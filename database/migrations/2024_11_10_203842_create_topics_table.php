@@ -23,6 +23,7 @@ class CreateTopicsTable extends Migration
             // Polymorphic columns for the creator (either teacher or student)
             $table->string('created_by_id', 10);
             $table->string('created_by_type');
+            
 
             // Optional foreign keys for clarity, but not enforced due to polymorphic structure
             // $table->foreign('created_by_id')->references('id')->on('students')->onDelete('cascade');
