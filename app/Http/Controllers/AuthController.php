@@ -109,6 +109,13 @@ class AuthController extends Controller
  
          // Fetch thesis information (if exists)
 
+         if ($role === 'student') {
+            $thesis = Thesis::where('student_id', $user->id)->first();
+        } else {
+            $thesis = Thesis::where('supervisor_id', $user->id)->first();
+        }
+
+        $thesisId = $thesis ? $thesis->id : null;
  
          return response()->json([
              'status' => true,
@@ -118,7 +125,7 @@ class AuthController extends Controller
                  'mail' => $user->mail,
                  'role' => $role,
                  'name' => $user->firstname . ' ' . $user->lastname,
-            
+                 'thesis' => $thesis
              ]
          ], 200);
  

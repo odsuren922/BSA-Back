@@ -41,7 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/subprojects/{id}', [SubProjectController::class, 'updateSubProject']);
     Route::delete('/subprojects/{id}', [SubprojectController::class, 'destroy']);
 
-    Route::get('/topic', [ThesisController::class, 'index']);
+    Route::get('/thesis/{id}', [ThesisController::class, 'index']);
 
 });
 

@@ -10,72 +10,59 @@ use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\Thesis;
 use App\Models\Department;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 
 class ThesisController extends Controller
 {
-
-    public function index(Request $request)
-    {  
-        //TODO :: sudalgaani ajiliin 
-        //Startdate
-        //enddate //admin maan oruulj ogno
-        //Topic table bolgoh
-
-        
-        $user = Auth::user();
-        $thesisId = $request->query('thesis_id'); 
-    
-        $thesis = Thesis::find($thesisId); 
-        if (!$thesis) {
-            return response()->json([
-                'status' => false,
-                'message' =>'thesis not found'
-            ], 404);
-        };
-
-        $student = Student::find($thesis->student_id);
-        $supervisor = Teacher::find($thesis->supervisor_id);
-
-        if(!$student || !$supervisor){
-            return response()->json([
-                'status' => false,
-                'message' =>'student or teachher not found'
-            ], 404);
-        }
    
-           // $department =Department::find($student->dep_id);
-      
-            
-            $head_dep = Teacher::where('dep_id',$student->dep_id)
-                                    ->where('superior', 'head')
-                                    ->first();
-     
-
-        //TODO: "weeks_num": "15",
-        // "name_of_plan": "7 хоногийн үйлчлэлсэн төлөвлөгөө",
-        // "major_short_name": "МТ"
-
-        return response()->json([
-            'status' => true,
-            'supervisor' => $supervisor->lastname . ' ' . $supervisor->firstname,
-            'student' => $student->lastname . ' ' . $student->firstname,
-            'num_id' => $student->sisi_id,
-            'topic' => $thesis->topic,
-            'head_dep' => $head_dep ? $head_dep->degree . '.' . ' '.  $head_dep->lastname . ' ' . $head_dep->firstname : 'Not assigned',
-            'phone' => $student->phonenumber,
-            'start_date'=> '2025-02-03',
-            'end_date'=> '2025-05-16',
-            'name_of_plan'=>'7 хоногийн үйлчлэлсэн төлөвлөгөө',
-            'weeks_num' =>'16',
-            'major_short_name' => "МТ"
-          
+    public function index( $id)
+    {
+        try {
+            $user = Auth::user();
         
-        ], 200);
-
-
-
-
+            $thesis = Thesis::findOrFail($id);
+            // Fetch Student and Supervisor
+            $student = Student::where('id', $thesis->student_id)->first();
+            $supervisor = Teacher::where('id', $thesis->supervisor_id)->first();
+    
+            if (!$student || !$supervisor) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Student or Supervisor not found'
+                ], 404);
+            }
+    
+            // Fetch Head of Department
+            $head_dep = Teacher::where('dep_id', $student->dep_id)
+                               ->where('superior', 'head')
+                               ->first();
+    
+            return response()->json([
+                'status' => true,
+                'supervisor' => "{$supervisor->lastname} {$supervisor->firstname}",
+                'student' => "{$student->lastname} {$student->firstname}",
+                'num_id' => $student->sisi_id,
+                'head_dep' => $head_dep ? "{$head_dep->degree}. {$head_dep->lastname} {$head_dep->firstname}" : 'Not assigned',
+                'phone' => $student->phone,
+                'start_date' => $thesis->start_date ?? '2025-02-03', // Replace with dynamic date
+                'end_date' => $thesis->end_date ?? '2025-05-16', // Replace with dynamic date
+                'name_of_plan' => '7 хоногийн үйлчлэлсэн төлөвлөгөө',
+                'weeks_num' => '16',
+                'major_short_name' => "МТ"
+            ], 200);
+    
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            \Log::error("Error in Thesis Index: " . $e->getMessage());
+    
+            return response()->json([
+                'status' => false,
+                'message' => 'An error occurred while fetching thesis data. Please try again later.',
+                'error' => $e->getMessage() // Only for debugging, remove in production
+            ], 500);
+        }
     }
+    
 
 }
