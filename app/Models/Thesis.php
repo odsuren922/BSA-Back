@@ -22,7 +22,7 @@ class Thesis extends Model
 
     public function supervisor()
     {
-        return $this->belongsTo(Supervisor::class, 'supervisor_id');
+        return $this->belongsTo(Teacher::class, 'supervisor_id');
     }
     public function projects()
     {

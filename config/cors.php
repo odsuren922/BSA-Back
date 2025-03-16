@@ -1,7 +1,8 @@
 <?php
 
 return [
-    'paths' => ['api/*', 'proposalform', '*'],
+    // 'paths' => ['api/*', 'proposalform', '*'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie'],
     'allowed_methods' => ['*'],
     'allowed_origins' => ['http://localhost:3000'], // Only allow requests from your frontend origin
     'allowed_origins_patterns' => [],
@@ -9,6 +10,9 @@ return [
     'exposed_headers' => [],
     'max_age' => 0,
     'supports_credentials' => true, // Enable credentials
+
+
+    
 ];
 
 
