@@ -4,12 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Laravel\Sanctum\HasApiTokens;
 
 class Teacher extends Model
 {
-    use HasFactory;
-
-    protected $fillable = ['id', 'dep_id', 'firstname', 'lastname', 'mail', 'numof_choosed_stud'];
+    use HasApiTokens,HasFactory;
+    protected $table = 'teachers';
+    protected $fillable = ['id', 'dep_id', 'firstname', 'lastname','degree', 'superior', 'mail', 'numof_choosed_stud'];
     public $incrementing = false;
     protected $keyType = 'string';
 
@@ -21,5 +22,9 @@ class Teacher extends Model
     public function topics()
     {
         return $this->morphMany(Topic::class, 'created_by');
+    }
+    public function thesis()
+    {
+        return $this->hasMany(Thesis::class, 'supervisor_id');
     }
 }

@@ -16,7 +16,7 @@ class DepartmentSeeder extends Seeder
         //
         DB::table('departments')->insert([
             [
-                'id' => 'D001',
+            
                 'name'=>"Мэдээллийн технологи, электроникийн сургууль",
                // 'programs'=> json_encode(['Компьютерын Ухаан', 'Мэдээллийн технологи', 'Програм хангамж']),
                 

@@ -14,7 +14,7 @@ class StudentsTableSeeder extends Seeder {
                 'firstname' => 'Бат',
                 'lastname' => 'Цэцэгээ',
                 'program' => 'Мэдээллийн Технологи',
-                'dep_id' => 'D001', 
+                'dep_id' => '1', 
                 'phone' =>'99999999',
                 'is_choosed'=> true,
                 'proposed_number'=> 1
@@ -25,7 +25,7 @@ class StudentsTableSeeder extends Seeder {
                 'firstname' => 'Сараа',
                 'lastname' => 'Дөлгөөн',
                 'program' => 'Мэдээллийн Технологи',
-                'dep_id' => 'D001', 
+                'dep_id' => '1', 
                 'phone' =>'99999999',
                 'is_choosed'=> true,
                 'proposed_number'=> 1

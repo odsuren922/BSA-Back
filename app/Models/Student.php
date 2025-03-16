@@ -10,7 +10,7 @@ use Laravel\Sanctum\HasApiTokens;
 class Student extends Model
 {
     use HasApiTokens,HasFactory;
-
+    protected $table = 'students';
     protected $fillable = ['id', 'dep_id', 'firstname', 'lastname', 'program', 'mail', 'phone', 'is_choosed', 'proposed_number'];
     public $incrementing = false;
     protected $keyType = 'string';
@@ -25,5 +25,9 @@ class Student extends Model
     public function topics()
     {
         return $this->morphMany(Topic::class, 'created_by');
+    }
+    public function thesis()
+    {
+        return $this->hasMany(Thesis::class, 'student_id');
     }
 }
