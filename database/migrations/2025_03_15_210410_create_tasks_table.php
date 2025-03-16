@@ -17,7 +17,7 @@ class CreateTasksTable extends Migration
             $table->id();
        //     $table->string('thesis_id', 10);
        $table->foreignId('thesis_id')->constrained('thesis')->onDelete('cascade');
-            $table->string('name')->nullable()->change();
+         $table->string('name')->nullable()->change();
             $table->timestamps();
          //   $table->foreign('thesis_id')->references('id')->on('thesis')->onDelete('cascade');
 
