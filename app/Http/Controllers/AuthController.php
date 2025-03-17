@@ -82,7 +82,7 @@ class AuthController extends Controller
          // Try to find the user in students table
          $user = Student::where('mail', $request->mail)->first();
          $role = 'student';
- 
+ //TODO::ADMIN LOGIN
          // If not found, check the supervisors table
          if (!$user) {
              $user = Teacher::where('mail', $request->mail)->first();

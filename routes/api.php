@@ -9,8 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ThesisController;
-use App\Http\Controllers\ProjectController;
-use App\Http\Controllers\SubprojectController;
+use App\Http\Controllers\TaskController;
+use App\Http\Controllers\SubtaskController;
 
 
 Route::get('/proposalform', [ProposalFormController::class, 'index']);
@@ -36,14 +36,14 @@ Route::middleware('auth:sanctum')->group(function () {
     //Шинээр project үүсгэх 
     //TODO:: CREATE TASK MODEL AND CONTROLLER
     //TODO:: CREATE SUBTASKMODEL NAD CONTROLLERS
-    Route::post('/task', [ProjectController::class, 'store']);  
-    Route::put('/task/{id}', [ProjectController::class, 'updateProject']);
-    Route::get('/task', [ProjectController::class, 'index']);
-    Route::delete('/task/{id}', [ProjectController::class, 'destroy']);
+    Route::post('/task', [TaskController::class, 'store']);  
+    Route::put('/task/{id}', [TaskController::class, 'updateProject']);
+    Route::get('/task', [TaskController::class, 'index']);
+    Route::delete('/task/{id}', [TaskController::class, 'destroy']);
     
-    Route::post('/subtask', [SubprojectController::class, 'store']); 
-    Route::put('/subtask/{id}', [SubProjectController::class, 'updateSubProject']);
-    Route::delete('/subtask/{id}', [SubprojectController::class, 'destroy']);
+    Route::post('/subtask', [SubtaskController::class, 'store']); 
+    Route::put('/subtask/{id}', [SubtaskController::class, 'updateSubProject']);
+    Route::delete('/subtask/{id}', [SubtaskController::class, 'destroy']);
 
     Route::get('/thesis/{id}', [ThesisController::class, 'index']);//done
 
