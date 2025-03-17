@@ -14,11 +14,10 @@ class CreateTasksTable extends Migration
     public function up()
     {
         Schema::create('tasks', function (Blueprint $table) {
-            $table->id();
-       //     $table->string('thesis_id', 10);
-       $table->foreignId('thesis_id')->constrained('thesis')->onDelete('cascade');
-         $table->string('name')->nullable()->change();
-            $table->timestamps();
+        $table->id();
+        $table->foreignId('thesis_id')->constrained('thesis')->onDelete('cascade');
+        $table->string('name')->nullable();
+        $table->timestamps();
          //   $table->foreign('thesis_id')->references('id')->on('thesis')->onDelete('cascade');
 
         });

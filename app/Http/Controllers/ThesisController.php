@@ -22,7 +22,7 @@ class ThesisController extends Controller
             $user = Auth::user();
         
             $thesis = Thesis::findOrFail($id);
-            // Fetch Student and Supervisor
+
             $student = Student::where('id', $thesis->student_id)->first();
             $supervisor = Teacher::where('id', $thesis->supervisor_id)->first();
     
@@ -37,7 +37,7 @@ class ThesisController extends Controller
             $head_dep = Teacher::where('dep_id', $student->dep_id)
                                ->where('superior', 'head')
                                ->first();
-    
+    //TODO:: START AND END DATE
             return response()->json([
                 'status' => true,
                 'supervisor' => "{$supervisor->lastname} {$supervisor->firstname}",
@@ -48,8 +48,13 @@ class ThesisController extends Controller
                 'start_date' => $thesis->start_date ?? '2025-02-03', // Replace with dynamic date
                 'end_date' => $thesis->end_date ?? '2025-05-16', // Replace with dynamic date
                 'name_of_plan' => '7 хоногийн үйлчлэлсэн төлөвлөгөө',
-                'weeks_num' => '16',
-                'major_short_name' => "МТ"
+                'weeks_num' => '15',
+                'major_short_name' => "МТ",
+                'name_mongolian'=> $thesis->name_mongolian,
+                'name_english' => $thesis->name_english,
+                'description'=>  $thesis->description
+            
+                
             ], 200);
     
         } catch (\Exception $e) {

@@ -13,162 +13,219 @@ use App\Models\Teacher;
 
 class TaskController extends Controller
 {
-    //TODO:: NEED TO EDIT
-    //
     /**
-     * Create a new Project linked to thesis
+     * Create a new task linked to thesis
      */
     public function store(Request $request)
-    {
+{
+    try {
         // Validate the incoming request data
-        $request->validate([
-            'role' => 'required|string|in:student,supervisor',
+        $validatedData = $request->validate([
+            'role' => 'nullable|string|in:student,supervisor',
             'thesis_id' => 'required|exists:thesis,id',
         ]);
-    
-        // Get the authenticated user
+
         $user = Auth::user();
-    
-        // Fetch the thesis
-        $thesis = Thesis::find($request->thesis_id);
-    
+        $thesis = Thesis::findOrFail($validatedData['thesis_id']);
+
         // Authorization: Check based on role
+        if ($request->role === 'student' && $user->id !== $thesis->student_id) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized. Only the assigned student can create a task.',
+            ], 403);
+        }
+
+        if ($request->role === 'supervisor' && $user->id !== $thesis->supervisor_id) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized. Only the assigned supervisor can create a task.',
+            ], 403);
+        }
+
+        // Create the task with default name
+        $task = Task::create([
+            'thesis_id' => $validatedData['thesis_id'],
+            'name' => 'Default task Name',
+        ]);
+
+        // Create a default subtask
+        Subtask::create([
+            'task_id' => $task->id,
+            'name' => 'Default Subtask Name',
+        ]);
+
+        // Load the subtasks relationship onto the task
+        $task->load('subtasks');
+
+        return response()->json([
+            'status' => true,
+            'message' => 'task created successfully.',
+            'task' => $task
+        ], 201);
+    } catch (ValidationException $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Validation error.',
+            'errors' => $e->errors()
+        ], 422);
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Thesis not found.',
+        ], 404);
+    } catch (Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'An unexpected error occurred.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+    /**
+    * update  task name
+    */
+
+    public function updateTask(Request $request, $id)
+    {
+        try {
+            // Find the task or fail
+            $task = Task::findOrFail($id);
+    
+            // Validate the request
+            $validatedData = $request->validate([
+                'name' => 'required|string|max:255',
+            ]);
+    
+            // Update the task
+            $task->update(['name' => $validatedData['name']]);
+    
+            return response()->json([
+                'status' => true,
+                'message' => 'task updated successfully',
+                'task' => $task
+            ], 200);
+    
+        } catch (ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation error.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'task not found.',
+            ], 404);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'An unexpected error occurred.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    
+
+
+  /**
+  * Get only the tasks related to the logged-in user
+  */
+
+ public function index(Request $request)
+{
+    try {
+        // Validate the request
+        $validatedData = $request->validate([
+            'thesis_id' => 'required|exists:thesis,id',
+        ]);
+
+        // Fetch tasks related to the thesis
+        $tasks = Task::where('thesis_id', $validatedData['thesis_id'])
+                        ->with('subtasks') // Load related subtasks
+                        ->get();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'tasks retrieved successfully.',
+            'tasks' => $tasks
+        ], 200);
+
+    } catch (ValidationException $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Validation error.',
+            'errors' => $e->errors()
+        ], 422);
+    } catch (Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'An unexpected error occurred.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+  
+
+/**
+* Delete a task and its subtasks
+*/
+public function destroy($id)
+{
+    try {
+        $user = Auth::user();
+
+        // Find the task or fail
+        $task = Task::find($id);
+        if (!$task) {
+            return response()->json([
+                'status' => false,
+                'message' => 'task not found.',
+            ], 404);
+        }
+
+        // Find the associated thesis
+        $thesis = Thesis::find($task->thesis_id);
         if (!$thesis) {
             return response()->json([
                 'status' => false,
                 'message' => 'Thesis not found.',
             ], 404);
         }
-    
-        if ($request->role === 'student' && $user->id !== $thesis->student_id) {
+
+        // Authorization check
+        if (!$thesis || ($user->id !== $thesis->student_id && $user->id !== $thesis->supervisor_id)) {
             return response()->json([
                 'status' => false,
-                'message' => 'Unauthorized. Only the assigned student can create a project.',
+                'message' => 'Unauthorized. You are not allowed to delete this task.',
             ], 403);
         }
-    
-        if ($request->role === 'supervisor' && $user->id !== $thesis->supervisor_id) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Unauthorized. Only the assigned supervisor can create a project.',
-            ], 403);
-        }
-    
-        // Create the project
-        $project = Task::create([
-            'thesis_id' => $request->thesis_id,
-            'name' => '', // Set a default name
-        ]);
-    
-        // Create a default subproject
-        Subtask::create([
-            'tasks_id' => $project->id,
-            'name' => null
-        ]);
-    
-        // Load the subprojects relationship onto the project
-        $project->load('subtask');
-    
+
+        // Delete the task and related subtasks
+        $task->subtasks()->delete();
+        $task->delete();
+
         return response()->json([
             'status' => true,
-            'message' => 'Project created successfully.',
-            'project' => $project
-        ], 201);
+            'message' => 'task deleted successfully.'
+        ], 200);
+
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'task not found.',
+        ], 404);
+    } catch (Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'An unexpected error occurred.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
-    /**
-    * update  Project name
-    */
-   public function updateProject(Request $request, $id)
-     {
-       $project = Task::findOrFail($id);
-
-       $request->validate([
-           'name' => 'nullable|string|max:255',
-        ]);
-
-       $project->update(['name' => $request->name]);
-
-       return response()->json(['message' => 'Project updated successfully', 'project' => $project]);
-      }
-
-
-  /**
-  * Get only the projects related to the logged-in user
-  */
-
-   public function index(Request $request)
-   {
-       $user = Auth::user();
-       $thesisId = $request->query('thesis_id'); // Get thesis_id from request
-
-       // Determine if user is a student or supervisor by checking their email in the respective tables
-       $isStudent = Student::where('email', $user->email)->exists();
-       $isSupervisor = Teacher::where('email', $user->email)->exists();
-
-       // Query projects based on role
-       $projectsQuery = Project::whereHas('thesis', function ($query) use ($user, $isStudent, $isSupervisor) {
-           $query->where(function ($q) use ($user, $isStudent, $isSupervisor) {
-               if ($isStudent) {
-                   $q->orWhere('student_id', $user->id);
-                   }
-               if ($isSupervisor) {
-                   $q->orWhere('supervisor_id', $user->id);
-               }
-           });
-       });
-
-       // Filter by thesis_id if provided
-       if ($thesisId) {
-           $projectsQuery->where('thesis_id', $thesisId);
-       }
-
-       // Fetch the projects with related data
-       $projects = $projectsQuery->with(['subprojects'])->orderBy('created_at', 'asc')->get();
-
-
-       return response()->json([
-           'status' => true,
-           'projects' => $projects,
-           'user' => $user,
-           'role' => $isStudent ? 'student' : ($isSupervisor ? 'supervisor' : 'unknown'),
-           ], 200);
 }
-
-/**
-* Delete a Project and its subprojects
-*/
-        public function destroy($id)
-        {
-            $user = Auth::user();
-            $project = Project::find($id);         
-
-            if (!$project) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Project not found.',
-                ], 404);
-            }         
-
-            $thesis = $project->thesis;         
-
-            // Check if the user is authorized to delete the project
-            if (!$thesis || ($user->id !== $thesis->student_id && $user->id !== $thesis->supervisor_id)) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Unauthorized. You are not allowed to delete this project.',
-                ], 403);
-            }         
-
-            // Delete related subprojects first
-            $project->subprojects()->delete();         
-
-            // Delete the project
-            $project->delete();         
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Project and related subprojects deleted successfully.',
-            ], 200);
-        }         
+      
        
 }

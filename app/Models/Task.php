@@ -13,9 +13,9 @@ class Task extends Model
          'name'
         ];
 
-    public function subprojects()
+    public function subtasks()
     {
-        return $this->hasMany(Subtasks::class);
+        return $this->hasMany(Subtask::class, 'task_id');
     }
 
     public function thesis()

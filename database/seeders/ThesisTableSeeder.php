@@ -19,7 +19,7 @@ class ThesisTableSeeder extends Seeder
         DB::table('thesis')->insert([
 
             [
-                'id' =>1,
+           
                 'supervisor_id' => 1, 
                 'student_id' => 1, 
                 'name_mongolian' => 'Thesis management system: Work plan and grading module',
@@ -30,7 +30,7 @@ class ThesisTableSeeder extends Seeder
             ],
 
             [
-                'id' =>2,
+               
                 'supervisor_id' => 1,
                 'student_id' => 2,
    

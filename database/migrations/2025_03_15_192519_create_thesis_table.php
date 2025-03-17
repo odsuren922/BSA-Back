@@ -32,11 +32,6 @@ class CreateThesisTable extends Migration
            // $table->timestamp('approved_by_teacher_at')->nullable();
             $table->timestamp('submitted_to_dep_at')->nullable();
             //$table->timestamp('approved_by_dep_at')->nullable();
-
-          //  $table->foreign('supervisor_id')->references('id')->on('teachers')->onDelete('cascade');
-           
-
-            // need to add dep_id
         });
     }
 

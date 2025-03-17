@@ -36,13 +36,13 @@ Route::middleware('auth:sanctum')->group(function () {
     //Шинээр project үүсгэх 
     //TODO:: CREATE TASK MODEL AND CONTROLLER
     //TODO:: CREATE SUBTASKMODEL NAD CONTROLLERS
-    Route::post('/task', [TaskController::class, 'store']);  
-    Route::put('/task/{id}', [TaskController::class, 'updateProject']);
-    Route::get('/task', [TaskController::class, 'index']);
-    Route::delete('/task/{id}', [TaskController::class, 'destroy']);
+    Route::post('/tasks', [TaskController::class, 'store']);  
+    Route::put('/tasks/{id}', [TaskController::class, 'updateTask']);
+    Route::get('/tasks', [TaskController::class, 'index']);
+    Route::delete('/tasks/{id}', [TaskController::class, 'destroy']);
     
     Route::post('/subtask', [SubtaskController::class, 'store']); 
-    Route::put('/subtask/{id}', [SubtaskController::class, 'updateSubProject']);
+    Route::put('/subtask/{id}', [SubtaskController::class, 'updateSubTask']);
     Route::delete('/subtask/{id}', [SubtaskController::class, 'destroy']);
 
     Route::get('/thesis/{id}', [ThesisController::class, 'index']);//done
