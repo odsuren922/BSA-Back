@@ -4,16 +4,14 @@ return [
     // 'paths' => ['api/*', 'proposalform', '*'],
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
     'allowed_methods' => ['*'],
-   // 'allowed_origins' => ['http://localhost:3000'], // Only allow requests from your frontend origin
+   'allowed_origins' => ['http://localhost:3000'], // Only allow requests from your frontend origin
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
     'exposed_headers' => [],
     'max_age' => 0,
+    //TODO:: EDITIED
     'supports_credentials' => true, // Enable credentials
-    'allowed_origins' => [
-        'http://localhost:3000', // React frontend URL
-        'http://localhost:3001',
-    ],
+ 
 
     
 
