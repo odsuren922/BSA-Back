@@ -33,9 +33,8 @@ Route::post('/auth/register',[AuthController::class,'createUser']);
 Route::post('/auth/login',[AuthController::class,'loginUser']);
 
 Route::middleware('auth:sanctum')->group(function () {
-    //Шинээр project үүсгэх 
-    //TODO:: CREATE TASK MODEL AND CONTROLLER
-    //TODO:: CREATE SUBTASKMODEL NAD CONTROLLERS
+ 
+   
     Route::post('/tasks', [TaskController::class, 'store']);  
     Route::put('/tasks/{id}', [TaskController::class, 'updateTask']);
     Route::get('/tasks', [TaskController::class, 'index']);
