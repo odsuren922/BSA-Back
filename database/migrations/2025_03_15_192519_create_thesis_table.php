@@ -21,6 +21,7 @@ class CreateThesisTable extends Migration
             
            // $table->json('topic'); 
             $table->timestamps();
+            //TODO:: THESIS STATUS
             $table->enum('status', ['draft', 'sent_to_teacher', 'approved_by_teacher','cancelled_by_teacher','sent_to_dep', 'approved_by_dep', 'cancelled_by_dep'])
           ->default('draft');
        

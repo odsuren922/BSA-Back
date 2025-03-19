@@ -46,13 +46,13 @@ class TaskController extends Controller
         // Create the task with default name
         $task = Task::create([
             'thesis_id' => $validatedData['thesis_id'],
-            'name' => 'Default task Name',
+            'name' => '',
         ]);
 
         // Create a default subtask
         Subtask::create([
             'task_id' => $task->id,
-            'name' => 'Default Subtask Name',
+            'name' => '',
         ]);
 
         // Load the subtasks relationship onto the task
@@ -95,11 +95,11 @@ class TaskController extends Controller
     
             // Validate the request
             $validatedData = $request->validate([
-                'name' => 'required|string|max:255',
+                'name' => 'nullable|string|max:255',
             ]);
     
             // Update the task
-            $task->update(['name' => $validatedData['name']]);
+            $task->update(['name' => $validatedData['name'] ?? null]);
     
             return response()->json([
                 'status' => true,
@@ -142,10 +142,26 @@ class TaskController extends Controller
             'thesis_id' => 'required|exists:thesis,id',
         ]);
 
+        $thesis = Thesis::find($validatedData['thesis_id']);
+        if (!$thesis) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Thesis not found.',
+            ], 404);
+        }
+
         // Fetch tasks related to the thesis
+        // $tasks = Task::where('thesis_id', $validatedData['thesis_id'])
+        //                 ->with('subtasks') // Load related subtasks
+        //                 ->orderBy('created_at', 'asc')
+        //                 ->get();
         $tasks = Task::where('thesis_id', $validatedData['thesis_id'])
-                        ->with('subtasks') // Load related subtasks
-                        ->get();
+            ->with(['subtasks' => function ($query) {
+            $query->orderBy('created_at', 'asc'); // Subtasks-ийг ascending буюу эрт үүссэнээс сүүлд үүссэн дарааллаар
+         }])
+            ->orderBy('created_at', 'asc') // Tasks-ийг бас үүссэн хугацаагаар эрэмбэлэх
+            ->get();
+
 
         return response()->json([
             'status' => true,

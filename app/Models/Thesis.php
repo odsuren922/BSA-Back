@@ -28,5 +28,9 @@ class Thesis extends Model
     {
         return $this->hxasMany(Project::class);
     }
+    public function status()
+    {
+        return $this->hasOne(ThesisPlanStatus::class, 'thesis_id');
+    }
 
 }
