@@ -21,7 +21,7 @@ class TaskController extends Controller
     try {
         // Validate the incoming request data
         $validatedData = $request->validate([
-            'role' => 'nullable|string|in:student,supervisor',
+            'role' => 'required|string|in:student,supervisor',
             'thesis_id' => 'required|exists:thesis,id',
         ]);
 
@@ -134,55 +134,76 @@ class TaskController extends Controller
   * Get only the tasks related to the logged-in user
   */
 
- public function index(Request $request)
-{
-    try {
-        // Validate the request
-        $validatedData = $request->validate([
-            'thesis_id' => 'required|exists:thesis,id',
-        ]);
-
-        $thesis = Thesis::find($validatedData['thesis_id']);
-        if (!$thesis) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Thesis not found.',
-            ], 404);
-        }
-
-        // Fetch tasks related to the thesis
-        // $tasks = Task::where('thesis_id', $validatedData['thesis_id'])
-        //                 ->with('subtasks') // Load related subtasks
-        //                 ->orderBy('created_at', 'asc')
-        //                 ->get();
-        $tasks = Task::where('thesis_id', $validatedData['thesis_id'])
-            ->with(['subtasks' => function ($query) {
-            $query->orderBy('created_at', 'asc'); // Subtasks-ийг ascending буюу эрт үүссэнээс сүүлд үүссэн дарааллаар
-         }])
-            ->orderBy('created_at', 'asc') // Tasks-ийг бас үүссэн хугацаагаар эрэмбэлэх
-            ->get();
-
-
-        return response()->json([
-            'status' => true,
-            'message' => 'tasks retrieved successfully.',
-            'tasks' => $tasks
-        ], 200);
-
-    } catch (ValidationException $e) {
-        return response()->json([
-            'status' => false,
-            'message' => 'Validation error.',
-            'errors' => $e->errors()
-        ], 422);
-    } catch (Exception $e) {
-        return response()->json([
-            'status' => false,
-            'message' => 'An unexpected error occurred.',
-            'error' => $e->getMessage(),
-        ], 500);
-    }
-}
+  public function index(Request $request)
+  {
+      try {
+          // Validate the request
+          $validatedData = $request->validate([
+              'thesis_id' => 'required|exists:thesis,id',
+          ]);
+  
+          $thesis = Thesis::find($validatedData['thesis_id']);
+          if (!$thesis) {
+              return response()->json([
+                  'status' => false,
+                  'message' => 'Thesis not found.',
+              ], 404);
+          }
+  
+          // Fetch tasks related to the thesis
+          $tasks = Task::where('thesis_id', $validatedData['thesis_id'])
+              ->with(['subtasks' => function ($query) {
+                  $query->orderBy('created_at', 'asc'); // Subtasks-ийг ascending дарааллаар эрэмбэлэх
+              }])
+              ->orderBy('created_at', 'asc') // Tasks-ийг бас үүссэн хугацаагаар эрэмбэлэх
+              ->get();
+  
+          // Хэрэв ямар ч task байхгүй бол нэгийг үүсгэж, түүнд subtask нэмнэ
+          if ($tasks->isEmpty()) {
+              // Create the task with default name
+              $task = Task::create([
+                  'thesis_id' => $validatedData['thesis_id'],
+                  'name' => 'Default Task',
+              ]);
+  
+              // Create a default subtask
+              $subtask = Subtask::create([
+                  'task_id' => $task->id,
+                  'name' => 'Default Subtask',
+              ]);
+  
+              // Task болон subtask-ийг харилцаатайгаар дахин ачаалгах
+              $task->load('subtasks');
+  
+              // Шинээр үүсгэсэн task-ийг буцаана
+              return response()->json([
+                  'status' => true,
+                  'message' => 'No tasks found. A new task with a subtask has been created.',
+                  'tasks' => [$task]
+              ], 201);
+          }
+  
+          return response()->json([
+              'status' => true,
+              'message' => 'Tasks retrieved successfully.',
+              'tasks' => $tasks
+          ], 200);
+  
+      } catch (ValidationException $e) {
+          return response()->json([
+              'status' => false,
+              'message' => 'Validation error.',
+              'errors' => $e->errors()
+          ], 422);
+      } catch (Exception $e) {
+          return response()->json([
+              'status' => false,
+              'message' => 'An unexpected error occurred.',
+              'error' => $e->getMessage(),
+          ], 500);
+      }
+  }
+  
 
   
 

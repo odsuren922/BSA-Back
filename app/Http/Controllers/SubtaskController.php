@@ -13,9 +13,6 @@ use App\Models\Teacher;
 
 class SubtaskController extends Controller
 {
-
-
-
        /**
      * Create a new subtask linked to a task
      */
@@ -60,7 +57,7 @@ class SubtaskController extends Controller
             'status' => true,
             'message' => 'Subtask created successfully',
             'subtask' => $subtask
-        ], 201);
+        ], 200);
     } catch (\Exception $e) {
         return response()->json([
             'status' => false,
@@ -123,7 +120,6 @@ class SubtaskController extends Controller
        }
    }
    
-
        /**
  * Delete a subtask
  */
@@ -158,7 +154,7 @@ public function destroy($id)
         return response()->json([
             'status' => false,
             'message' => 'An error occurred while deleting the subtask.',
-            'error' => $e->getMessage(), // Remove in production for security
+            'error' => $e->getMessage(), 
         ], 500);
     }
 }

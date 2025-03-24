@@ -13,8 +13,6 @@ class DepartmentController extends Controller
     {
         return Department::all();
     }
-
-    // Store a newly created department in storage
     public function store(Request $request)
     {
         $request->validate([

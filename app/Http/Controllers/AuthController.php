@@ -113,9 +113,21 @@ class AuthController extends Controller
             $thesis = Thesis::where('student_id', $user->id)->first();
         } else {
             $thesis = Thesis::where('supervisor_id', $user->id)->first();
+
+         return response()->json([
+            'status' => true,
+            'message' => 'User Logged In Successfully',
+            'token' => $token,
+            'user' => [
+                'mail' => $user->mail,
+                'role' => $role,
+                'name' => $user->firstname . ' ' . $user->lastname,
+              
+            ]
+        ], 200);
         }
 
-        $thesisId = $thesis ? $thesis->id : null;
+      //  $thesisId = $thesis ? $thesis->id : null;
  
          return response()->json([
              'status' => true,

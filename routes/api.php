@@ -37,14 +37,17 @@ Route::middleware('auth:sanctum')->group(function () {
    
     Route::post('/tasks', [TaskController::class, 'store']);  
     Route::put('/tasks/{id}', [TaskController::class, 'updateTask']);
-    Route::get('/tasks', [TaskController::class, 'index']);
+    Route::get('/tasks', [TaskController::class, 'index']); //done
     Route::delete('/tasks/{id}', [TaskController::class, 'destroy']);
     
     Route::post('/subtask', [SubtaskController::class, 'store']); 
     Route::put('/subtask/{id}', [SubtaskController::class, 'updateSubTask']);
     Route::delete('/subtask/{id}', [SubtaskController::class, 'destroy']);
 
-    Route::get('/thesis/{id}', [ThesisController::class, 'index']);//done
-
+    Route::get('/thesis/{id}', [ThesisController::class, 'pdf']);//done
+    //thesisByRole
+    Route::get('/theses', [ThesisController::class, 'thesisByRole']);
+    Route::get('/allTheses', [ThesisController::class, 'allTheses']);
+    Route::get('/onethesis/{id}', [ThesisController::class, 'index']);
 });
 
