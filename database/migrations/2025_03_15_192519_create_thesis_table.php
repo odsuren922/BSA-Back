@@ -22,16 +22,18 @@ class CreateThesisTable extends Migration
            // $table->json('topic'); 
             $table->timestamps();
             //TODO:: THESIS STATUS
-            $table->enum('status', ['draft', 'sent_to_teacher', 'approved_by_teacher','cancelled_by_teacher','sent_to_dep', 'approved_by_dep', 'cancelled_by_dep'])
-          ->default('draft');
+           // $table->enum('status', ['draft', 'sent_to_teacher', 'approved_by_teacher','cancelled_by_teacher','sent_to_dep', 'approved_by_dep', 'cancelled_by_dep'])
+        //  ->default('draft');
+          $table->enum('status', ['unactive','active', 'done', 'fail'])->default('active')->change();
+
        
             $table->string('name_mongolian')->nullable();
             $table->string('name_english')->nullable();
             $table->text('description')->nullable();
 
-            $table->timestamp('submitted_to_teacher_at')->nullable();
+            //$table->timestamp('submitted_to_teacher_at')->nullable();
            // $table->timestamp('approved_by_teacher_at')->nullable();
-            $table->timestamp('submitted_to_dep_at')->nullable();
+            //$table->timestamp('submitted_to_dep_at')->nullable();
             //$table->timestamp('approved_by_dep_at')->nullable();
         });
     }

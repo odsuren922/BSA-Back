@@ -85,9 +85,14 @@ class AuthController extends Controller
  //TODO::ADMIN LOGIN
          // If not found, check the supervisors table
          if (!$user) {
-             $user = Teacher::where('mail', $request->mail)->first();
-             $role = 'supervisor';
-         }
+            $user = Teacher::where('mail', $request->mail)->first();
+            $role = 'supervisor';
+        }
+        
+        if ($user && $user->superior === 'Тэнхмийн туслах') {
+            $role = 'admin';
+        }
+        
 
          if (!$user || $request->password !== 'password123') {
             return response()->json([

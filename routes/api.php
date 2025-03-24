@@ -46,8 +46,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/thesis/{id}', [ThesisController::class, 'pdf']);//done
     //thesisByRole
-    Route::get('/theses', [ThesisController::class, 'thesisByRole']);
+    Route::get('/theses', [ThesisController::class, 'supervisodThesis']);
     Route::get('/allTheses', [ThesisController::class, 'allTheses']);
-    Route::get('/onethesis/{id}', [ThesisController::class, 'index']);
+   Route::get('/onethesisSuper/{id}', [ThesisController::class, 'index']);
+   Route::get('/onethesis/{id}', [ThesisController::class, 'getThesis']);
+Route::get('/thesis/{id}/student', [ThesisController::class, 'getStudentByThesis']);
+Route::get('/thesis/{id}/supervisor', [ThesisController::class, 'getSupervisorByThesis']);
+
 });
 

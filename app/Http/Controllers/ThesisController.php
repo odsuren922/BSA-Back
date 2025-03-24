@@ -73,18 +73,14 @@ class ThesisController extends Controller
 //Thesis awah
 
 
-public function thesisByRole()
+public function supervisodThesis()
 {
     try {
         $user = Auth::user();
+        $query = Thesis::with('student'); 
 
-        // Хэрэв хэрэглэгч админ бол бүх дипломын ажлыг авах
-        // Хэрэв хэрэглэгч supervisor бол зөвхөн өөрийн удирдсан дипломын ажлыг авах
-        $query = Thesis::with('student'); // Eager load student relationship
+        $query->where('supervisor_id', $user->id);
 
-        if ($user->role === 'supervisor') {
-            $query->where('supervisor_id', $user->id);
-        }
 
         $thesis = $query->get();
 
@@ -150,6 +146,88 @@ public function index($id)
         ], 500);
     }
 }
+
+public function getThesis($id)
+{
+    try {
+        $thesis = Thesis::findOrFail($id);
+
+        return response()->json([
+            'status' => true,
+            'data' => $thesis,
+        ], 200);
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Thesis not found',
+        ], 404);
+    } catch (\Exception $e) {
+        \Log::error("Error in fetching thesis: " . $e->getMessage());
+
+        return response()->json([
+            'status' => false,
+            'message' => 'An error occurred while fetching the thesis.',
+        ], 500);
+    }
+}
+
+public function getStudentByThesis($thesis_id)
+{
+    try {
+        $thesis = Thesis::findOrFail($thesis_id);
+        $student = Student::findOrFail($thesis->student_id);
+
+        return response()->json([
+            'status' => true,
+            'data' => [
+                'firstname' => $student->firstname,
+                'lastname' => $student->lastname,
+                'sisi_id' => $student->sisi_id,
+                'mail' => $student->mail,
+                'phone' => $student->phone,
+                'program' => $student->program,
+            ],
+        ], 200);
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Thesis or Student not found',
+        ], 404);
+    } catch (\Exception $e) {
+        \Log::error("Error in fetching student by thesis: " . $e->getMessage());
+
+        return response()->json([
+            'status' => false,
+            'message' => 'An error occurred while fetching the student.',
+        ], 500);
+    }
+}
+
+public function getSupervisorByThesis($thesis_id)
+{
+    try {
+        $thesis = Thesis::findOrFail($thesis_id);
+        $supervisor = Teacher::findOrFail($thesis->supervisor_id);
+
+        return response()->json([
+            'status' => true,
+            'data' => $supervisor,
+        ], 200);
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Thesis or Supervisor not found',
+        ], 404);
+    } catch (\Exception $e) {
+        \Log::error("Error in fetching supervisor by thesis: " . $e->getMessage());
+
+        return response()->json([
+            'status' => false,
+            'message' => 'An error occurred while fetching the supervisor.',
+        ], 500);
+    }
+}
+
 
 
 
