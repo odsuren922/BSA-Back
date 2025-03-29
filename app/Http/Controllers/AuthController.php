@@ -126,9 +126,11 @@ class AuthController extends Controller
             'user' => [
                 'mail' => $user->mail,
                 'role' => $role,
-                'name' => $user->firstname . ' ' . $user->lastname,
-              
-            ]
+                'firstname' => $user->firstname,
+                 'lastname' => $user->lastname,
+                 'dep_id' => $user->dep_id,
+                 
+                 ]
         ], 200);
         }
 

@@ -21,7 +21,6 @@ class TeachersSeeder extends Seeder
                 'firstname' => 'Батаа',
                 'lastname' => 'Болд',
                 'dep_id' => '1', 
-                //'numof_choosed_stud' => 5, 
                 
             ],
             [ 
@@ -36,6 +35,42 @@ class TeachersSeeder extends Seeder
                 'mail' => 'supervisor3@example.com',
                 'firstname' => 'Хуягаа',
                 'lastname' => 'Амараа',
+                'dep_id' => '1',
+            ],
+            [
+                'mail' => 'supervisor4@example.com',
+                'firstname' => 'Ганхуяг',
+                'lastname' => 'Дашдондог',
+                'dep_id' => '1',
+            ],
+            [
+                'mail' => 'supervisor5@example.com',
+                'firstname' => 'Цэцгээ',
+                'lastname' => 'Отгон',
+                'dep_id' => '1',
+            ],
+            [
+                'mail' => 'supervisor6@example.com',
+                'firstname' => 'Дорж',
+                'lastname' => 'Содном',
+                'dep_id' => '1',
+            ],
+            [
+                'mail' => 'supervisor7@example.com',
+                'firstname' => 'Бямба',
+                'lastname' => 'Энхжаргал',
+                'dep_id' => '1',
+            ],
+            [
+                'mail' => 'admin1@example.com',
+                'firstname' => 'Бямба',
+                'lastname' => 'Амаржаргал',
+                'dep_id' => '1',
+            ],
+            [
+                'mail' => 'admin-@example.com',
+                'firstname' => 'Амаржаргал',
+                'lastname' => 'Пүрэвсүрэг',
                 'dep_id' => '1',
             ],
         ]);

@@ -11,7 +11,7 @@ class Thesis extends Model
     use HasFactory;
 
     protected $table = 'thesis';
-    protected $fillable = ['supervisor_id', 'student_id', 'status', 'submitted_to_teacher_at', 'submitted_to_dep_at', 'name_mongolian', 'name_english','description'];
+    protected $fillable = ['supervisor_id', 'student_id', 'status', 'submitted_to_teacher_at', 'submitted_to_dep_at', 'name_mongolian', 'name_english','description', 'thesis_cycle_id'];
     protected $casts = [
         'topic' => 'array', // Automatically converts JSON to an array
     ];
@@ -31,6 +31,9 @@ class Thesis extends Model
     public function status()
     {
         return $this->hasOne(ThesisPlanStatus::class, 'thesis_id');
+    }
+    public function thesisCycle() {
+        return $this->belongsTo(ThesisCycle::class);
     }
 
 }

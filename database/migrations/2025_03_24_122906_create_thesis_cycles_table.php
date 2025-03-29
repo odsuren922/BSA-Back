@@ -21,7 +21,8 @@ class CreateThesisCyclesTable extends Migration
             $table->string('semester', 20);
             $table->date('start_date');
             $table->date('end_date');
-            $table->foreignId('grading_schema_id')->constrained('grading_schemas')->onDelete('cascade')->nullable();
+            $table->foreignId('grading_schema_id')->nullable()->constrained('grading_schemas')->onDelete('cascade');
+            $table->string('status', 255)->default('Хүлээгдэж буй'); //(Хүлээгдэж буй,Хаагдсан,Цуцлагдсан,Идэвхитэй, Устгах)
             $table->timestamps();
         });
     }

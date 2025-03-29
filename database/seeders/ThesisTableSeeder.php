@@ -22,8 +22,8 @@ class ThesisTableSeeder extends Seeder
            
                 'supervisor_id' => 1, 
                 'student_id' => 1, 
-                'name_mongolian' => 'Thesis management system: Work plan and grading module',
-                    'name_english' => 'Дипломын ажлын удирдах систем: Төлөвлөгөө батлах, дүгнэх модуль',
+                'name_mongolian' => 'Дипломын ажлын удирдах систем: Төлөвлөгөө батлах, дүгнэх модуль',
+                'name_english' => 'Thesis management system: Work plan and grading module',
                     'description' => 'Төлөвлөгөө батлуулах, явцын үнэлгээ оруулах, үзлэг болон хамгаалалтын хуваарь товлох, комиссын гишүүдийг хуваарилах, мэдээллэх модулийг хөгжүүлнэ.',
                 'status' => 'active',
                
@@ -40,6 +40,29 @@ class ThesisTableSeeder extends Seeder
            ,
                 'status' => 'active',
                 
+            ],
+
+            [
+           
+                'supervisor_id' => 1, 
+                'student_id' => 3, 
+                'name_mongolian' => 'Зээлийн хугацаа хэтрэлтийн шинжилгээ',
+                    'name_english' => 'Data analysis of overdue loans',
+                    'description' => '',
+                'status' => 'active',
+               
+            ],
+
+            [
+           
+                'supervisor_id' => 1, 
+                'student_id' => 4, 
+                'name_mongolian' => 'Блокчэйнд суурилсан гэрчилгээ баталгаажуулалтын систем',
+                    'name_english' => 'Blockchain based certificate validation system',
+                    'description' => 'Блокчэйн сонирхдог бол блокчэйн дээр баримт бичиг баталгаажуулах системийг хөгжүүлнэ. 
+                    ReactJs, python мэддэг байвал сайн. Дипломын чвцад EVM solidity сурч smart contract хөгжүүлж сурна.',
+                'status' => 'active',
+               
             ],
         ]);
     }
