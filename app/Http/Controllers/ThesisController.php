@@ -10,6 +10,7 @@ use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\Thesis;
 use App\Models\Department;
+use App\Models\ThesisCycle;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 
@@ -69,6 +70,67 @@ class ThesisController extends Controller
             ], 500);
         }
     }
+
+
+    //all thesis where thesis_cycle= thesis_cycle_active
+    public function getThesesByCycle($id)
+    {
+        $thesisCycle = ThesisCycle::findOrFail($id);
+        
+        $formattedTheses = $thesisCycle->theses->map(function ($thesis) {
+            return [
+                'id' => $thesis->id,
+                'name_mongolian' => $thesis->name_mongolian,
+                'student_info' => [
+                    'firstname' => $thesis->student->firstname,
+                    'lastname' => $thesis->student->lastname,
+                    'program'=>$thesis->student->program,
+                    'id' => $thesis->student_id,
+                    'email' => $thesis->student->mail
+                ],
+                'supervisor_info' => [
+                    'firstname' => $thesis->supervisor->firstname,
+                    'lastname' => $thesis->supervisor->lastname,
+                    // 'department' => $thesis->supervisor->department->name
+                ],
+                'status' => $thesis->status,
+                'department' => $thesis->student->department->name,
+                // 'plan_status'=> [
+                //     'student'=> $thesis->status->student_sent,
+                //     'teacher'=>$thesis->status->teacher_status,
+                // ]
+            ];
+        });
+    
+        // Sort by department name first, then student first name
+        $sortedTheses = $formattedTheses->sortBy([
+            ['department', 'asc'],
+            ['student_info.firstname', 'asc']
+        ]);
+    
+        return response()->json($sortedTheses->values()); // Re-index after sorting
+    }
+
+
+
+    public function getStudentCountByProgram($id)
+    {
+        $thesisCycle = ThesisCycle::findOrFail($id);
+    
+        $programCounts = $thesisCycle->theses
+            ->groupBy('student.program')
+            ->map(function ($theses, $program) {
+                return [
+                    'program' => $program,
+                    'student_count' => $theses->count(),
+                ];
+            })
+            ->values(); // Re-index after grouping
+    
+        return response()->json($programCounts);
+    }
+    
+    
 
 //Thesis awah
 

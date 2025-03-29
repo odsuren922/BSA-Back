@@ -11,4 +11,9 @@ class ThesisCycle extends Model {
     public function gradingSchema() {
         return $this->belongsTo(GradingSchema::class);
     }
+    // In ThesisCycle model
+public function theses()
+{
+    return $this->hasMany(Thesis::class, 'thesis_cycle_id');
+}
 }

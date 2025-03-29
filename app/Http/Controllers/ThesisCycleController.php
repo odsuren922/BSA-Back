@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\ThesisCycle;
 use App\Models\GradingSchema;
-
+// TODO::maybe need dep id
 class ThesisCycleController extends Controller
 {
     // Get all thesis cycles
@@ -17,19 +17,29 @@ class ThesisCycleController extends Controller
                 ->get()
         );
     }
-    
+
     public function active()
-    {
-        //TODO::
-        $activeThesis = ThesisCycle::with('gradingSchema')
-            ->where('start_date', '<=', now())
-            ->where('end_date', '>=', now())
-            ->first();
-    
-   
-    
-        return response()->json($activeThesis);
-    }
+{
+    $activeThesis = ThesisCycle::with('gradingSchema')
+        ->withCount(['theses as totalTheses' => function ($query) {
+            $query->whereColumn('thesis_cycle_id', 'thesis_cycles.id');
+        }])
+        ->where('start_date', '<=', now())
+        ->where('end_date', '>=', now())
+        ->where('status', 'Идэвхитэй')
+        ->first();
+
+    return response()->json($activeThesis);
+}
+  // Get a specific thesis cycle
+  public function show($id)
+  {
+      return response()->json(ThesisCycle::with('gradingSchema')
+      ->withCount(['theses as totalTheses' => function ($query) {
+        $query->whereColumn('thesis_cycle_id', 'thesis_cycles.id');
+    }])
+      ->findOrFail($id));
+  }
     
     // Create a new thesis cycle
     public function store(Request $request)
@@ -58,11 +68,7 @@ class ThesisCycleController extends Controller
         return response()->json($thesisCycle, 201);
     }
 
-    // Get a specific thesis cycle
-    public function show($id)
-    {
-        return response()->json(ThesisCycle::with('gradingSchema')->findOrFail($id));
-    }
+  
 
     // Update a thesis cycle
     //TODO:: ONLY ADMIN CAN DO IT

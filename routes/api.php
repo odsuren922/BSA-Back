@@ -57,7 +57,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/onethesis/{id}', [ThesisController::class, 'getThesis']); //1 БСА ХАРАХ
     Route::get('/thesis/{id}/student', [ThesisController::class, 'getStudentByThesis']);//БСА СУРАГЧ
     Route::get('/thesis/{id}/supervisor', [ThesisController::class, 'getSupervisorByThesis']); //БСА УДИРДАХ 
+  
+    //tuhain thesiscycle iin buh thesis bagsh suragchin mdeelel awah
+    Route::get('/cycles/{id}/theses', [ThesisController::class, 'getThesesByCycle']);
+   //Neg major hedin suragch ug cycled baigaa we
+   Route::get('/cycles/{id}/student-counts', [ThesisController::class, 'getStudentCountByProgram']);
 
+    
     //Тэнхмийн туслах шинэ cycle үүсгэх
     Route::post('/thesis-cycles', [ThesisCycleController::class, 'store']); 
     Route::get('/thesis-cycles', [ThesisCycleController::class, 'index']);
