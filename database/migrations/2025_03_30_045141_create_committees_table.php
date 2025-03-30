@@ -20,6 +20,8 @@ class CreateCommitteesTable extends Migration
             $table->foreignId('grading_component_id')->nullable()->constrained('grading_components')->nullOnDelete();
             $table->foreignId('dep_id')->constrained('departments')->cascadeOnDelete();
             $table->foreignId('thesis_cycle_id')->nullable()->constrained('thesis_cycles')->cascadeOnDelete();
+            $table->enum('status', ['planned', 'active', 'done', 'cancelled'])->default('planned');
+           // $table->enum('status', ['төлөвлөгдсөн', 'идэвхтэй', 'дууссан', 'цуцлагдсан'])->default('төлөвлөгдсөн');
             $table->timestamps();
         });
     }
