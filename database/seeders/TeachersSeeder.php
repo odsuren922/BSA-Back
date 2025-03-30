@@ -17,7 +17,7 @@ class TeachersSeeder extends Seeder
         DB::table('teachers')->insert([
             [
          
-                'mail' => 'supervisor1@example.com',
+                'mail' => 'supervisor18@example.com',
                 'firstname' => 'Батаа',
                 'lastname' => 'Болд',
                 'dep_id' => '1', 
@@ -25,51 +25,57 @@ class TeachersSeeder extends Seeder
             ],
             [ 
    
-                'mail' => 'supervisor2@example.com',
+                'mail' => 'supervisor19@example.com',
                 'firstname' => 'Нямаа',
                 'lastname' => 'Сэндмаа',
                 'dep_id' => '1',
             ],
             [
  
-                'mail' => 'supervisor3@example.com',
+                'mail' => 'supervisor20@example.com',
                 'firstname' => 'Хуягаа',
                 'lastname' => 'Амараа',
                 'dep_id' => '1',
             ],
             [
-                'mail' => 'supervisor4@example.com',
+                'mail' => 'supervisor21@example.com',
                 'firstname' => 'Ганхуяг',
                 'lastname' => 'Дашдондог',
                 'dep_id' => '1',
             ],
             [
-                'mail' => 'supervisor5@example.com',
+                'mail' => 'supervisor22@example.com',
                 'firstname' => 'Цэцгээ',
                 'lastname' => 'Отгон',
                 'dep_id' => '1',
             ],
             [
-                'mail' => 'supervisor6@example.com',
+                'mail' => 'supervisor23@example.com',
                 'firstname' => 'Дорж',
                 'lastname' => 'Содном',
                 'dep_id' => '1',
             ],
             [
-                'mail' => 'supervisor7@example.com',
+                'mail' => 'supervisor24@example.com',
                 'firstname' => 'Бямба',
                 'lastname' => 'Энхжаргал',
                 'dep_id' => '1',
             ],
+            // [
+            //     'mail' => 'admin1@example.com',
+            //     'firstname' => 'Бямба',
+            //     'lastname' => 'Амаржаргал',
+            //     'dep_id' => '1',
+            // ],
+            // [
+            //     'mail' => 'admin-@example.com',
+            //     'firstname' => 'Амаржаргал',
+            //     'lastname' => 'Пүрэвсүрэг',
+            //     'dep_id' => '1',
+            // ],
             [
-                'mail' => 'admin1@example.com',
+                'mail' => 'supervisor25@example.com',
                 'firstname' => 'Бямба',
-                'lastname' => 'Амаржаргал',
-                'dep_id' => '1',
-            ],
-            [
-                'mail' => 'admin-@example.com',
-                'firstname' => 'Амаржаргал',
                 'lastname' => 'Пүрэвсүрэг',
                 'dep_id' => '1',
             ],
