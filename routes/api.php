@@ -131,6 +131,17 @@ Route::prefix('committees/{committee}')->group(function () {
 });
 
 
+Route::prefix('committees/{committee}')->group(function () {
+    // Students routes
+    Route::get('students', [CommitteeStudentController::class, 'index']);
+    Route::post('students', [CommitteeStudentController::class, 'store']);
+    Route::put('students/{committeeStudent}', [CommitteeStudentController::class, 'update'])
+         ->scopeBindings();
+    Route::delete('students/{committeeStudent}', [CommitteeStudentController::class, 'destroy'])
+         ->scopeBindings();
+});
+
+
 
 
 
