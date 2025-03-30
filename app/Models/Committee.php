@@ -9,7 +9,20 @@ class Committee extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'grading_component_id', 'dep_id','thesis_cycle_id'];
+    protected $fillable = ['name', 'description', 'grading_component_id', 'dep_id','thesis_cycle_id', 'status'];
+
+
+    public function translatedStatus()
+    {
+        $statuses = [
+            'planned' => 'Төлөвлөгдсөн',
+            'active' => 'Идэвхтэй',
+            'done' => 'Дууссан',
+            'cancelled' => 'Цуцлагдсан',
+        ];
+
+        return $statuses[$this->status] ?? $this->status;
+    }
 
     public function gradingComponent()
     {
@@ -34,4 +47,10 @@ class Committee extends Model
     {
         return $this->belongsTo(ThesisCycle::class);
     }
+    public function schedules()
+    {
+        return $this->hasMany(Schedule::class, 'committee_id');
+    }
+
+
 }

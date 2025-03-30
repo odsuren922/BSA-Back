@@ -14,6 +14,19 @@ class CommitteeResource extends JsonResource
      */
     public function toArray($request)
     {
-        return parent::toArray($request);
+        //return parent::toArray($request);
+
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'description' => $this->description,
+            'status' => $this->translatedStatus(), // Translated status
+            'thesis_cycle' => new ThesisCycleResource($this->whenLoaded('thesis_cycle')), //
+            'department' => new DepartmentResource($this->whenLoaded('department')),
+            'grading_component' => new GradingComponentResource($this->whenLoaded('gradingComponent')),
+           // 'members' => MemberResource::collection($this->whenLoaded('members')),
+           // 'students' => StudentResource::collection($this->whenLoaded('students')),
+            //'schedules' => ScheduleResource::collection($this->whenLoaded('schedules')),
+        ];
     }
 }

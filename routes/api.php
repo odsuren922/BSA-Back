@@ -116,6 +116,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
+    Route::get('committees', [CommitteeController::class, 'index']); // Get all committees
+    Route::get('committees/{committee}', [CommitteeController::class, 'show']); // Get single committee
+    Route::post('committees', [CommitteeController::class, 'store']); // Create committee
+    Route::put('committees/{committee}', [CommitteeController::class, 'update']); // Update committee
+    Route::delete('committees/{committee}', [CommitteeController::class, 'destroy']); // Delete committee
+
+
+
 
 
 

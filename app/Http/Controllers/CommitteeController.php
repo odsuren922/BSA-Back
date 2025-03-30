@@ -11,12 +11,31 @@ class CommitteeController extends Controller
 {
     public function index(Request $request)
     {
-        $committees = Committee::with(['department', 'gradingComponent', 'members.teacher', 'students', 'schedules'])
-            ->where('dep_id', $request->user()->dep_id) // Assuming department-based access
-            ->paginate(10);
-
+        $committees = Committee::with([
+            'department', 
+            'gradingComponent', 
+            'members.teacher', 
+            'students', 
+            'schedules', 
+            'thesis_cycle' // Load thesis cycle
+        ])->where('dep_id', $request->user()->dep_id)
+          ->paginate(10);
+    
         return CommitteeResource::collection($committees);
     }
+    
+    public function show(Committee $committee)
+    {
+        return new CommitteeResource($committee->load([
+            'department', 
+            'gradingComponent', 
+            'members.teacher', 
+            'students.student', 
+            'schedules',
+            'thesis_cycle' // Load thesis cycle
+        ]));
+    }
+    
 
     public function store(Request $request)
     {
@@ -29,19 +48,10 @@ class CommitteeController extends Controller
         ]);
 
         $committee = Committee::create($validated);
-        return new CommitteeResource($committee->load('department'));
+        return new CommitteeResource($committee);
     }
 
-    public function show(Committee $committee)
-    {
-        return new CommitteeResource($committee->load([
-            'department', 
-            'gradingComponent', 
-            'members.teacher', 
-            'students.student', 
-            'schedules'
-        ]));
-    }
+  
 
     public function update(Request $request, Committee $committee)
     {
