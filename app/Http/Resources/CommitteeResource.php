@@ -24,8 +24,8 @@ class CommitteeResource extends JsonResource
             'thesis_cycle' => new ThesisCycleResource($this->whenLoaded('thesis_cycle')), //
             'department' => new DepartmentResource($this->whenLoaded('department')),
             'grading_component' => new GradingComponentResource($this->whenLoaded('gradingComponent')),
-           // 'members' => MemberResource::collection($this->whenLoaded('members')),
-           // 'students' => StudentResource::collection($this->whenLoaded('students')),
+           'members' => CommitteeMemberResource::collection($this->whenLoaded('members')),
+           // 'students' => CommitteeStudentResource::collection($this->whenLoaded('students')),
             //'schedules' => ScheduleResource::collection($this->whenLoaded('schedules')),
         ];
     }

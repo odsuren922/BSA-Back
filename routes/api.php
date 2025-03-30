@@ -121,7 +121,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('committees', [CommitteeController::class, 'store']); // Create committee
     Route::put('committees/{committee}', [CommitteeController::class, 'update']); // Update committee
     Route::delete('committees/{committee}', [CommitteeController::class, 'destroy']); // Delete committee
+// api.php
 
+Route::prefix('committees/{committee}')->group(function () {
+    Route::get('members', [CommitteeMemberController::class, 'index']);
+    Route::post('members', [CommitteeMemberController::class, 'store']);
+    Route::put('members/{member}', [CommitteeMemberController::class, 'update']);
+    Route::delete('members/{member}', [CommitteeMemberController::class, 'destroy']);
+});
 
 
 
