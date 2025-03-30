@@ -3,28 +3,40 @@
 namespace App\Http\Controllers;
 
 use App\Models\GradingSchema;
+use App\Models\ThesisCycle;
 use Illuminate\Http\Request;
 
 class GradingSchemaController extends Controller
 {
-    // public function index()
-    // {
-  
-    //     return GradingSchema::with('gradingComponents')->get();
-    // }
-   
-
-
     public function show($id)
     {
         return GradingSchema::with('gradingComponents')->findOrFail($id);
     }
+
     public function index()
     {
         return GradingSchema::with('gradingComponents.gradingCriteria')
             ->orderBy('year', 'desc') // Order by year (newest first)
             ->get();
     }
+    public function showByThesisCycle($thesisCycleId)
+    {
+        // First, find the ThesisCycle by its ID
+        $thesisCycle = ThesisCycle::find($thesisCycleId);
+    
+        // If ThesisCycle exists, fetch the associated GradingSchema
+        if ($thesisCycle) {
+            return GradingSchema::where('id', $thesisCycle->grading_schema_id)  // Filter GradingSchema by the ID from ThesisCycle
+                ->with('gradingComponents.gradingCriteria')  // Include grading components and criteria
+                ->orderBy('year', 'desc')  // Sort by year
+                ->get();
+        }
+    
+        // If ThesisCycle doesn't exist, return an empty response or handle as needed
+        return response()->json(['message' => 'Thesis Cycle not found'], 404);
+    }
+    
+
     public function storeonlySchema(Request $request)
     {
         $validated = $request->validate([
@@ -142,41 +154,7 @@ public function update(Request $request, $id)
     ], 200);
 }
 
-    // public function update(Request $request, $schemaId)
-    // {
-    //     // Validate request
-    //     $validated = $request->validate([
-    //         'name' => 'required|string|max:255',
-    //         'year' => 'required|integer|min:2000|max:' . date('Y'),
-    //         'grading_components' => 'required|array',
-    //         'grading_components.*.id' => 'nullable|exists:grading_components,id',
-    //         'grading_components.*.name' => 'required|string|max:255',
-    //         'grading_components.*.score' => 'required|numeric|min:0|max:100',
-    //         'grading_components.*.by_who' => 'required|string|max:255',
-    //     ]);
-    
-    //     // Find and update the grading schema
-    //     $gradingSchema = GradingSchema::findOrFail($schemaId);
-    //     $gradingSchema->update([
-    //         'name' => $validated['name'],
-    //         'year' => $validated['year'],
-    //     ]);
-    
-    //     // Delete old components and create new ones
-    //     $gradingSchema->gradingComponents()->delete();
-    //     foreach ($validated['grading_components'] as $component) {
-    //         $gradingSchema->gradingComponents()->create([
-    //             'name' => $component['name'],
-    //             'score' => $component['score'],
-    //             'by_who' => $component['by_who'],
-    //         ]);
-    //     }
-    
-    //     return response()->json([
-    //         'message' => 'Грейдинг схем амжилттай шинэчлэгдлээ!',
-    //         'grading_schema' => $gradingSchema->load('gradingComponents'),
-    //     ], 200);
-    // }
+
     public function addComponents(Request $request, $schemaId)
 {
     // Validate request

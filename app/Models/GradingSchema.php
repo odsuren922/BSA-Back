@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class GradingSchema extends Model {
     use HasFactory;
     protected $fillable = ['year', 'description', 'step_num', 'name'];
+    
     public function thesisCycles() {
         return $this->hasMany(ThesisCycle::class);
     }

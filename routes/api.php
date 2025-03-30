@@ -17,6 +17,11 @@ use App\Http\Controllers\GradingComponentController;
 use App\Http\Controllers\GradingCriteriaController;
 use App\Http\Controllers\ScoreController;
 
+use App\Http\Controllers\CommitteeController;
+use App\Http\Controllers\CommitteeMemberController;
+use App\Http\Controllers\CommitteeStudentController;
+use App\Http\Controllers\CommitteeScheduleController;
+
 
 Route::get('/proposalform', [ProposalFormController::class, 'index']);
 Route::post('/proposalform', [ProposalFormController::class, 'update']);
@@ -57,10 +62,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/onethesis/{id}', [ThesisController::class, 'getThesis']); //1 БСА ХАРАХ
     Route::get('/thesis/{id}/student', [ThesisController::class, 'getStudentByThesis']);//БСА СУРАГЧ
     Route::get('/thesis/{id}/supervisor', [ThesisController::class, 'getSupervisorByThesis']); //БСА УДИРДАХ 
-  
-    //tuhain thesiscycle iin buh thesis bagsh suragchin mdeelel awah
+  //ThesisCycle id гаар бүх БСА-н мэдээллийг багш сурагчидтай хамт авах
     Route::get('/cycles/{id}/theses', [ThesisController::class, 'getThesesByCycle']);
-   //Neg major hedin suragch ug cycled baigaa we
+   //Тухайн БСА ымар мэргэжлийн хэдэн хүүхэд байгааг олох
    Route::get('/cycles/{id}/student-counts', [ThesisController::class, 'getStudentCountByProgram']);
 
     
@@ -76,6 +80,9 @@ Route::middleware('auth:sanctum')->group(function () {
     //үнэлэх аргын нэгдэл
     Route::post('/grading-schemas', [GradingSchemaController::class, 'store']); 
     Route::get('/grading-schemas', [GradingSchemaController::class, 'index']);
+    //showByThesisCycle
+    Route::get('/thesis-cycles/{id}/grading-schema', [GradingSchemaController::class, 'showByThesisCycle']);
+
     Route::get('/grading-schemas/{id}', [GradingSchemaController::class, 'show']);
     Route::put('/grading-schemas/{id}', [GradingSchemaController::class, 'update']);
     Route::patch('/grading-schemas/{id}', [GradingSchemaController::class, 'addComponents']);    
@@ -93,7 +100,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
    // Grading Criteria Management
     //үнэлэх аргын дэлгэрэнгүй
-   Route::post('grading-criteria', [GradingCriteriaController::class, 'store']);
+    Route::post('grading-criteria', [GradingCriteriaController::class, 'store']);
     Route::get('grading-criteria', [GradingCriteriaController::class, 'index']);
     Route::get('grading-criteria/{id}', [GradingCriteriaController::class, 'show']);
     Route::put('grading-criteria/{id}', [GradingCriteriaController::class, 'update']);
@@ -106,6 +113,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('scores/{id}', [ScoreController::class, 'show']);
     Route::put('scores/{id}', [ScoreController::class, 'update']);
     Route::delete('scores/{id}', [ScoreController::class, 'destroy']);
+
+
+
 
 
 
