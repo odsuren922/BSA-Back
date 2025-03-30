@@ -21,7 +21,7 @@ class CommitteeMemberResource extends JsonResource
             'role' => $this->role,
             'status' => $this->status,
             'isChairperson' => $this->is_chairperson,
-            'assignedAt' => $this->assigned_at->toIso8601String(),
+         
             'teacher' => $this->whenLoaded('teacher', fn() => [
                 'id' => $this->teacher->id,
                 'name' => $this->teacher->name,
