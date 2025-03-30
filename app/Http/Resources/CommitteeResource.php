@@ -26,7 +26,7 @@ class CommitteeResource extends JsonResource
             'grading_component' => new GradingComponentResource($this->whenLoaded('gradingComponent')),
             'members' => CommitteeMemberResource::collection($this->whenLoaded('members')),
             'students' => CommitteeStudentResource::collection($this->whenLoaded('students')),
-            //'schedules' => ScheduleResource::collection($this->whenLoaded('schedules')),
+            'schedules' => ScheduleResource::collection($this->whenLoaded('schedules')),
         ];
     }
 }
