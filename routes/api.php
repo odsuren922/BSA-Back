@@ -30,7 +30,7 @@ Route::post('/proposalform', [ProposalFormController::class, 'update']);
 Route::apiResource('topics', TopicController::class);
 Route::post('/topic/store', [TopicController::class, 'store']);
 
-
+Route::get('/teachers', [TeacherController::class, 'index']);
 Route::get('/teacher/{id}', [TeacherController::class, 'show']);
 Route::get('/department/{id}', [DepartmentController::class, 'show']);
 
@@ -127,9 +127,10 @@ Route::prefix('committees/{committee}')->group(function () {
     Route::get('members', [CommitteeMemberController::class, 'index']);
     Route::post('members', [CommitteeMemberController::class, 'store']);
     Route::put('members/{member}', [CommitteeMemberController::class, 'update']);
-    Route::delete('members/{member}', [CommitteeMemberController::class, 'destroy']);
+    // Route::delete('members/{member}', [CommitteeMemberController::class, 'destroy']);
 });
-
+Route::delete('/committee-members/{id}', [CommitteeMemberController::class, 'destroy']);
+Route::patch('/committee-members/{member}/role', [CommitteeMemberController::class, 'patchRole']);
 
 Route::prefix('committees/{committee}')->group(function () {
     // Students routes
@@ -141,7 +142,11 @@ Route::prefix('committees/{committee}')->group(function () {
          ->scopeBindings();
 });
 
-
+Route::prefix('committees/{committee}')->group(function () {
+    Route::apiResource('schedules', ScheduleController::class)
+         ->except(['show'])
+         ->scoped(['schedule' => 'committee']);
+});
 
 
 

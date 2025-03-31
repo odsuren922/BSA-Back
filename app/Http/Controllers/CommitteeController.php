@@ -44,7 +44,7 @@ class CommitteeController extends Controller
             'description' => 'nullable|string',
             'grading_component_id' => 'nullable|exists:grading_components,id',
             'dep_id' => 'required|exists:departments,id',
-            'status' => 'required|in:planned,active,done,cancelled' // Status validation
+            'status' => 'nullable|in:planned,active,done,cancelled' // Status validation
         ]);
 
         $committee = Committee::create($validated);

@@ -22,11 +22,12 @@ class CommitteeMemberResource extends JsonResource
             'status' => $this->status,
             'isChairperson' => $this->is_chairperson,
          
-            'teacher' => $this->whenLoaded('teacher', fn() => [
+            'teacher' => [
                 'id' => $this->teacher->id,
-                'name' => $this->teacher->name,
-                'email' => $this->teacher->email
-            ]),
+                'firstname' => $this->teacher->firstname,
+                'lastname' => $this->teacher->lastname,
+                'email' => $this->teacher->mail
+            ],
             'committee' => $this->whenLoaded('committee', fn() => [
                 'id' => $this->committee->id,
                 'name' => $this->committee->name

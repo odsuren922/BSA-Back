@@ -20,23 +20,23 @@ class ThesisTableSeeder extends Seeder
 
             [
            
-                'supervisor_id' => 1, 
-                'student_id' => 1, 
-                'name_mongolian' => 'Дипломын ажлын удирдах систем: Төлөвлөгөө батлах, дүгнэх модуль',
-                'name_english' => 'Thesis management system: Work plan and grading module',
-                    'description' => 'Төлөвлөгөө батлуулах, явцын үнэлгээ оруулах, үзлэг болон хамгаалалтын хуваарь товлох, комиссын гишүүдийг хуваарилах, мэдээллэх модулийг хөгжүүлнэ.',
+                'supervisor_id' => 2, 
+                'student_id' => 11, 
+                'name_mongolian' => 'hДипломын ажлын удирдах систем: Төлөвлөгөө батлах, дүгнэх модуль',
+                'name_english' => 'Thehhhsis manshshsagement system: Work plan and grading module',
+                    'description' => 'Төлөвjsjjsлөгөө батлуулах, явцын үнэлгээ оруулах, үзлэг болон хамгаалалтын хуваарь товлох, комиссын гишүүдийг хуваарилах, мэдээллэх модулийг хөгжүүлнэ.',
                 'status' => 'active',
                
             ],
 
             [
                
-                'supervisor_id' => 1,
-                'student_id' => 2,
+                'supervisor_id' => 3,
+                'student_id' => 12,
    
-                'name_mongolian' => 'IoT in Smart Cities',
-                    'name_english' => 'Ухаалаг хот дахь IoT технологи',
-                    'description' => 'Enhancing urban infrastructure with IoT technology / Хотын дэд бүтцийг IoT технологиор сайжруулах'
+                'name_mongolian' => 'hIoT in Smart Cities',
+                    'name_english' => 'hhУхаалагshshs хот дахь IoT технологи',
+                    'description' => 'Enhanjsjjscing urban infrastructure with IoT technology / Хотын дэд бүтцийг IoT технологиор сайжруулах'
            ,
                 'status' => 'active',
                 
@@ -44,22 +44,22 @@ class ThesisTableSeeder extends Seeder
 
             [
            
-                'supervisor_id' => 1, 
-                'student_id' => 3, 
-                'name_mongolian' => 'Зээлийн хугацаа хэтрэлтийн шинжилгээ',
-                    'name_english' => 'Data analysis of overdue loans',
-                    'description' => '',
-                'status' => 'active',
+                'supervisor_id' => 4, 
+                'student_id' => 13, 
+                'name_mongolian' => 'hЗээлийн хугацаа хэтрэлтийн шинжилгээ',
+                    'name_english' => 'sssData analysis of overdue loans',
+           'description' => 'hhh',
+         'status' => 'active',
                
             ],
 
             [
            
                 'supervisor_id' => 1, 
-                'student_id' => 4, 
-                'name_mongolian' => 'Блокчэйнд суурилсан гэрчилгээ баталгаажуулалтын систем',
-                    'name_english' => 'Blockchain based certificate validation system',
-                    'description' => 'Блокчэйн сонирхдог бол блокчэйн дээр баримт бичиг баталгаажуулах системийг хөгжүүлнэ. 
+                'student_id' => 14, 
+                'name_mongolian' => 'hБлокчэйнд суурилсан гэрчилгээ баталгаажуулалтын систем',
+                    'name_english' => 'Blockchaishshsn based certificate validation system',
+                    'description' => 'Блокчjsjjsэйн сонирхдог бол блокчэйн дээр баримт бичиг баталгаажуулах системийг хөгжүүлнэ. 
                     ReactJs, python мэддэг байвал сайн. Дипломын чвцад EVM solidity сурч smart contract хөгжүүлж сурна.',
                 'status' => 'active',
                
