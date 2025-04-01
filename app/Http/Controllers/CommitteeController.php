@@ -6,7 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Committee;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CommitteeResource;
-
+use App\Models\ThesisCycle;
+use App\Models\GradingComponent;
 class CommitteeController extends Controller
 {
     public function index(Request $request)
@@ -23,9 +24,72 @@ class CommitteeController extends Controller
     
         return CommitteeResource::collection($committees);
     }
+
+    // thesis_cycle id tai
+    public function getByThesisCycle(ThesisCycle $thesisCycle, Request $request)
+{
+ 
+    $committees = Committee::with([
+        'department', 
+        'gradingComponent', 
+        'members.teacher', 
+        'students', 
+        'schedules',
+        'thesis_cycle'
+    ])
+    ->where('dep_id', $request->user()->dep_id)
+    ->where('thesis_cycle_id', $thesisCycle->id)
+    ->paginate(10);
+
+    return CommitteeResource::collection($committees);
+}
+
+
+
+public function getByCycleAndComponent(ThesisCycle $thesisCycle, GradingComponent $gradingComponent, Request $request)
+{
+    $committees = Committee::with([
+        'department', 
+        'gradingComponent', 
+        'members.teacher', 
+        'students', 
+        'schedules',
+        'thesis_cycle'
+    ])
+    ->where('thesis_cycle_id', $thesisCycle->id)
+    ->where('grading_component_id', $gradingComponent->id)
+    ->where('dep_id', $request->user()->dep_id)
+    ->paginate(10);
+
+    return CommitteeResource::collection($committees);
+}
+
+
+public function storeWithCycleAndComponent(Request $request, ThesisCycle $thesisCycle, GradingComponent $gradingComponent)
+{
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'description' => 'nullable|string',
+    ]);
+
+    $committee = Committee::create([
+        'name' => $validated['name'],
+        'description' => $validated['description'] ?? null,
+        'thesis_cycle_id' => $thesisCycle->id,
+        'grading_component_id' => $gradingComponent->id,
+        'dep_id' => $request->user()->dep_id,
+    ]);
+
+    return new CommitteeResource($committee);
+}
+
+
     
     public function show(Committee $committee)
     {
+        //Загварын нэвтрэлтээр Committee-г эхлээд ачаалчихаад, 
+        // дараа нь load() ашиглан холбогдох мэдээллийг авна
+      
         return new CommitteeResource($committee->load([
             'department', 
             'gradingComponent', 

@@ -122,6 +122,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('committees', [CommitteeController::class, 'store']); // Create committee
     Route::put('committees/{committee}', [CommitteeController::class, 'update']); // Update committee
     Route::delete('committees/{committee}', [CommitteeController::class, 'destroy']); // Delete committee
+
+    // комиссын мэдээлэл авахдаа : 1. Thesis_cycle-н id gaarn awah 
+    Route::get('/thesis-cycles/{thesisCycle}/committees', [CommitteeController::class, 'getByThesisCycle']);
+     // комиссын мэдээлэл авахдаа : 1. Thesis_cycle-н id gaarn awah 2. үнэлгээтэйгээ хамт авна
+    Route::prefix('thesis-cycles/{thesisCycle}/grading-components/{gradingComponent}')->group(function () {
+        Route::get('/committees', [CommitteeController::class, 'getByCycleAndComponent']);
+        Route::post('/committees', [CommitteeController::class, 'storeWithCycleAndComponent']);
+    });
+    
+
 // api.php
 
 Route::prefix('committees/{committee}')->group(function () {
