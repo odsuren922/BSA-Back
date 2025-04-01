@@ -31,6 +31,7 @@ Route::apiResource('topics', TopicController::class);
 Route::post('/topic/store', [TopicController::class, 'store']);
 
 Route::get('/teachers', [TeacherController::class, 'index']);
+Route::get('/teachers/{id}', [TeacherController::class, 'dep_id']);
 Route::get('/teacher/{id}', [TeacherController::class, 'show']);
 Route::get('/department/{id}', [DepartmentController::class, 'show']);
 

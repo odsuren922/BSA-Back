@@ -26,6 +26,17 @@ class TeacherController extends Controller
         return Teacher::create($request->all());
     }
 
+    public function dep_id($id)
+    {
+        $teachers = Teacher::where('dep_id', $id)->get();
+    
+        if ($teachers->isEmpty()) {
+            return response()->json(['message' => 'No teachers found for this department'], 404);
+        }
+    
+        return response()->json($teachers);
+    }
+    
     public function show($id)
     {
         $teacher = Teacher::find($id);
@@ -34,7 +45,6 @@ class TeacherController extends Controller
         }
         return response()->json($teacher);
     }
-
 
     public function update(Request $request, $id)
     {
