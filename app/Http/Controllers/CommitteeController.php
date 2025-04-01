@@ -106,8 +106,9 @@ public function storeWithCycleAndComponent(Request $request, ThesisCycle $thesis
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'grading_component_id' => 'nullable|exists:grading_components,id',
-            'dep_id' => 'required|exists:departments,id',
+            'grading_component_id' => 'required|exists:grading_components,id',
+            'thesis_cycle_id' => 'required|exists:thesis_cycles,id',
+            'dep_id' => 'nullable|exists:departments,id',
             'status' => 'nullable|in:planned,active,done,cancelled' // Status validation
         ]);
 

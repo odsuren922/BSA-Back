@@ -18,12 +18,13 @@ class CommitteeStudentResource extends JsonResource
         return [
             'id' => $this->id,
             'status' => $this->status,
-            'joinedAt' => $this->joined_at,
+            //'joinedAt' => $this->joined_at,
             'student' => $this->whenLoaded('student', fn() => [
                 'id' => $this->student->id,
-                'name' => $this->student->name,
+                'lastname' => $this->student->lastname,
+                'firstname' => $this->student->firstname,
                 'studentId' => $this->student->student_id,
-                'email' => $this->student->email
+                'mail' => $this->student->mail
             ]),
             'committee' => $this->whenLoaded('committee', fn() => [
                 'id' => $this->committee->id,
