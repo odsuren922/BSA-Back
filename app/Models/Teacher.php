@@ -8,9 +8,9 @@ use Laravel\Sanctum\HasApiTokens;
 
 class Teacher extends Model
 {
-    use HasApiTokens,HasFactory;
+    use HasApiTokens, HasFactory;
     protected $table = 'teachers';
-    protected $fillable = ['id', 'dep_id', 'firstname', 'lastname','degree', 'superior', 'mail', 'numof_choosed_stud'];
+    protected $fillable = ['id', 'dep_id', 'firstname', 'lastname', 'degree', 'superior', 'mail', 'numof_choosed_stud'];
     public $incrementing = false;
     protected $keyType = 'string';
 
@@ -27,4 +27,5 @@ class Teacher extends Model
     {
         return $this->hasMany(Thesis::class, 'supervisor_id');
     }
+
 }

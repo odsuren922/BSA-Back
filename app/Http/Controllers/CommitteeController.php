@@ -13,93 +13,75 @@ class CommitteeController extends Controller
     public function index(Request $request)
     {
         $committees = Committee::with([
-            'department', 
-            'gradingComponent', 
-            'members.teacher', 
-            'students', 
-            'schedules', 
-            'thesis_cycle' // Load thesis cycle
-        ])->where('dep_id', $request->user()->dep_id)
-          ->paginate(10);
-    
+            'department',
+            'gradingComponent',
+            'members.teacher',
+            'students',
+            'schedules',
+            'thesis_cycle', // Load thesis cycle
+        ])
+            ->where('dep_id', $request->user()->dep_id)
+            ->paginate(10);
+
         return CommitteeResource::collection($committees);
     }
 
     // thesis_cycle id tai
     public function getByThesisCycle(ThesisCycle $thesisCycle, Request $request)
-{
- 
-    $committees = Committee::with([
-        'department', 
-        'gradingComponent', 
-        'members.teacher', 
-        'students', 
-        'schedules',
-        'thesis_cycle'
-    ])
-    ->where('dep_id', $request->user()->dep_id)
-    ->where('thesis_cycle_id', $thesisCycle->id)
-    ->paginate(10);
+    {
+        $committees = Committee::with(['department', 'gradingComponent', 'members.teacher', 'students', 'schedules', 'thesis_cycle'])
+            ->where('dep_id', $request->user()->dep_id)
+            ->where('thesis_cycle_id', $thesisCycle->id)
+            ->paginate(10);
 
-    return CommitteeResource::collection($committees);
-}
+        return CommitteeResource::collection($committees);
+    }
 
+    public function getByCycleAndComponent(ThesisCycle $thesisCycle, GradingComponent $gradingComponent, Request $request)
+    {
+        $committees = Committee::with(['department', 'gradingComponent', 'members.teacher', 'students', 'schedules', 'thesis_cycle'])
+            ->where('thesis_cycle_id', $thesisCycle->id)
+            ->where('grading_component_id', $gradingComponent->id)
+            ->where('dep_id', $request->user()->dep_id)
+            ->paginate(10);
 
+        return CommitteeResource::collection($committees);
+    }
 
-public function getByCycleAndComponent(ThesisCycle $thesisCycle, GradingComponent $gradingComponent, Request $request)
-{
-    $committees = Committee::with([
-        'department', 
-        'gradingComponent', 
-        'members.teacher', 
-        'students', 
-        'schedules',
-        'thesis_cycle'
-    ])
-    ->where('thesis_cycle_id', $thesisCycle->id)
-    ->where('grading_component_id', $gradingComponent->id)
-    ->where('dep_id', $request->user()->dep_id)
-    ->paginate(10);
+    public function storeWithCycleAndComponent(Request $request, ThesisCycle $thesisCycle, GradingComponent $gradingComponent)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+        ]);
 
-    return CommitteeResource::collection($committees);
-}
+        $committee = Committee::create([
+            'name' => $validated['name'],
+            'description' => $validated['description'] ?? null,
+            'thesis_cycle_id' => $thesisCycle->id,
+            'grading_component_id' => $gradingComponent->id,
+            'dep_id' => $request->user()->dep_id,
+        ]);
 
+        return new CommitteeResource($committee);
+    }
 
-public function storeWithCycleAndComponent(Request $request, ThesisCycle $thesisCycle, GradingComponent $gradingComponent)
-{
-    $validated = $request->validate([
-        'name' => 'required|string|max:255',
-        'description' => 'nullable|string',
-    ]);
-
-    $committee = Committee::create([
-        'name' => $validated['name'],
-        'description' => $validated['description'] ?? null,
-        'thesis_cycle_id' => $thesisCycle->id,
-        'grading_component_id' => $gradingComponent->id,
-        'dep_id' => $request->user()->dep_id,
-    ]);
-
-    return new CommitteeResource($committee);
-}
-
-
-    
     public function show(Committee $committee)
     {
-        //Загварын нэвтрэлтээр Committee-г эхлээд ачаалчихаад, 
+        //Загварын нэвтрэлтээр Committee-г эхлээд ачаалчихаад,
         // дараа нь load() ашиглан холбогдох мэдээллийг авна
-      
-        return new CommitteeResource($committee->load([
-            'department', 
-            'gradingComponent', 
-            'members.teacher', 
-            'students.student', 
-            'schedules',
-            'thesis_cycle' // Load thesis cycle
-        ]));
+
+        return new CommitteeResource(
+            $committee->load([
+                'department',
+                'gradingComponent',
+                'members.teacher',
+                'students.student',
+                'schedules',
+                'thesis_cycle', // Load thesis cycle
+            ]),
+        );
     }
-    
 
     public function store(Request $request)
     {
@@ -109,14 +91,12 @@ public function storeWithCycleAndComponent(Request $request, ThesisCycle $thesis
             'grading_component_id' => 'required|exists:grading_components,id',
             'thesis_cycle_id' => 'required|exists:thesis_cycles,id',
             'dep_id' => 'nullable|exists:departments,id',
-            'status' => 'nullable|in:planned,active,done,cancelled' // Status validation
+            'status' => 'nullable|in:planned,active,done,cancelled', // Status validation
         ]);
 
         $committee = Committee::create($validated);
         return new CommitteeResource($committee);
     }
-
-  
 
     public function update(Request $request, Committee $committee)
     {
@@ -124,7 +104,7 @@ public function storeWithCycleAndComponent(Request $request, ThesisCycle $thesis
             'name' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
             'grading_component_id' => 'nullable|exists:grading_components,id',
-            'status' => 'sometimes|in:planned,active,done,cancelled' // Status validation
+            'status' => 'sometimes|in:planned,active,done,cancelled', // Status validation
         ]);
 
         $committee->update($validated);
@@ -137,4 +117,3 @@ public function storeWithCycleAndComponent(Request $request, ThesisCycle $thesis
         return response()->json(['message' => 'Committee deleted successfully']);
     }
 }
-

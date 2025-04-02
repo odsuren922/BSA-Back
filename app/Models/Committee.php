@@ -9,7 +9,7 @@ class Committee extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'grading_component_id', 'dep_id','thesis_cycle_id', 'status'];
+    protected $fillable = ['name', 'description', 'grading_component_id', 'dep_id','thesis_cycle_id', 'status', 'color'];
 
 
     public function translatedStatus()

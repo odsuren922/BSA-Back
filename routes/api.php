@@ -30,7 +30,10 @@ Route::apiResource('topics', TopicController::class);
 Route::post('/topic/store', [TopicController::class, 'store']);
 
 Route::get('/teachers', [TeacherController::class, 'index']);
+
 Route::get('/teachers/{id}', [TeacherController::class, 'dep_id']);
+//Тухайн тэнхмийн бүх багшийн мэдээлэл авах
+//Route::get('/teachers/{id}', [TeacherController::class, 'teacherCommittee']); //TODO::
 Route::get('/teacher/{id}', [TeacherController::class, 'show']);
 Route::get('/department/{id}', [DepartmentController::class, 'show']);
 
@@ -41,22 +44,28 @@ Route::post('/auth/register', [AuthController::class, 'createUser']);
 Route::post('/auth/login', [AuthController::class, 'loginUser']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    // ------------------------------
     //ҮЕЧИЛСЭН ТӨЛӨВЛӨГӨӨ ҮҮСГЭХ
+    // ------------------------------
+
     Route::post('/tasks', [TaskController::class, 'store']);
     Route::put('/tasks/{id}', [TaskController::class, 'updateTask']);
-    Route::get('/tasks', [TaskController::class, 'index']); //done
+    Route::get('/tasks', [TaskController::class, 'index']);
     Route::delete('/tasks/{id}', [TaskController::class, 'destroy']);
 
     Route::post('/subtask', [SubtaskController::class, 'store']);
     Route::put('/subtask/{id}', [SubtaskController::class, 'updateSubTask']);
     Route::delete('/subtask/{id}', [SubtaskController::class, 'destroy']);
-    //PDF ҮҮСГЭХД ХЭРЭГЛЭХ МЭДЭЭЛЭЛ
-    Route::get('/thesis/{id}', [ThesisController::class, 'pdf']); //done
+    Route::get('/thesis/{id}', [ThesisController::class, 'pdf']); //PDF ҮҮСГЭХД ХЭРЭГЛЭХ МЭДЭЭЛЭЛ
+
+    // ------------------------------
     //Supervisor ӨӨРИЙН УДИРДАХ БСА ХАРАХ
-    Route::get('/theses', [ThesisController::class, 'supervisodThesis']);
-    Route::get('/allTheses', [ThesisController::class, 'allTheses']); // БҮХ БСА ХАРАХ
-    Route::get('/onethesisSuper/{id}', [ThesisController::class, 'index']); //1 БСА ХАРАХ +teacher+student (not used cus i think slow )
-    Route::get('/onethesis/{id}', [ThesisController::class, 'getThesis']); //1 БСА ХАРАХ
+    // ------------------------------
+
+    Route::get('/theses', [ThesisController::class, 'supervisodThesis']); //нэвтэрсэн багштай харьяатай бүр БСА
+    Route::get('/allTheses', [ThesisController::class, 'allTheses']); // ӨГӨГДЛИЙН САНД БАЙГАА БҮХ БСА ХАРАХ
+    Route::get('/onethesisSuper/{id}', [ThesisController::class, 'index']); //БСА Хэрэгжүүлэгч болон удирдагч 
+    Route::get('/onethesis/{id}', [ThesisController::class, 'getThesis']); // id- гаар ганц БСА ХАРАХ
     Route::get('/thesis/{id}/student', [ThesisController::class, 'getStudentByThesis']); //БСА СУРАГЧ
     Route::get('/thesis/{id}/supervisor', [ThesisController::class, 'getSupervisorByThesis']); //БСА УДИРДАХ
     //ThesisCycle id гаар бүх БСА-н мэдээллийг багш сурагчидтай хамт авах
@@ -123,7 +132,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/committees', [CommitteeController::class, 'getByCycleAndComponent']);
         Route::post('/committees', [CommitteeController::class, 'storeWithCycleAndComponent']);
     });
-
 
     Route::prefix('committees/{committee}')->group(function () {
         Route::get('members', [CommitteeMemberController::class, 'index']);

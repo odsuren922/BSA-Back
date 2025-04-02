@@ -11,6 +11,8 @@ class CommitteeResource extends JsonResource
      *
      * @param  \Illuminate\Http\Request  $request
      * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
+     * Laravel-ийн JSON API resource бөгөөд Committee модель дээр үндэслэн 
+     * frontend-д ойлгомжтой бүтэцтэй JSON хариу бэлддэг.
      */
     public function toArray($request)
     {

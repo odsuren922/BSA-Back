@@ -19,6 +19,8 @@ class ThesisCycleResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,  // Example field
+            'year' => $this->year,
+            'semester' => $this->semester,
             'start_date' => $this->start_date,
             'end_date' => $this->end_date,
         ];

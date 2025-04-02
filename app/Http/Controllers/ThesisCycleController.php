@@ -5,10 +5,15 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\ThesisCycle;
 use App\Models\GradingSchema;
-// TODO::maybe need dep id
+
+// TODO:: Шаардлагатай бол тэнхимийн ID-р шүүхийг нэмэх
 class ThesisCycleController extends Controller
 {
-    // Get all thesis cycles
+    /**
+     * Бүх төгсөлтийн ажлын мөчлөгийг авах
+     * - "Устгах" төлөвтэй мөчлөгийг алгасана
+     * - gradingSchema хамааралтайгаар хамт авчирна
+     */
     public function index()
     {
         return response()->json(
@@ -18,30 +23,46 @@ class ThesisCycleController extends Controller
         );
     }
 
+    /**
+     * Одоогоор идэвхтэй байгаа мөчлөгийг авах
+     * - Эхлэх огноо нь өнөөдрөөс өмнө эсвэл өнөөдөр
+     * - Дуусах огноо нь өнөөдрөөс хойш эсвэл өнөөдөр
+     * - Статус нь "Идэвхитэй"
+     * - Мөн тухайн мөчлөгт хамаарах нийт БСА (thesis)-ийн тоог авчирна
+     */
     public function active()
-{
-    $activeThesis = ThesisCycle::with('gradingSchema')
-        ->withCount(['theses as totalTheses' => function ($query) {
-            $query->whereColumn('thesis_cycle_id', 'thesis_cycles.id');
-        }])
-        ->where('start_date', '<=', now())
-        ->where('end_date', '>=', now())
-        ->where('status', 'Идэвхитэй')
-        ->first();
+    {
+        $activeThesis = ThesisCycle::with('gradingSchema')
+            ->withCount(['theses as totalTheses' => function ($query) {
+                $query->whereColumn('thesis_cycle_id', 'thesis_cycles.id');
+            }])
+            ->where('start_date', '<=', now())
+            ->where('end_date', '>=', now())
+            ->where('status', 'Идэвхитэй')
+            ->first();
 
-    return response()->json($activeThesis);
-}
-  // Get a specific thesis cycle
-  public function show($id)
-  {
-      return response()->json(ThesisCycle::with('gradingSchema')
-      ->withCount(['theses as totalTheses' => function ($query) {
-        $query->whereColumn('thesis_cycle_id', 'thesis_cycles.id');
-    }])
-      ->findOrFail($id));
-  }
-    
-    // Create a new thesis cycle
+        return response()->json($activeThesis);
+    }
+
+    /**
+     * ID-р нь нэг мөчлөгийн мэдээллийг авах
+     * - gradingSchema болон тухайн мөчлөгт хэдэн БСА байгааг авчирна
+     */
+    public function show($id)
+    {
+        return response()->json(
+            ThesisCycle::with('gradingSchema')
+                ->withCount(['theses as totalTheses' => function ($query) {
+                    $query->whereColumn('thesis_cycle_id', 'thesis_cycles.id');
+                }])
+                ->findOrFail($id)
+        );
+    }
+
+    /**
+     * Шинэ төгсөлтийн ажлын мөчлөг үүсгэх
+     * - Нэр, он, улирал, эхлэх/дуусах огноо, үнэлгээний арга шаардлагатай
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -53,25 +74,27 @@ class ThesisCycleController extends Controller
             'grading_schema_id' => 'nullable|exists:grading_schemas,id'
         ]);
 
-        // if (!$request->grading_schema_id) {
-        //     // Create a new grading schema if not provided
-        //     $gradingSchema = GradingSchema::create([
-        //         'year' => $request->year,
-        //         'name' => 'Default Schema for ' . $request->name,
-        //         'step_num' => 3, // Default step count
-        //     ]);
-        //     $request->merge(['grading_schema_id' => $gradingSchema->id]);
-        // }
+        // Хэрэв grading_schema_id өгөөгүй бол default-оор шинээр үүсгэж болно (доорх кодыг идэвхжүүлж болно)
+        /*
+        if (!$request->grading_schema_id) {
+            $gradingSchema = GradingSchema::create([
+                'year' => $request->year,
+                'name' => 'Default Schema for ' . $request->name,
+                'step_num' => 3,
+            ]);
+            $request->merge(['grading_schema_id' => $gradingSchema->id]);
+        }
+        */
 
         $thesisCycle = ThesisCycle::create($request->all());
 
-        return response()->json($thesisCycle, 201);
+        return response()->json($thesisCycle, 201); // 201 = Шинэ зүйл амжилттай үүссэн
     }
 
-  
-
-    // Update a thesis cycle
-    //TODO:: ONLY ADMIN CAN DO IT
+    /**
+     * Тодорхой мөчлөгийн мэдээллийг шинэчлэх
+     * TODO:: Зөвхөн админ эрхтэй хэрэглэгч шинэчилж болохоор хязгаар тавих
+     */
     public function update(Request $request, $id)
     {
         $thesisCycle = ThesisCycle::findOrFail($id);
@@ -79,10 +102,13 @@ class ThesisCycleController extends Controller
         return response()->json($thesisCycle);
     }
 
-    // Delete a thesis cycle
+    /**
+     * Төгсөлтийн ажлын мөчлөгийг устгах
+     * - Мөнхөд устгана (soft delete биш)
+     */
     public function destroy($id)
     {
         ThesisCycle::destroy($id);
-        return response()->json(['message' => 'Thesis cycle deleted']);
+        return response()->json(['message' => 'Төгсөлтийн ажлын мөчлөг амжилттай устгагдлаа']);
     }
 }
