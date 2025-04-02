@@ -22,6 +22,7 @@ class CommitteeResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'description' => $this->description,
+            'color' => $this->color,
             'status' => $this->translatedStatus(), // Translated status
             'thesis_cycle' => new ThesisCycleResource($this->whenLoaded('thesis_cycle')), //
             'department' => new DepartmentResource($this->whenLoaded('department')),

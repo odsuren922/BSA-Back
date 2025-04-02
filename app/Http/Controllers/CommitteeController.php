@@ -92,6 +92,7 @@ class CommitteeController extends Controller
             'thesis_cycle_id' => 'required|exists:thesis_cycles,id',
             'dep_id' => 'nullable|exists:departments,id',
             'status' => 'nullable|in:planned,active,done,cancelled', // Status validation
+            'color' => 'required|string',
         ]);
 
         $committee = Committee::create($validated);
