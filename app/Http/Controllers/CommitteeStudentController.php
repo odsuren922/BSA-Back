@@ -32,42 +32,7 @@ class CommitteeStudentController extends Controller
         }
     }
 
-    // Add student to committee
-    // public function store(Request $request, Committee $committee)
-    // {
-    //     try {
-    //         $validated = $request->validate([
-    //             'student_id' => 'required|exists:students,id',
-    //             'status' => 'sometimes|string|max:255'
-    //         ]);
-
-    //         // Prevent duplicate entries
-    //         if($committee->students()->where('student_id', $validated['student_id'])->exists()) {
-    //             return response()->json([
-    //                 'message' => 'Student already exists in this committee'
-    //             ], 409);
-    //         }
-
-    //         $committeeStudent = $committee->students()->create(array_merge($validated, [
-    //             'joined_at' => now()
-    //         ]));
-
-    //         return new CommitteeStudentResource($committeeStudent->load(['student', 'committee']));
-
-    //     } catch (ValidationException $e) {
-    //         return response()->json([
-    //             'message' => 'Validation failed',
-    //             'errors' => $e->errors()
-    //         ], 422);
-            
-    //     } catch (\Exception $e) {
-    //         Log::error('Committee student store error: ' . $e->getMessage());
-    //         return response()->json([
-    //             'message' => 'Failed to add student to committee',
-    //             'error' => config('app.env') === 'local' ? $e->getMessage() : null
-    //         ], 500);
-    //     }
-    // }
+  
     public function store(Request $request, Committee $committee)
 {
     $validated = $request->validate([
@@ -77,21 +42,24 @@ class CommitteeStudentController extends Controller
 
     $assigned = [];
 
+
     foreach ($validated['student_ids'] as $studentId) {
         $exists = $committee->students()->where('student_id', $studentId)->exists();
         if (!$exists) {
-            $committee->students()->create([
+            $assigned[]=   $committee->students()->create([
                 'student_id' => $studentId,
                 'joined_at' => now()
             ]);
-            $assigned[] = $studentId;
+            // $assigned[] = $studentId;
         }
     }
+    return CommitteeStudentResource::collection($assigned);
 
-    return response()->json([
-        'message' => 'Students assigned successfully',
-        'assigned' => $assigned,
-    ]);
+
+    // return response()->json([
+    //     'message' => 'Students assigned successfully',
+    //     'assigned' => $assigned,
+    // ]);
 }
 
 
@@ -122,20 +90,43 @@ class CommitteeStudentController extends Controller
     }
 
     // Remove student from committee
-    public function destroy(CommitteeStudent $committeeStudent)
-    {
-        try {
-            $committeeStudent->delete();
-            return response()->json([
-                'message' => 'Student removed from committee successfully'
-            ]);
+    // public function destroy(CommitteeStudent $committeeStudent)
+    // {
+    //     try {
+    //         $committeeStudent->delete();
+    //         return response()->json([
+    //             'message' => 'Student removed from committee successfully'
+    //         ]);
 
-        } catch (\Exception $e) {
-            Log::error('Committee student destroy error: ' . $e->getMessage());
-            return response()->json([
-                'message' => 'Failed to remove student from committee',
-                'error' => config('app.env') === 'local' ? $e->getMessage() : null
-            ], 500);
-        }
+    //     } catch (\Exception $e) {
+    //         Log::error('Committee student destroy error: ' . $e->getMessage());
+    //         return response()->json([
+    //             'message' => 'Failed to remove student from committee',
+    //             'error' => config('app.env') === 'local' ? $e->getMessage() : null
+    //         ], 500);
+    //     }
+    // }
+
+    public function destroy($committeeId, $studentId)
+{
+    try {
+        $committeeStudent = CommitteeStudent::where('committee_id', $committeeId)
+                                            ->where('id', $studentId)
+                                            ->firstOrFail();
+
+        $committeeStudent->delete();
+
+        return response()->json([
+            'message' => 'Student removed from committee successfully'
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Committee student destroy error: ' . $e->getMessage());
+        return response()->json([
+            'message' => 'Failed to remove student from committee',
+            'error' => config('app.env') === 'local' ? $e->getMessage() : null
+        ], 500);
     }
+}
+
 }

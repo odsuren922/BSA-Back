@@ -46,6 +46,7 @@ class CommitteeController extends Controller
             ->paginate(10);
 
         return CommitteeResource::collection($committees);
+        //TODO:: ORDER
     }
 
     public function storeWithCycleAndComponent(Request $request, ThesisCycle $thesisCycle, GradingComponent $gradingComponent)
@@ -105,12 +106,13 @@ class CommitteeController extends Controller
             'name' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
             'grading_component_id' => 'nullable|exists:grading_components,id',
-            'status' => 'sometimes|in:planned,active,done,cancelled', // Status validation
+            'status' => 'sometimes|in:planned,active,done,cancelled', 
         ]);
 
         $committee->update($validated);
         return new CommitteeResource($committee);
     }
+    
 
     public function destroy(Committee $committee)
     {

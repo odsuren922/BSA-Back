@@ -77,7 +77,7 @@ class ThesisController extends Controller
     public function getThesesByCycle($id)
     {
         $thesisCycle = ThesisCycle::findOrFail($id);
-
+    
         $formattedTheses = $thesisCycle->theses->map(function ($thesis) {
             return [
                 'id' => $thesis->id,
@@ -92,22 +92,58 @@ class ThesisController extends Controller
                 'supervisor_info' => [
                     'firstname' => $thesis->supervisor->firstname,
                     'lastname' => $thesis->supervisor->lastname,
-                    // 'department' => $thesis->supervisor->department->name
                 ],
                 'status' => $thesis->status,
                 'department' => $thesis->student->department->name,
-                // 'plan_status'=> [
-                //     'student'=> $thesis->status->student_sent,
-                //     'teacher'=>$thesis->status->teacher_status,
-                // ]
             ];
         });
-
-        // Sort by department name first, then student first name
-        $sortedTheses = $formattedTheses->sortBy([['department', 'asc'], ['student_info.firstname', 'asc']]);
-
-        return response()->json($sortedTheses->values()); // Re-index after sorting
+    
+        // Sort by program, then firstname
+        $sortedTheses = $formattedTheses->sortBy([
+            ['student_info.program', 'asc'],
+            ['student_info.firstname', 'asc']
+        ]);
+    
+        return response()->json($sortedTheses->values());
     }
+
+
+
+    public function getActiveThesesByCycle($id)
+    {
+        $thesisCycle = ThesisCycle::findOrFail($id);
+    
+        $formattedTheses = $thesisCycle->theses()
+            ->where('status', 'active')
+            ->with(['student', 'supervisor']) // eager load for speed
+            ->get()
+            ->map(function ($thesis) {
+                return [
+                    'student_info' => [
+                        'firstname' => $thesis->student->firstname,
+                        'lastname' => $thesis->student->lastname,
+                        'program' => $thesis->student->program,
+                        'id' => $thesis->student_id,
+                    ],
+                    'supervisor_info' => [
+                        'firstname' => $thesis->supervisor->firstname,
+                        'lastname' => $thesis->supervisor->lastname,
+                    ],
+                    'status' => $thesis->status,
+                ];
+            });
+    
+        // Sort by program, then firstname
+        $sortedTheses = $formattedTheses->sortBy([
+            ['student_info.program', 'asc'],
+            ['student_info.firstname', 'asc']
+        ]);
+    
+        return response()->json($sortedTheses->values());
+    }
+    
+    
+    
 
     public function getStudentCountByProgram($id)
     {

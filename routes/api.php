@@ -36,6 +36,7 @@ Route::get('/teachers/{id}', [TeacherController::class, 'dep_id']);
 //Route::get('/teachers/{id}', [TeacherController::class, 'teacherCommittee']); //TODO::
 Route::get('/teacher/{id}', [TeacherController::class, 'show']);
 Route::get('/department/{id}', [DepartmentController::class, 'show']);
+Route::get('/teachers/count/department/{dep_id}', [TeacherController::class, 'countByDepartment']);
 
 Route::get('/topic_requests_teacher', [TopicRequestController::class, 'getRequestedTopicByTeacher']);
 
@@ -70,6 +71,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/thesis/{id}/supervisor', [ThesisController::class, 'getSupervisorByThesis']); //БСА УДИРДАХ
     //ThesisCycle id гаар бүх БСА-н мэдээллийг багш сурагчидтай хамт авах
     Route::get('/cycles/{id}/theses', [ThesisController::class, 'getThesesByCycle']);
+    //getActiveThesesByCycle багш сурагчидын мэдээлэлтэй 
+    Route::get('/cycles/{id}/active-theses', [ThesisController::class, 'getActiveThesesByCycle']);
     //Тухайн БСА ымар мэргэжлийн хэдэн хүүхэд байгааг олох
     Route::get('/cycles/{id}/student-counts', [ThesisController::class, 'getStudentCountByProgram']);
 
@@ -122,7 +125,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('committees', [CommitteeController::class, 'index']); // Get all committees
     Route::get('committees/{committee}', [CommitteeController::class, 'show']); // Get single committee
     Route::post('committees', [CommitteeController::class, 'store']); // Create committee
-    Route::put('committees/{committee}', [CommitteeController::class, 'update']); // Update committee
+    Route::patch('committees/{committee}', [CommitteeController::class, 'update']);
+    //Route::put('committees/{committee}', [CommitteeController::class, 'update']); // Update committee
     Route::delete('committees/{committee}', [CommitteeController::class, 'destroy']); // Delete committee
 
     // комиссын мэдээлэл авахдаа : 1. Thesis_cycle-н id gaarn awah

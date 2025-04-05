@@ -11,7 +11,7 @@ class Student extends Model
 {
     use HasApiTokens,HasFactory;
     protected $table = 'students';
-    protected $fillable = ['id', 'dep_id', 'firstname', 'lastname', 'program', 'mail', 'phone', 'is_choosed', 'proposed_number'];
+    protected $fillable = ['id', 'dep_id', 'firstname', 'lastname', 'program', 'mail', 'phone', 'is_choosed', 'proposed_number', 'sisi_id', ];
     public $incrementing = false;
     protected $keyType = 'string';
 
