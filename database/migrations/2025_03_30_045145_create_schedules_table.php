@@ -17,9 +17,11 @@ class CreateSchedulesTable extends Migration
             $table->id();
             $table->foreignId('committee_id')->constrained('committees')->cascadeOnDelete();
             $table->string('event_type');
-            $table->date('date');
-            $table->time('start_time');
-            $table->time('end_time')->nullable(); // Nullable in case it's not fixed
+            $table->dateTime('start_datetime');
+            $table->dateTime('end_datetime')->nullable(); 
+            // $table->date('date');
+            // $table->time('start_time');
+            // $table->time('end_time')->nullable(); // Nullable in case it's not fixed
             $table->string('location');
             $table->string('room')->nullable();
             $table->text('notes')->nullable();

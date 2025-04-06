@@ -20,7 +20,7 @@ use App\Http\Controllers\ScoreController;
 use App\Http\Controllers\CommitteeController;
 use App\Http\Controllers\CommitteeMemberController;
 use App\Http\Controllers\CommitteeStudentController;
-use App\Http\Controllers\CommitteeScheduleController;
+use App\Http\Controllers\ScheduleController;
 
 Route::get('/proposalform', [ProposalFormController::class, 'index']);
 Route::post('/proposalform', [ProposalFormController::class, 'update']);
@@ -123,6 +123,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('scores/{id}', [ScoreController::class, 'destroy']);
 
     Route::get('committees', [CommitteeController::class, 'index']); // Get all committees
+    Route::get('/committees/active-cycle', [CommitteeController::class, 'getActiveCycleValidCommittees']); // Get all committees with active cycle
     Route::get('committees/{committee}', [CommitteeController::class, 'show']); // Get single committee
     Route::post('committees', [CommitteeController::class, 'store']); // Create committee
     Route::patch('committees/{committee}', [CommitteeController::class, 'update']);
@@ -154,9 +155,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('students/{committeeStudent}', [CommitteeStudentController::class, 'destroy'])->scopeBindings();
     });
 
+
     Route::prefix('committees/{committee}')->group(function () {
-        Route::apiResource('schedules', ScheduleController::class)
-            ->except(['show'])
-            ->scoped(['schedule' => 'committee']);
+        Route::get('schedules', [ScheduleController::class, 'index']);
+        Route::post('schedules', [ScheduleController::class, 'store']);
+        Route::delete('schedules/{schedule}', [ScheduleController::class, 'destroy']);
+        // Route::apiResource('schedules', ScheduleController::class)
+        //     ->except(['show'])
+        //     ->scoped(['schedule' => 'committee']);
     });
+    Route::patch('schedules/{schedule}', [ScheduleController::class, 'update']);
+
+
+    
 });

@@ -18,23 +18,32 @@ class ScheduleResource extends JsonResource
         return [
             'id' => $this->id,
             'eventType' => $this->event_type,
-            'date' => $this->formatted_date,
-            'startTime' => $this->start_time_formatted,
-            'endTime' => $this->end_time_formatted,
+            'start_datetime' => $this->start_datetime,
+            'end_datetime' => $this->end_datetime,
             'location' => $this->location,
             'room' => $this->room,
             'notes' => $this->notes,
-            'rawDate' => $this->date->toDateString(),
-            'rawStart' => $this->start_time->format('H:i:s'),
-            'rawEnd' => $this->end_time?->format('H:i:s'),
-            'committee' => $this->whenLoaded('committee', fn() => [
-                'id' => $this->committee->id,
-                'name' => $this->committee->name
-            ]),
+
+            'committee' => $this->whenLoaded('committee', function () {
+                return [
+                    'id' => $this->committee->id ?? null,
+                    'name' => $this->committee->name ?? null,
+                    'grading_components_name' => $this->committee->gradingComponent->name ?? null,
+                    // 'grading_components' => $this->committee->gradingComponent->( {
+                    //     return [
+                    //         'id' => $component->id,
+                    //         'name' => $component->name,
+                    //         'weight' => $component->weight,
+                    //     ];
+                    // }),
+                ];
+            }),
+
+
             'meta' => [
                 'createdAt' => $this->created_at->toIso8601String(),
-                'updatedAt' => $this->updated_at->toIso8601String()
-            ]
+                'updatedAt' => $this->updated_at->toIso8601String(),
+            ],
         ];
     }
 }

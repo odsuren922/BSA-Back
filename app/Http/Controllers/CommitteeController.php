@@ -48,6 +48,26 @@ class CommitteeController extends Controller
         return CommitteeResource::collection($committees);
         //TODO:: ORDER
     }
+    public function getActiveCycleValidCommittees(Request $request)
+{
+    $committees = Committee::with([
+        'department',
+        'gradingComponent',
+        'members.teacher',
+        'students',
+        'schedules',
+       
+    ])
+        ->whereHas('thesis_cycle', function ($query) {
+            $query->where('status', 'Идэвхитэй');
+        })
+        ->where('dep_id', $request->user()->dep_id)
+        ->whereNotIn('status', ['cancelled', 'done'])
+        ->paginate(10);
+
+    return CommitteeResource::collection($committees);
+}
+
 
     public function storeWithCycleAndComponent(Request $request, ThesisCycle $thesisCycle, GradingComponent $gradingComponent)
     {
