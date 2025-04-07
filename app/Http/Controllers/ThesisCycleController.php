@@ -19,9 +19,18 @@ class ThesisCycleController extends Controller
         return response()->json(
             ThesisCycle::with('gradingSchema')
                 ->where('status', '!=', 'Устгах')
+                ->orderByRaw("
+                    CASE 
+                        WHEN status = 'Идэвхитэй' THEN 1
+                        WHEN status = 'Хүлээгдэж буй' THEN 2
+                        ELSE 3
+                    END
+                ")
+                ->orderBy('created_at', 'desc')
                 ->get()
         );
     }
+    
 
     /**
      * Одоогоор идэвхтэй байгаа мөчлөгийг авах

@@ -62,6 +62,7 @@ class GradingSchemaController extends Controller
         'grading_components.*.name' => 'required_if:grading_components.*.score,!=,null|string|max:255', // Validate name if score is not null
         'grading_components.*.score' => 'nullable|numeric', // Allow score to be nullable but only if the name exists
         'grading_components.*.by_who' => 'nullable|string', // Optional field for who assigns
+        'grading_components.*.scheduled_week' => 'nullable|numeric'
     ]);
 
     // If no grading components were sent
@@ -85,6 +86,7 @@ class GradingSchemaController extends Controller
                 'name' => $component['name'],
                 'score' => $component['score'],
                 'by_who' => $component['by_who'] ?? 'Supervisor', // Default to Supervisor if 'by_who' is not provided
+                'scheduled_week' => $component['scheduled_week'],
             ]);
         }
     }
@@ -107,6 +109,7 @@ public function update(Request $request, $id)
         'grading_components.*.name' => 'required_if:grading_components.*.score,!=,null|string|max:255',
         'grading_components.*.score' => 'nullable|numeric',
         'grading_components.*.by_who' => 'nullable|string',
+        'grading_components.*.scheduled_week' => 'nullable|numeric'
     ]);
 
     // Find the existing GradingSchema
@@ -132,6 +135,7 @@ public function update(Request $request, $id)
                 'name' => $component['name'],
                 'score' => $component['score'],
                 'by_who' => $component['by_who'] ?? 'Supervisor',
+                'scheduled_week' => $component['scheduled_week'],
             ]);
             $keptComponentIds[] = $existingComponent->id;
         } else {
@@ -140,6 +144,7 @@ public function update(Request $request, $id)
                 'name' => $component['name'],
                 'score' => $component['score'],
                 'by_who' => $component['by_who'] ?? 'Supervisor',
+                'scheduled_week' => $component['scheduled_week'],
             ]);
             $keptComponentIds[] = $newComponent->id;
         }
