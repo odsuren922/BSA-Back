@@ -40,10 +40,10 @@ class ScheduleResource extends JsonResource
             }),
 
 
-            'meta' => [
-                'createdAt' => $this->created_at->toIso8601String(),
-                'updatedAt' => $this->updated_at->toIso8601String(),
-            ],
+            // 'meta' => [
+            //     'createdAt' => $this->created_at->toIso8601String(),
+            //     'updatedAt' => $this->updated_at->toIso8601String(),
+            // ],
         ];
     }
 }

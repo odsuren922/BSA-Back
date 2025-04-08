@@ -51,10 +51,10 @@ class CommitteeController extends Controller
     public function getActiveCycleValidCommittees(Request $request)
 {
     $committees = Committee::with([
-        'department',
+        //'department',
         'gradingComponent',
-        'members.teacher',
-        'students',
+        // 'members.teacher',
+        // 'students',
         'schedules',
        
     ])
