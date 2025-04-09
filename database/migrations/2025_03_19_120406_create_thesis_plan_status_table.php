@@ -16,10 +16,18 @@ class CreateThesisPlanStatusTable extends Migration
         Schema::create('thesis_plan_status', function (Blueprint $table) {
             $table->id();
             $table->foreignId('thesis_id')->constrained('thesis')->onDelete('cascade');
+
+            // Status flags
             $table->boolean('student_sent')->default(false);
             $table->enum('teacher_status', ['approved', 'returned', 'pending'])->default('pending');
             $table->enum('department_status', ['approved', 'returned', 'pending'])->default('pending');
-            $table->timestamps();
+
+            // Timestamps for each status change
+            $table->timestamp('student_sent_at')->nullable();
+            $table->timestamp('teacher_status_updated_at')->nullable();
+            $table->timestamp('department_status_updated_at')->nullable();
+
+            $table->timestamps(); // created_at & updated_at
         });
     }
 
