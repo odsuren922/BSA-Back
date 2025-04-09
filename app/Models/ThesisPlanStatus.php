@@ -11,10 +11,13 @@ class ThesisPlanStatus extends Model
 
     protected $table = 'thesis_plan_status';
 
-    protected $fillable = ['thesis_id', 'student_sent', 'teacher_status', 'department_status'];
+    protected $fillable = ['thesis_id', 'student_sent', 'teacher_status', 
+                           'department_status','student_sent_at', 
+                           'teacher_status_updated_at','department_status_updated_at'];
 
-    public function thesisPlan()
+    public function thesis()
     {
         return $this->belongsTo(Thesis::class, 'thesis_id');
     }
 }
+
