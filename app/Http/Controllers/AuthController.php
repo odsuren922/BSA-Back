@@ -129,6 +129,8 @@ class AuthController extends Controller
                 'firstname' => $user->firstname,
                  'lastname' => $user->lastname,
                  'dep_id' => $user->dep_id,
+   
+
                  
                  ]
         ], 200);
@@ -144,7 +146,10 @@ class AuthController extends Controller
                  'mail' => $user->mail,
                  'role' => $role,
                  'name' => $user->firstname . ' ' . $user->lastname,
-                 'thesis' => $thesis
+                 'program' => $user->program ?? "N/A",
+                 'thesis' => $thesis ?? "",
+                 'thesis_cycle' => $thesis->thesisCycle ?? "N/A"
+
              ]
          ], 200);
  
