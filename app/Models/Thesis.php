@@ -24,14 +24,16 @@ class Thesis extends Model
     {
         return $this->belongsTo(Teacher::class, 'supervisor_id');
     }
-    public function projects()
+    public function tasks()
     {
-        return $this->hxasMany(Project::class);
+        return $this->hasMany(Task::class);
     }
-    public function status()
-    {
-        return $this->hasOne(ThesisPlanStatus::class, 'thesis_id');
-    }
+
+    public function thesisPlanStatus()
+{
+    return $this->hasOne(ThesisPlanStatus::class, 'thesis_id');
+}
+
     public function thesisCycle() {
         return $this->belongsTo(ThesisCycle::class);
     }
