@@ -11,6 +11,7 @@ use App\Models\Teacher;
 use App\Models\Thesis;
 use App\Models\Department;
 use App\Models\ThesisCycle;
+use App\Models\ThesisPlanStatus;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ThesisController extends Controller
@@ -252,7 +253,9 @@ class ThesisController extends Controller
     public function getThesis($id)
     {
         try {
-            $thesis = Thesis::findOrFail($id);
+            $thesis = Thesis::with('thesisCycle', 'thesisPlanStatus')->findOrFail($id);
+
+        
 
             return response()->json(
                 [
@@ -261,6 +264,7 @@ class ThesisController extends Controller
                 ],
                 200,
             );
+
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json(
                 [
