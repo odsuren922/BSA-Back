@@ -9,9 +9,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ThesisController;
+use App\Http\Controllers\ThesisPlanStatusController;
+
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\SubtaskController;
 use App\Http\Controllers\ThesisCycleController;
+
 use App\Http\Controllers\GradingSchemaController;
 use App\Http\Controllers\GradingComponentController;
 use App\Http\Controllers\GradingCriteriaController;
@@ -58,6 +61,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/subtask/{id}', [SubtaskController::class, 'updateSubTask']);
     Route::delete('/subtask/{id}', [SubtaskController::class, 'destroy']);
     Route::get('/thesis/{id}', [ThesisController::class, 'pdf']); //PDF ҮҮСГЭХД ХЭРЭГЛЭХ МЭДЭЭЛЭЛ
+    // ------------------------------
+    //ҮЕЧИЛСЭН ТӨЛӨВЛӨГӨӨ ТӨЛӨВ ӨӨРЧЛӨХ
+    // ------------------------------
+
+
+    Route::get('/thesis-plan-status/{thesis_id}', [ThesisPlanStatusController::class, 'show']);
+    Route::patch('/thesis-plan-status/{thesis_id}/student-send', [ThesisPlanStatusController::class, 'studentSent']);
+    Route::patch('/thesis-plan-status/{thesis_id}/student-Unsend', [ThesisPlanStatusController::class, 'studentUnSent']);
+    Route::patch('/thesis-plan-status/{thesis_id}/teacher-status', [ThesisPlanStatusController::class, 'updateTeacherStatus']);
+    Route::patch('/thesis-plan-status/{thesis_id}/department-status', [ThesisPlanStatusController::class, 'updateDepartmentStatus']);
+
 
     // ------------------------------
     //Supervisor ӨӨРИЙН УДИРДАХ БСА ХАРАХ
