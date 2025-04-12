@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Grading;
 
-use App\Models\GradingComponent;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 class GradingComponentController extends Controller

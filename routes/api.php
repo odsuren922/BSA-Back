@@ -18,9 +18,9 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\SubtaskController;
 
 
-use App\Http\Controllers\GradingSchemaController;
-use App\Http\Controllers\GradingComponentController;
-use App\Http\Controllers\GradingCriteriaController;
+use App\Http\Controllers\Grading\GradingSchemaController;
+use App\Http\Controllers\Grading\GradingComponentController;
+use App\Http\Controllers\Grading\GradingCriteriaController;
 use App\Http\Controllers\ScoreController;
 
 use App\Http\Controllers\Committee\CommitteeController;

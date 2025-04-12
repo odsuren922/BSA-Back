@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Grading;
 
-use App\Models\GradingCriteria;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 class GradingCriteriaController extends Controller
@@ -41,3 +41,4 @@ class GradingCriteriaController extends Controller
         return response()->json(['message' => 'Grading criteria deleted'], 200);
     }
 }
+
