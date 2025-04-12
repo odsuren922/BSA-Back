@@ -1,8 +1,10 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Thesis;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+
 use App\Models\Project;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -78,7 +80,7 @@ class ThesisController extends Controller
     public function getThesesByCycle($id)
     {
         $thesisCycle = ThesisCycle::findOrFail($id);
-    
+
         $formattedTheses = $thesisCycle->theses->map(function ($thesis) {
             return [
                 'id' => $thesis->id,
@@ -96,27 +98,22 @@ class ThesisController extends Controller
                 ],
                 'status' => $thesis->status,
                 'department' => $thesis->student->department->name,
-                'plan_status' => $thesis->thesisPlanStatus
-
+                'plan_status' => $thesis->thesisPlanStatus,
             ];
         });
-    
+
         // Sort by program, then firstname
-        $sortedTheses = $formattedTheses->sortBy([
-            ['student_info.program', 'asc'],
-            ['student_info.firstname', 'asc']
-        ]);
-    
+        $sortedTheses = $formattedTheses->sortBy([['student_info.program', 'asc'], ['student_info.firstname', 'asc']]);
+
         return response()->json($sortedTheses->values());
     }
-
-
 
     public function getActiveThesesByCycle($id)
     {
         $thesisCycle = ThesisCycle::findOrFail($id);
-   
-        $formattedTheses = $thesisCycle->theses()
+
+        $formattedTheses = $thesisCycle
+            ->theses()
             ->where('status', 'active')
             ->with(['student', 'supervisor']) // eager load for speed
             ->get()
@@ -133,21 +130,15 @@ class ThesisController extends Controller
                         'lastname' => $thesis->supervisor->lastname,
                     ],
                     'status' => $thesis->status,
-                    'plan_status' => $thesis->thesisPlanStatus
+                    'plan_status' => $thesis->thesisPlanStatus,
                 ];
             });
-    
+
         // Sort by program, then firstname
-        $sortedTheses = $formattedTheses->sortBy([
-            ['student_info.program', 'asc'],
-            ['student_info.firstname', 'asc']
-        ]);
-    
+        $sortedTheses = $formattedTheses->sortBy([['student_info.program', 'asc'], ['student_info.firstname', 'asc']]);
+
         return response()->json($sortedTheses->values());
     }
-    
-    
-    
 
     public function getStudentCountByProgram($id)
     {
@@ -203,63 +194,57 @@ class ThesisController extends Controller
         }
     }
 
-
     public function index($id)
-{
-    try {
-        $thesis = Thesis::with('thesisCycle.gradingSchema.gradingComponents')->findOrFail($id);
+    {
+        try {
+            $thesis = Thesis::with('thesisCycle.gradingSchema.gradingComponents')->findOrFail($id);
 
-        $student = Student::findOrFail($thesis->student_id);
-        $supervisor = Teacher::findOrFail($thesis->supervisor_id);
-//TODO:: THESIS GRADING COMPONENT BEGIN AND LAST DATE
-        return response()->json(
-            [
-                'status' => true,
-                'supervisor' => $supervisor,
-                'student' => [
-                    'firstname' => $student->firstname,
-                    'lastname' => $student->lastname,
-                    'sisi_id' => $student->sisi_id,
-                    'mail' => $student->mail,
-                    'phone' => $student->phone,
-                    'program' => $student->program,
+            $student = Student::findOrFail($thesis->student_id);
+            $supervisor = Teacher::findOrFail($thesis->supervisor_id);
+            //TODO:: THESIS GRADING COMPONENT BEGIN AND LAST DATE
+            return response()->json(
+                [
+                    'status' => true,
+                    'supervisor' => $supervisor,
+                    'student' => [
+                        'firstname' => $student->firstname,
+                        'lastname' => $student->lastname,
+                        'sisi_id' => $student->sisi_id,
+                        'mail' => $student->mail,
+                        'phone' => $student->phone,
+                        'program' => $student->program,
+                    ],
+                    'thesis' => $thesis,
+                    'thesis_cycle' => $thesis->thesisCycle,
+                    'grading_schema' => $thesis->thesisCycle->gradingSchema,
                 ],
-                'thesis' => $thesis,
-                'thesis_cycle'=> $thesis->thesisCycle,
-                'grading_schema' => $thesis->thesisCycle->gradingSchema,
-            ],
-            200,
-        );
+                200,
+            );
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(
+                [
+                    'status' => false,
+                    'message' => 'Student or Supervisor not found',
+                ],
+                404,
+            );
+        } catch (\Exception $e) {
+            \Log::error('Error in Thesis Index: ' . $e->getMessage());
 
-    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-        return response()->json(
-            [
-                'status' => false,
-                'message' => 'Student or Supervisor not found',
-            ],
-            404,
-        );
-
-    } catch (\Exception $e) {
-        \Log::error('Error in Thesis Index: ' . $e->getMessage());
-
-        return response()->json(
-            [
-                'status' => false,
-                'message' => 'An error occurred while fetching thesis data. Please try again later.',
-            ],
-            500,
-        );
+            return response()->json(
+                [
+                    'status' => false,
+                    'message' => 'An error occurred while fetching thesis data. Please try again later.',
+                ],
+                500,
+            );
+        }
     }
-}
-
 
     public function getThesis($id)
     {
         try {
             $thesis = Thesis::with('thesisCycle', 'thesisPlanStatus')->findOrFail($id);
-
-        
 
             return response()->json(
                 [
@@ -268,7 +253,6 @@ class ThesisController extends Controller
                 ],
                 200,
             );
-
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json(
                 [
@@ -396,3 +380,4 @@ class ThesisController extends Controller
         }
     }
 }
+

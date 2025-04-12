@@ -8,12 +8,15 @@ use App\Http\Controllers\TopicRequestController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ThesisController;
-use App\Http\Controllers\ThesisPlanStatusController;
+
+use App\Http\Controllers\Thesis\ThesisController;
+use App\Http\Controllers\Thesis\ThesisCycleController;
+use App\Http\Controllers\Thesis\ThesisScoreController;
+use App\Http\Controllers\Thesis\ThesisPlanStatusController;
 
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\SubtaskController;
-use App\Http\Controllers\ThesisCycleController;
+
 
 use App\Http\Controllers\GradingSchemaController;
 use App\Http\Controllers\GradingComponentController;
@@ -25,7 +28,7 @@ use App\Http\Controllers\Committee\CommitteeMemberController;
 use App\Http\Controllers\Committee\CommitteeStudentController;
 
 use App\Http\Controllers\ScheduleController;
-use App\Http\Controllers\Thesis\ThesisScoreController;
+
 
 Route::get('/proposalform', [ProposalFormController::class, 'index']);
 Route::post('/proposalform', [ProposalFormController::class, 'update']);

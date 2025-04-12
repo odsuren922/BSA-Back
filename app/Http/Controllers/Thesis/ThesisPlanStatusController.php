@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Thesis;
 
-use App\Models\ThesisPlanStatus;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 class ThesisPlanStatusController extends Controller
@@ -127,3 +127,4 @@ class ThesisPlanStatusController extends Controller
         }
     }
 }
+

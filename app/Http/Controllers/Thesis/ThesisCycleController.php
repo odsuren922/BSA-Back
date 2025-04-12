@@ -1,10 +1,13 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Thesis;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+
 use App\Models\ThesisCycle;
 use App\Models\GradingSchema;
+
 
 // TODO:: Шаардлагатай бол тэнхимийн ID-р шүүхийг нэмэх
 class ThesisCycleController extends Controller
