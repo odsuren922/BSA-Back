@@ -175,6 +175,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('schedules', [ScheduleController::class, 'index']);
         Route::post('schedules', [ScheduleController::class, 'store']);
         Route::delete('schedules/{schedule}', [ScheduleController::class, 'destroy']);
+        // Route::apiResource('schedules', ScheduleController::class)
+        //     ->except(['show'])
+        //     ->scoped(['schedule' => 'committee']);
     });
     Route::patch('schedules/{schedule}', [ScheduleController::class, 'update']);
 
