@@ -14,6 +14,7 @@ class ThesisResource extends JsonResource
      */
     public function toArray($request)
     {
+        //TODO:: ADD GRADING MODEL AND SCORE 
         return [
             'id' => $this->id,
             'name_mongolian' => $this->name_mongolian,
@@ -24,6 +25,8 @@ class ThesisResource extends JsonResource
                 'firstname' => $this->supervisor->firstname ?? null,
                 'lastname' => $this->supervisor->lastname ?? null,
             ],
+            'student' => $this->student,
+            
             'submitted_to_teacher_at' => $this->submitted_to_teacher_at,
             'submitted_to_dep_at' => $this->submitted_to_dep_at,
             'status' => $this->status,

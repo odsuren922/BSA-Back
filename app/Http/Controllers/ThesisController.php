@@ -96,6 +96,8 @@ class ThesisController extends Controller
                 ],
                 'status' => $thesis->status,
                 'department' => $thesis->student->department->name,
+                'plan_status' => $thesis->thesisPlanStatus
+
             ];
         });
     
@@ -113,7 +115,7 @@ class ThesisController extends Controller
     public function getActiveThesesByCycle($id)
     {
         $thesisCycle = ThesisCycle::findOrFail($id);
-    
+   
         $formattedTheses = $thesisCycle->theses()
             ->where('status', 'active')
             ->with(['student', 'supervisor']) // eager load for speed
@@ -131,6 +133,7 @@ class ThesisController extends Controller
                         'lastname' => $thesis->supervisor->lastname,
                     ],
                     'status' => $thesis->status,
+                    'plan_status' => $thesis->thesisPlanStatus
                 ];
             });
     
@@ -200,55 +203,56 @@ class ThesisController extends Controller
         }
     }
 
+
     public function index($id)
-    {
-        try {
-            // Fetch the thesis and associated models
-            $thesis = Thesis::findOrFail($id);
+{
+    try {
+        $thesis = Thesis::with('thesisCycle.gradingSchema.gradingComponents')->findOrFail($id);
 
-            // Use findOrFail for student and supervisor to ensure consistency in error handling
-            $student = Student::findOrFail($thesis->student_id);
-            $supervisor = Teacher::findOrFail($thesis->supervisor_id);
+        $student = Student::findOrFail($thesis->student_id);
+        $supervisor = Teacher::findOrFail($thesis->supervisor_id);
+//TODO:: THESIS GRADING COMPONENT BEGIN AND LAST DATE
+        return response()->json(
+            [
+                'status' => true,
+                'supervisor' => $supervisor,
+                'student' => [
+                    'firstname' => $student->firstname,
+                    'lastname' => $student->lastname,
+                    'sisi_id' => $student->sisi_id,
+                    'mail' => $student->mail,
+                    'phone' => $student->phone,
+                    'program' => $student->program,
+                ],
+                'thesis' => $thesis,
+                'thesis_cycle'=> $thesis->thesisCycle,
+                'grading_schema' => $thesis->thesisCycle->gradingSchema,
+            ],
+            200,
+        );
 
-            // Return response with thesis, student (filtered), and supervisor details
-            return response()->json(
-                [
-                    'status' => true,
-                    'supervisor' => $supervisor,
-                    'student' => [
-                        'firstname' => $student->firstname,
-                        'lastname' => $student->lastname,
-                        'sisi_id' => $student->sisi_id,
-                        'mail' => $student->mail,
-                        'phone' => $student->phone,
-                        'program' => $student->program,
-                    ],
-                    'thesis' => $thesis,
-                ],
-                200,
-            );
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            // Handle case where a student or supervisor doesn't exist
-            return response()->json(
-                [
-                    'status' => false,
-                    'message' => 'Student or Supervisor not found',
-                ],
-                404,
-            );
-        } catch (\Exception $e) {
-            // Log the error for debugging
-            \Log::error('Error in Thesis Index: ' . $e->getMessage());
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        return response()->json(
+            [
+                'status' => false,
+                'message' => 'Student or Supervisor not found',
+            ],
+            404,
+        );
 
-            return response()->json(
-                [
-                    'status' => false,
-                    'message' => 'An error occurred while fetching thesis data. Please try again later.',
-                ],
-                500,
-            );
-        }
+    } catch (\Exception $e) {
+        \Log::error('Error in Thesis Index: ' . $e->getMessage());
+
+        return response()->json(
+            [
+                'status' => false,
+                'message' => 'An error occurred while fetching thesis data. Please try again later.',
+            ],
+            500,
+        );
     }
+}
+
 
     public function getThesis($id)
     {

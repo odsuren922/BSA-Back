@@ -13,7 +13,8 @@ class GradingSchema extends Model {
         return $this->hasMany(ThesisCycle::class);
     }
     public function gradingComponents() {
-        return $this->hasMany(GradingComponent::class);
+        return $this->hasMany(GradingComponent::class)->orderBy('scheduled_week');
     }
+    
     
 }

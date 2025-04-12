@@ -89,12 +89,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/cycles/{id}/active-theses', [ThesisController::class, 'getActiveThesesByCycle']);
     //Тухайн БСА ымар мэргэжлийн хэдэн хүүхэд байгааг олох
     Route::get('/cycles/{id}/student-counts', [ThesisController::class, 'getStudentCountByProgram']);
-
+     
     //Тэнхмийн туслах шинэ cycle үүсгэх
     Route::post('/thesis-cycles', [ThesisCycleController::class, 'store']);
     Route::get('/thesis-cycles', [ThesisCycleController::class, 'index']);
     Route::get('/active-cycles', [ThesisCycleController::class, 'active']);
     Route::get('/thesis-cycles/{id}', [ThesisCycleController::class, 'show']);
+    
     Route::put('/thesis-cycles/{id}', [ThesisCycleController::class, 'update']);
     Route::delete('/thesis-cycles/{id}', [ThesisCycleController::class, 'destroy']); //done
 
@@ -174,9 +175,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('schedules', [ScheduleController::class, 'index']);
         Route::post('schedules', [ScheduleController::class, 'store']);
         Route::delete('schedules/{schedule}', [ScheduleController::class, 'destroy']);
-        // Route::apiResource('schedules', ScheduleController::class)
-        //     ->except(['show'])
-        //     ->scoped(['schedule' => 'committee']);
     });
     Route::patch('schedules/{schedule}', [ScheduleController::class, 'update']);
 

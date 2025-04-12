@@ -14,6 +14,8 @@ class ThesisCycleController extends Controller
      * - "Устгах" төлөвтэй мөчлөгийг алгасана
      * - gradingSchema хамааралтайгаар хамт авчирна
      */
+
+
     public function index()
     {
         return response()->json(
@@ -50,13 +52,14 @@ class ThesisCycleController extends Controller
             ->where('status', 'Идэвхитэй')
             ->first();
 
-        return response()->json($activeThesis);
+        return response()->json($activeThesis, );
     }
 
     /**
      * ID-р нь нэг мөчлөгийн мэдээллийг авах
      * - gradingSchema болон тухайн мөчлөгт хэдэн БСА байгааг авчирна
      */
+    //TODO::
     public function show($id)
     {
         return response()->json(
@@ -65,6 +68,19 @@ class ThesisCycleController extends Controller
                     $query->whereColumn('thesis_cycle_id', 'thesis_cycles.id');
                 }])
                 ->findOrFail($id)
+        );
+    }
+    public function thesis_idShow($id)
+    {
+      $thesis = Thesis::findOrFail($id);
+
+
+        return response()->json(
+            ThesisCycle::with('gradingSchema')
+                ->withCount(['theses as totalTheses' => function ($query) {
+                    $query->whereColumn('thesis_cycle_id', 'thesis_cycles.id');
+                }])
+                ->findOrFail($thesis->thesisCycle->id )
         );
     }
 

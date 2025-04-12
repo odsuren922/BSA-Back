@@ -13,7 +13,7 @@ class CreateThesisCyclesTable extends Migration
      */
     public function up()
     {
-       
+       //TODO REALLY NEED NAME
         Schema::create('thesis_cycles', function (Blueprint $table) {
             $table->id();
             $table->string('name', 100);

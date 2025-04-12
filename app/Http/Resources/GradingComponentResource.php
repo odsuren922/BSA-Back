@@ -16,6 +16,7 @@ class GradingComponentResource extends JsonResource
     {
         // return parent::toArray($request);
         return [
+            //TODO:: EDIT ::scheduled_week
             'id' => $this->id,
             'name' => $this->name,
             'score' => $this->score,
