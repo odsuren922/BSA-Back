@@ -15,7 +15,7 @@ class CreateThesisScoresTable extends Migration
     {
         Schema::create('thesis_scores', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('thesis_id')->constrained()->onDelete('cascade');
+            $table->foreignId('thesis_id')->constrained('thesis')->onDelete('cascade');
             $table->foreignId('grading_component_id')->constrained()->onDelete('cascade');
             $table->foreignId('committee_id')->nullable()->constrained()->onDelete('cascade'); // only if given_by = committee
             $table->foreignId('teacher_id')->nullable()->constrained()->onDelete('cascade');   // who gave score

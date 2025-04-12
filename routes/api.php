@@ -20,10 +20,12 @@ use App\Http\Controllers\GradingComponentController;
 use App\Http\Controllers\GradingCriteriaController;
 use App\Http\Controllers\ScoreController;
 
-use App\Http\Controllers\CommitteeController;
-use App\Http\Controllers\CommitteeMemberController;
-use App\Http\Controllers\CommitteeStudentController;
+use App\Http\Controllers\Committee\CommitteeController;
+use App\Http\Controllers\Committee\CommitteeMemberController;
+use App\Http\Controllers\Committee\CommitteeStudentController;
+
 use App\Http\Controllers\ScheduleController;
+use App\Http\Controllers\Thesis\ThesisScoreController;
 
 Route::get('/proposalform', [ProposalFormController::class, 'index']);
 Route::post('/proposalform', [ProposalFormController::class, 'update']);
@@ -181,6 +183,8 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::patch('schedules/{schedule}', [ScheduleController::class, 'update']);
 
-
+    Route::get('/thesis/{id}/scores', [ThesisScoreController::class, 'getThesisScores']);
+    Route::post('/thesis-scores', [ThesisScoreController::class, 'storeScore']);
+    
     
 });

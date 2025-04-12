@@ -1,13 +1,15 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Committee;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Committee;
-use App\Http\Controllers\Controller;
+
 use App\Http\Resources\CommitteeResource;
 use App\Models\ThesisCycle;
 use App\Models\GradingComponent;
+
 class CommitteeController extends Controller
 {
     public function index(Request $request)

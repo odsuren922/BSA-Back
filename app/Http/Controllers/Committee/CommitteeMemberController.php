@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Committee;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+
 use App\Models\Committee;
 use App\Models\CommitteeMember;
-use App\Http\Controllers\Controller;
 use App\Http\Resources\CommitteeMemberResource;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
