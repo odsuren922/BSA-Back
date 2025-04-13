@@ -4,7 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class ScheduleResource extends JsonResource
+class ThesisScoreResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -16,15 +16,13 @@ class ScheduleResource extends JsonResource
     {
         // return parent::toArray($request);
         return [
-        
             'id' => $this->id,
-            'event_type' => $this->event_type,
-            'start_datetime' => $this->start_datetime,
-            'end_datetime' => $this->end_datetime,
-            'location' => $this->location,
-            'room' => $this->room,
-            'notes' => $this->notes,
+            'score' => $this->score,
+            'comment' => $this->comment,
+            'given_by' => $this->given_by,
 
+            'grading_component' => new GradingComponentResource($this->whenLoaded('gradingComponent')),
+            'teacher' => new TeacherResource($this->whenLoaded('teacher')),
             'committee' => new CommitteeResource($this->whenLoaded('committee')),
 
             'created_at' => $this->created_at?->toDateTimeString(),

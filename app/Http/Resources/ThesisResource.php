@@ -20,13 +20,13 @@ class ThesisResource extends JsonResource
             'name_mongolian' => $this->name_mongolian,
             'name_english' => $this->name_english,
             'description' => $this->description,
-            'supervisor' => [
-                'id' => $this->supervisor->id ?? null,
-                'firstname' => $this->supervisor->firstname ?? null,
-                'lastname' => $this->supervisor->lastname ?? null,
-            ],
-            'student' => $this->student,
-            
+
+            'supervisor' => new TeacherResource($this->whenLoaded('supervisor')),
+            'student' => new StudentResource($this->whenLoaded('student')),
+            'thesis_cycle' => new ThesisCycleResource($this->whenLoaded('thesisCycle')),
+            'thesisPlanStatus' => new ThesisPlanStatusResource($this->whenLoaded('thesisPlanStatus')),
+            'scores' => ThesisScoreResource::collection($this->whenLoaded('scores')),
+
             'submitted_to_teacher_at' => $this->submitted_to_teacher_at,
             'submitted_to_dep_at' => $this->submitted_to_dep_at,
             'status' => $this->status,

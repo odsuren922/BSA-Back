@@ -18,8 +18,8 @@ class DepartmentResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            // 'teachers' => TeacherResource::collection($this->whenLoaded('teachers')),
-            // 'supervisors' => SupervisorResource::collection($this->whenLoaded('supervisors')),
+            'teachers' => TeacherResource::collection($this->whenLoaded('teachers')),
+            'supervisors' => SupervisorResource::collection($this->whenLoaded('supervisors')),
             // 'students' => StudentResource::collection($this->whenLoaded('students')),
             // 'proposalForms' => ProposalFormResource::collection($this->whenLoaded('proposalForms')),
             // 'createdAt' => $this->created_at->toDateTimeString(),

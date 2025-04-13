@@ -23,6 +23,9 @@ class ThesisCycleResource extends JsonResource
             'semester' => $this->semester,
             'start_date' => $this->start_date,
             'end_date' => $this->end_date,
+
+            'grading_schema' => new GradingSchemaResource($this->whenLoaded('gradingSchema')),
+            'theses' => ThesisResource::collection($this->whenLoaded('theses')),
         ];
     }
 }

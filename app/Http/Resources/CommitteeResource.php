@@ -30,6 +30,7 @@ class CommitteeResource extends JsonResource
             'members' => CommitteeMemberResource::collection($this->whenLoaded('members')),
             'students' => CommitteeStudentResource::collection($this->whenLoaded('students')),
             'schedules' => ScheduleResource::collection($this->whenLoaded('schedules')),
+            
         ];
     }
 }
