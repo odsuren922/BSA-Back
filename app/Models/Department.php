@@ -34,12 +34,11 @@ class Department extends Model
     }
 
     public function headOfDepartment()
-{
-    return $this->hasOne(Teacher::class, 'department_id')
-    ->whereHas('superior', function ($query) {
-        $query->where('title', 'Тэнхимийн эрхлэгч');
-    });
-}
+    {
+        return $this->hasOne(Teacher::class, 'dep_id')
+                    ->where('superior', 'Тэнхимийн эрхлэгч');
+    }
+    
 
 
 }

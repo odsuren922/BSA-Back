@@ -8,7 +8,8 @@ use App\Models\Thesis;
 use App\Models\GradingSchema;
 use App\Models\ThesisScore;
 use App\Models\Committee;
-
+use App\Http\Resources\ThesisScoreResource;
+use App\Http\Resources\ThesisResource;
 use Illuminate\Support\Facades\DB;
 
 
@@ -73,7 +74,7 @@ class ThesisScoreController extends Controller
         'grading_component_id' => 'required|exists:grading_components,id',
         'teacher_id' => 'required|exists:teachers,id',
         'score' => 'required|numeric|min:0',
-        'comment' => 'nullable|string',
+         'comment' => 'nullable|string',
         'given_by' => 'required|in:supervisor,committee,teacher',
         'committee_id' => 'nullable|exists:committees,id'
     ]);
@@ -94,6 +95,8 @@ class ThesisScoreController extends Controller
 
     return response()->json(['message' => 'Score saved successfully']);
 }
+
+
 public function storeMultipleScores(Request $request, $thesisId)
 {
     $validated = $request->validate([
@@ -127,50 +130,7 @@ public function storeMultipleScores(Request $request, $thesisId)
 
 
 
-// public function storeBulk(Request $request)
-// {
-//     $validated = $request->validate([
-//         'data' => 'required|array',
-//         'data.*.student_id' => 'required|exists:students,id',
-//         'data.*.teacher_id' => 'required|exists:teachers,id',
-//         'data.*.component_id' => 'required|exists:grading_components,id',
-//         'data.*.score' => 'required|numeric|min:0|max:100',
-// 'data.*.committee_id' => 'nullable|exists:committees,id',
-//     ]);
 
-//     DB::beginTransaction();
-
-//     try {
-//         foreach ($validated['data'] as $scoreData) {
-//             $thesis = Thesis::where('student_id', $scoreData['student_id'])->first();
-
-//             if (!$thesis) {
-//                 throw new \Exception('Thesis not found for student_id: '.$scoreData['student_id']);
-//             }
-
-//             ThesisScore::updateOrCreate(
-//                 [
-//                     'thesis_id' => $thesis->id,
-//                     'teacher_id' => $scoreData['teacher_id'],
-//                     'grading_component_id' => $scoreData['component_id'],
-//                     'given_by' => 'committee',
-//                     'committee_id' => $scoreData['committee_id'],  // ✅ ЗӨВ
-//                 ],
-//                 [
-//                     'score' => $scoreData['score'],
-//                 ]
-//             );
-            
-//         }
-
-//         DB::commit();
-
-//         return response()->json(['message' => 'Scores saved successfully']);
-//     } catch (\Throwable $e) {
-//         DB::rollBack();
-//         return response()->json(['message' => 'Error saving scores', 'error' => $e->getMessage()], 500);
-//     }
-// }
 public function storeBulk(Request $request)
 {
     $validated = $request->validate([
@@ -263,6 +223,67 @@ public function getCommitteeStudentScores(Committee $committee)
 
     return response()->json($students);
 }
+
+public function index($id)
+{
+    $thesis = Thesis::with([
+        'scores.teacher',
+        // Keep this to load committee info but don't include in individual scores.
+        'thesisCycle.gradingSchema.gradingComponents',
+    ])->findOrFail($id);
+
+    $gradingComponents = $thesis->thesisCycle->gradingSchema->gradingComponents->map(function ($component) use ($thesis) {
+        $componentScores = $thesis->scores->where('grading_component_id', $component->id);
+
+        if (in_array($component->by_who, ['teacher', 'supervisor'])) {
+            $average = $componentScores->avg('score');
+        
+            $component->given_score = [
+                'average_score' => $average,
+            ];
+                 // Just add the first score for supervisor/teacher.
+        } elseif ($component->by_who === 'committee') {
+            $firstScoreWithCommittee = $componentScores->firstWhere('committee_id', '!=', null);
+
+            if ($firstScoreWithCommittee && $firstScoreWithCommittee->committee) {
+                $committee = $firstScoreWithCommittee->committee;
+                $committeeId = $firstScoreWithCommittee->committee_id;
+
+                $committeeScores = $componentScores->where('committee_id', $committeeId);
+                $memberCount = $committee->members->count();
+                $submittedCount = $committeeScores->count();
+                $average = $committeeScores->avg('score');
+
+                // Store committee scores separately under `given_score` field in the component
+                $component->given_score = [
+                    'committee_scores' => $committeeScores->values(),
+                    'average_score' => $submittedCount < $memberCount ? null : $average, // if not all gave score -> null
+                    'submitted_count' => $submittedCount,
+                    'member_count' => $memberCount,
+                    'note' => $submittedCount < $memberCount 
+                        ? "Only $submittedCount of $memberCount committee members have submitted scores." 
+                        : null,
+                ];
+                
+            } else {
+                // No committee scores submitted yet
+                $component->given_score = [
+                    'committee_scores' => [],
+                    'average_score' => null,
+                    'note' => "No committee scores submitted yet.",
+                ];
+            }
+        }
+
+        return $component;
+    });
+
+    return response()->json($gradingComponents);
+}
+
+
+
+
 
 
 

@@ -61,7 +61,7 @@ class ThesisController extends Controller
             // 'thesisCycle',
             'thesisCycle.gradingSchema.gradingComponents',
             'thesisPlanStatus',
-            'scores',
+            'scores.teacher',
         ])->findOrFail($id);
 
         return new ThesisResource($thesis);
@@ -98,7 +98,7 @@ class ThesisController extends Controller
     public function pdf($id)
     {
         try {
-            $user = Auth::user();
+    
 
             $thesis = Thesis::findOrFail($id);
 

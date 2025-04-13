@@ -20,7 +20,7 @@ class ThesisScoreResource extends JsonResource
             'score' => $this->score,
             'comment' => $this->comment,
             'given_by' => $this->given_by,
-
+            'grading_component_id' => $this->grading_component_id,
             'grading_component' => new GradingComponentResource($this->whenLoaded('gradingComponent')),
             'teacher' => new TeacherResource($this->whenLoaded('teacher')),
             'committee' => new CommitteeResource($this->whenLoaded('committee')),

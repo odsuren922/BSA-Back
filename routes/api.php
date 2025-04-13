@@ -65,7 +65,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/subtask', [SubtaskController::class, 'store']);
     Route::put('/subtask/{id}', [SubtaskController::class, 'updateSubTask']);
     Route::delete('/subtask/{id}', [SubtaskController::class, 'destroy']);
-    
+
     Route::get('/thesis/{id}', [ThesisController::class, 'pdf']); //PDF ҮҮСГЭХД ХЭРЭГЛЭХ МЭДЭЭЛЭЛ
     // ------------------------------
     //ҮЕЧИЛСЭН ТӨЛӨВЛӨГӨӨ ТӨЛӨВ ӨӨРЧЛӨХ
@@ -188,10 +188,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('schedules/{schedule}', [ScheduleController::class, 'update']);
 
     Route::get('/thesis/{id}/scores', [ThesisScoreController::class, 'getThesisScores']);
-    Route::post('/thesis-scores', [ThesisScoreController::class, 'storeScore']);
+    Route::post('/supervisor/thesis-scores', [ThesisScoreController::class, 'storeScore']);
     Route::post('/thesis/{thesisId}/give-scores', [ThesisScoreController::class, 'storeMultipleScores']);
     Route::post('/committee-scores/bulk', [ThesisScoreController::class, 'storeBulk']);
     Route::get('/committees/{committee}/scores', [ThesisScoreController::class, 'getCommitteeStudentScores']);
 
-    
+    Route::get('/scores/{id}', [ThesisScoreController::class, 'index']);
+
 });
