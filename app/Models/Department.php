@@ -33,5 +33,13 @@ class Department extends Model
         return $this->hasMany(ProposalForm::class, 'dep_id');
     }
 
-    
+    public function headOfDepartment()
+{
+    return $this->hasOne(Teacher::class, 'department_id')
+    ->whereHas('superior', function ($query) {
+        $query->where('title', 'Тэнхимийн эрхлэгч');
+    });
+}
+
+
 }
