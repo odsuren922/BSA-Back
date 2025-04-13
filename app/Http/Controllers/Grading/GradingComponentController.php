@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Grading;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
+use App\Models\GradingComponent;
+
 class GradingComponentController extends Controller
 {
     public function index()
