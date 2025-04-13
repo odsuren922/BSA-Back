@@ -82,13 +82,13 @@ Route::middleware('auth:sanctum')->group(function () {
     // ------------------------------
     //Supervisor ӨӨРИЙН УДИРДАХ БСА ХАРАХ
     // ------------------------------
-
+//TODO::USER OR UN USED
     Route::get('/theses', [ThesisController::class, 'supervisodThesis']); //нэвтэрсэн багштай харьяатай бүр БСА //DONE
-    Route::get('/allTheses', [ThesisController::class, 'allTheses']); // ӨГӨГДЛИЙН САНД БАЙГАА БҮХ БСА ХАРАХ
-    Route::get('/onethesisSuper/{id}', [ThesisController::class, 'index']); //БСА Хэрэгжүүлэгч болон удирдагч 
+    Route::get('/thesisInfo/{id}', [ThesisController::class, 'index']); //БСА Хэрэгжүүлэгч болон удирдагч 
     Route::get('/onethesis/{id}', [ThesisController::class, 'getThesis']); // id- гаар ганц БСА ХАРАХ
-    Route::get('/thesis/{id}/student', [ThesisController::class, 'getStudentByThesis']); //БСА СУРАГЧ
-    Route::get('/thesis/{id}/supervisor', [ThesisController::class, 'getSupervisorByThesis']); //БСА УДИРДАХ
+
+
+    
     //ThesisCycle id гаар бүх БСА-н мэдээллийг багш сурагчидтай хамт авах
     Route::get('/cycles/{id}/theses', [ThesisController::class, 'getThesesByCycle']);
     //getActiveThesesByCycle багш сурагчидын мэдээлэлтэй 

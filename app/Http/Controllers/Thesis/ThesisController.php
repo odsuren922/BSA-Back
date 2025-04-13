@@ -19,6 +19,56 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ThesisController extends Controller
 {
+
+
+    //Thesis awah
+    public function supervisodThesis()
+{
+    try {
+        $user = Auth::user();
+
+        $thesis = Thesis::with([
+            'student',
+            'supervisor',
+            'thesisCycle',
+            'thesisPlanStatus',
+            'scores',
+          
+        ])->where('supervisor_id', $user->id)->get();
+
+        if ($thesis->isEmpty()) {
+            return response()->json(['status' => false, 'message' => 'No thesis found.'], 404);
+        }
+
+        return response()->json([
+            'status' => true,
+            'thesis' => ThesisResource::collection($thesis),
+    
+        ], 200);
+    } catch (\Exception $e) {
+        \Log::error('Error in thesisByRole: ' . $e->getMessage());
+        return response()->json([
+            'status' => false,
+            'message' => 'An error occurred while fetching thesis.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+
+public function index($id){
+    $thesis =Thesis::with([
+        'supervisor',
+        'student',
+       // 'thesisCycle',
+        'thesisCycle.gradingSchema.gradingComponents',
+        'thesisPlanStatus',
+        'scores'
+    ])->findOrFail($id);
+
+    return new ThesisResource($thesis);
+}
+    //TODO::
     public function pdf($id)
     {
         try {
@@ -158,120 +208,9 @@ class ThesisController extends Controller
         return response()->json($programCounts);
     }
 
-    //Thesis awah
 
-    // public function supervisodThesis()
-    // {
-    //     try {
-    //         $user = Auth::user();
-    //         $query = Thesis::with('student');
 
-    //         $query->where('supervisor_id', $user->id);
 
-    //         $thesis = $query->get();
-
-    //         if ($thesis->isEmpty()) {
-    //             return response()->json(['status' => false, 'message' => 'No thesis found.'], 404);
-    //         }
-
-    //         return response()->json(
-    //             [
-    //                 'status' => true,
-    //                 'thesis' => $thesis,
-    //                 'user' => $user,
-    //             ],
-    //             200,
-    //         );
-    //     } catch (\Exception $e) {
-    //         \Log::error('Error in thesisByRole: ' . $e->getMessage());
-    //         return response()->json(
-    //             [
-    //                 'status' => false,
-    //                 'message' => 'An error occurred while fetching thesis.',
-    //                 'error' => $e->getMessage(),
-    //             ],
-    //             500,
-    //         );
-    //     }
-    // }
-
-    public function supervisodThesis()
-{
-    try {
-        $user = Auth::user();
-
-        $thesis = Thesis::with([
-            'student',
-            'thesisCycle',
-            'thesisPlanStatus',
-          
-        ])->where('supervisor_id', $user->id)->get();
-
-        if ($thesis->isEmpty()) {
-            return response()->json(['status' => false, 'message' => 'No thesis found.'], 404);
-        }
-
-        return response()->json([
-            'status' => true,
-            'thesis' => ThesisResource::collection($thesis),
-    
-        ], 200);
-    } catch (\Exception $e) {
-        \Log::error('Error in thesisByRole: ' . $e->getMessage());
-        return response()->json([
-            'status' => false,
-            'message' => 'An error occurred while fetching thesis.',
-            'error' => $e->getMessage(),
-        ], 500);
-    }
-}
-
-    public function index($id)
-    {
-        try {
-            $thesis = Thesis::with('thesisCycle.gradingSchema.gradingComponents')->findOrFail($id);
-
-            $student = Student::findOrFail($thesis->student_id);
-            $supervisor = Teacher::findOrFail($thesis->supervisor_id);
-            //TODO:: THESIS GRADING COMPONENT BEGIN AND LAST DATE
-            return response()->json(
-                [
-                    'status' => true,
-                    'supervisor' => $supervisor,
-                    'student' => [
-                        'firstname' => $student->firstname,
-                        'lastname' => $student->lastname,
-                        'sisi_id' => $student->sisi_id,
-                        'mail' => $student->mail,
-                        'phone' => $student->phone,
-                        'program' => $student->program,
-                    ],
-                    'thesis' => $thesis,
-                    'thesis_cycle' => $thesis->thesisCycle,
-                    'grading_schema' => $thesis->thesisCycle->gradingSchema,
-                ],
-                200,
-            );
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json(
-                [
-                    'status' => false,
-                    'message' => 'Student or Supervisor not found',
-                ],
-                404,
-            );
-        } catch (\Exception $e) {
-            \Log::error('Error in Thesis Index: ' . $e->getMessage());
-
-            return response()->json(
-                [
-                    'status' => false,
-                    'message' => 'An error occurred while fetching thesis data. Please try again later.',
-                ],
-                500,
-            );
-        }
-    }
 
     public function getThesis($id)
     {
@@ -306,110 +245,8 @@ class ThesisController extends Controller
         }
     }
 
-    public function getStudentByThesis($thesis_id)
-    {
-        try {
-            $thesis = Thesis::findOrFail($thesis_id);
-            $student = Student::findOrFail($thesis->student_id);
 
-            return response()->json(
-                [
-                    'status' => true,
-                    'data' => [
-                        'firstname' => $student->firstname,
-                        'lastname' => $student->lastname,
-                        'sisi_id' => $student->sisi_id,
-                        'mail' => $student->mail,
-                        'phone' => $student->phone,
-                        'program' => $student->program,
-                    ],
-                ],
-                200,
-            );
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json(
-                [
-                    'status' => false,
-                    'message' => 'Thesis or Student not found',
-                ],
-                404,
-            );
-        } catch (\Exception $e) {
-            \Log::error('Error in fetching student by thesis: ' . $e->getMessage());
 
-            return response()->json(
-                [
-                    'status' => false,
-                    'message' => 'An error occurred while fetching the student.',
-                ],
-                500,
-            );
-        }
-    }
 
-    public function getSupervisorByThesis($thesis_id)
-    {
-        try {
-            $thesis = Thesis::findOrFail($thesis_id);
-            $supervisor = Teacher::findOrFail($thesis->supervisor_id);
-
-            return response()->json(
-                [
-                    'status' => true,
-                    'data' => $supervisor,
-                ],
-                200,
-            );
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json(
-                [
-                    'status' => false,
-                    'message' => 'Thesis or Supervisor not found',
-                ],
-                404,
-            );
-        } catch (\Exception $e) {
-            \Log::error('Error in fetching supervisor by thesis: ' . $e->getMessage());
-
-            return response()->json(
-                [
-                    'status' => false,
-                    'message' => 'An error occurred while fetching the supervisor.',
-                ],
-                500,
-            );
-        }
-    }
-
-    public function allTheses()
-    {
-        try {
-            // Get all theses including the student relationship
-            $theses = Thesis::with('student')->get();
-
-            // Check if any theses are found
-            if ($theses->isEmpty()) {
-                return response()->json(['status' => false, 'message' => 'No thesis found.'], 404);
-            }
-
-            return response()->json(
-                [
-                    'status' => true,
-                    'theses' => $theses,
-                ],
-                200,
-            );
-        } catch (\Exception $e) {
-            \Log::error('Error in allTheses: ' . $e->getMessage());
-            return response()->json(
-                [
-                    'status' => false,
-                    'message' => 'An error occurred while fetching theses.',
-                    'error' => $e->getMessage(),
-                ],
-                500,
-            );
-        }
-    }
 }
 
