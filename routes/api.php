@@ -14,6 +14,7 @@ use App\Http\Controllers\Thesis\ThesisCycleController;
 use App\Http\Controllers\Thesis\ThesisScoreController;
 use App\Http\Controllers\Thesis\ThesisPlanStatusController;
 
+
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\SubtaskController;
 
@@ -188,6 +189,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/thesis/{id}/scores', [ThesisScoreController::class, 'getThesisScores']);
     Route::post('/thesis-scores', [ThesisScoreController::class, 'storeScore']);
-    
+    Route::post('/thesis/{thesisId}/give-scores', [ThesisScoreController::class, 'storeMultipleScores']);
+    Route::post('/committee-scores/bulk', [ThesisScoreController::class, 'storeBulk']);
+    Route::get('/committees/{committee}/scores', [ThesisScoreController::class, 'getCommitteeStudentScores']);
+
     
 });

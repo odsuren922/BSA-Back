@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Thesis;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
 
 class ThesisPlanStatusController extends Controller
 {
