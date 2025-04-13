@@ -18,6 +18,7 @@ class ThesisScore extends Model
         'given_by',
         'committee_id'
     ];
+//TODO::     "error": "Call to undefined relationship [gradingModel] on model [App\\Models\\ThesisScore]."
 
     public function thesis()
     {

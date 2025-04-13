@@ -83,7 +83,7 @@ Route::middleware('auth:sanctum')->group(function () {
     //Supervisor ӨӨРИЙН УДИРДАХ БСА ХАРАХ
     // ------------------------------
 
-    Route::get('/theses', [ThesisController::class, 'supervisodThesis']); //нэвтэрсэн багштай харьяатай бүр БСА
+    Route::get('/theses', [ThesisController::class, 'supervisodThesis']); //нэвтэрсэн багштай харьяатай бүр БСА //DONE
     Route::get('/allTheses', [ThesisController::class, 'allTheses']); // ӨГӨГДЛИЙН САНД БАЙГАА БҮХ БСА ХАРАХ
     Route::get('/onethesisSuper/{id}', [ThesisController::class, 'index']); //БСА Хэрэгжүүлэгч болон удирдагч 
     Route::get('/onethesis/{id}', [ThesisController::class, 'getThesis']); // id- гаар ганц БСА ХАРАХ

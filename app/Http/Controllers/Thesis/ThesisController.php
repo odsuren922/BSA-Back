@@ -14,6 +14,7 @@ use App\Models\Thesis;
 use App\Models\Department;
 use App\Models\ThesisCycle;
 use App\Models\ThesisPlanStatus;
+use App\Http\Resources\ThesisResource;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ThesisController extends Controller
@@ -159,40 +160,71 @@ class ThesisController extends Controller
 
     //Thesis awah
 
+    // public function supervisodThesis()
+    // {
+    //     try {
+    //         $user = Auth::user();
+    //         $query = Thesis::with('student');
+
+    //         $query->where('supervisor_id', $user->id);
+
+    //         $thesis = $query->get();
+
+    //         if ($thesis->isEmpty()) {
+    //             return response()->json(['status' => false, 'message' => 'No thesis found.'], 404);
+    //         }
+
+    //         return response()->json(
+    //             [
+    //                 'status' => true,
+    //                 'thesis' => $thesis,
+    //                 'user' => $user,
+    //             ],
+    //             200,
+    //         );
+    //     } catch (\Exception $e) {
+    //         \Log::error('Error in thesisByRole: ' . $e->getMessage());
+    //         return response()->json(
+    //             [
+    //                 'status' => false,
+    //                 'message' => 'An error occurred while fetching thesis.',
+    //                 'error' => $e->getMessage(),
+    //             ],
+    //             500,
+    //         );
+    //     }
+    // }
+
     public function supervisodThesis()
-    {
-        try {
-            $user = Auth::user();
-            $query = Thesis::with('student');
+{
+    try {
+        $user = Auth::user();
 
-            $query->where('supervisor_id', $user->id);
+        $thesis = Thesis::with([
+            'student',
+            'thesisCycle',
+            'thesisPlanStatus',
+          
+        ])->where('supervisor_id', $user->id)->get();
 
-            $thesis = $query->get();
-
-            if ($thesis->isEmpty()) {
-                return response()->json(['status' => false, 'message' => 'No thesis found.'], 404);
-            }
-
-            return response()->json(
-                [
-                    'status' => true,
-                    'thesis' => $thesis,
-                    'user' => $user,
-                ],
-                200,
-            );
-        } catch (\Exception $e) {
-            \Log::error('Error in thesisByRole: ' . $e->getMessage());
-            return response()->json(
-                [
-                    'status' => false,
-                    'message' => 'An error occurred while fetching thesis.',
-                    'error' => $e->getMessage(),
-                ],
-                500,
-            );
+        if ($thesis->isEmpty()) {
+            return response()->json(['status' => false, 'message' => 'No thesis found.'], 404);
         }
+
+        return response()->json([
+            'status' => true,
+            'thesis' => ThesisResource::collection($thesis),
+    
+        ], 200);
+    } catch (\Exception $e) {
+        \Log::error('Error in thesisByRole: ' . $e->getMessage());
+        return response()->json([
+            'status' => false,
+            'message' => 'An error occurred while fetching thesis.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
 
     public function index($id)
     {
