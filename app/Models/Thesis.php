@@ -41,6 +41,10 @@ class Thesis extends Model
     {
         return $this->hasMany(ThesisScore::class, 'thesis_id');
     }
+    public function thesisFile(){
+        
+        return $this->hasMany(ThesisFile::class, 'thesis_file');
+    }
     
 
 }
