@@ -29,19 +29,19 @@ class TaskController extends Controller
         $thesis = Thesis::findOrFail($validatedData['thesis_id']);
 
         // Authorization: Check based on role
-        if ($request->role === 'student' && $user->id !== $thesis->student_id) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Unauthorized. Only the assigned student can create a task.',
-            ], 403);
-        }
+        // if ($request->role === 'student' && $user->id !== $thesis->student_id) {
+        //     return response()->json([
+        //         'status' => false,
+        //         'message' => 'Unauthorized. Only the assigned student can create a task.',
+        //     ], 403);
+        // }
 
-        if ($request->role === 'supervisor' && $user->id !== $thesis->supervisor_id) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Unauthorized. Only the assigned supervisor can create a task.',
-            ], 403);
-        }
+        // if ($request->role === 'supervisor' && $user->id !== $thesis->supervisor_id) {
+        //     return response()->json([
+        //         'status' => false,
+        //         'message' => 'Unauthorized. Only the assigned supervisor can create a task.',
+        //     ], 403);
+        // }
 
         // Create the task with default name
         $task = Task::create([
@@ -134,75 +134,75 @@ class TaskController extends Controller
   * Get only the tasks related to the logged-in user
   */
 
-  public function index(Request $request)
-  {
-      try {
-          // Validate the request
-          $validatedData = $request->validate([
-              'thesis_id' => 'required|exists:thesis,id',
-          ]);
+//   public function index(Request $request)
+//   {
+//       try {
+//           // Validate the request
+//           $validatedData = $request->validate([
+//               'thesis_id' => 'required|exists:thesis,id',
+//           ]);
   
-          $thesis = Thesis::find($validatedData['thesis_id']);
-          if (!$thesis) {
-              return response()->json([
-                  'status' => false,
-                  'message' => 'Thesis not found.',
-              ], 404);
-          }
+//           $thesis = Thesis::find($validatedData['thesis_id']);
+//           if (!$thesis) {
+//               return response()->json([
+//                   'status' => false,
+//                   'message' => 'Thesis not found.',
+//               ], 404);
+//           }
   
-          // Fetch tasks related to the thesis
-          $tasks = Task::where('thesis_id', $validatedData['thesis_id'])
-              ->with(['subtasks' => function ($query) {
-                  $query->orderBy('created_at', 'asc'); // Subtasks-ийг ascending дарааллаар эрэмбэлэх
-              }])
-              ->orderBy('created_at', 'asc') // Tasks-ийг бас үүссэн хугацаагаар эрэмбэлэх
-              ->get();
+//           // Fetch tasks related to the thesis
+//           $tasks = Task::where('thesis_id', $validatedData['thesis_id'])
+//               ->with(['subtasks' => function ($query) {
+//                   $query->orderBy('created_at', 'asc'); // Subtasks-ийг ascending дарааллаар эрэмбэлэх
+//               }])
+//               ->orderBy('created_at', 'asc') // Tasks-ийг бас үүссэн хугацаагаар эрэмбэлэх
+//               ->get();
   
-          // Хэрэв ямар ч task байхгүй бол нэгийг үүсгэж, түүнд subtask нэмнэ
-          if ($tasks->isEmpty()) {
-              // Create the task with default name
-              $task = Task::create([
-                  'thesis_id' => $validatedData['thesis_id'],
-                  'name' => 'Default Task',
-              ]);
+//           // Хэрэв ямар ч task байхгүй бол нэгийг үүсгэж, түүнд subtask нэмнэ
+//           if ($tasks->isEmpty()) {
+//               // Create the task with default name
+//               $task = Task::create([
+//                   'thesis_id' => $validatedData['thesis_id'],
+//                   'name' => 'Default Task',
+//               ]);
   
-              // Create a default subtask
-              $subtask = Subtask::create([
-                  'task_id' => $task->id,
-                  'name' => 'Default Subtask',
-              ]);
+//               // Create a default subtask
+//               $subtask = Subtask::create([
+//                   'task_id' => $task->id,
+//                   'name' => 'Default Subtask',
+//               ]);
   
-              // Task болон subtask-ийг харилцаатайгаар дахин ачаалгах
-              $task->load('subtasks');
+//               // Task болон subtask-ийг харилцаатайгаар дахин ачаалгах
+//               $task->load('subtasks');
   
-              // Шинээр үүсгэсэн task-ийг буцаана
-              return response()->json([
-                  'status' => true,
-                  'message' => 'No tasks found. A new task with a subtask has been created.',
-                  'tasks' => [$task]
-              ], 201);
-          }
+//               // Шинээр үүсгэсэн task-ийг буцаана
+//               return response()->json([
+//                   'status' => true,
+//                   'message' => 'No tasks found. A new task with a subtask has been created.',
+//                   'tasks' => [$task]
+//               ], 201);
+//           }
   
-          return response()->json([
-              'status' => true,
-              'message' => 'Tasks retrieved successfully.',
-              'tasks' => $tasks
-          ], 200);
+//           return response()->json([
+//               'status' => true,
+//               'message' => 'Tasks retrieved successfully.',
+//               'tasks' => $tasks
+//           ], 200);
   
-      } catch (ValidationException $e) {
-          return response()->json([
-              'status' => false,
-              'message' => 'Validation error.',
-              'errors' => $e->errors()
-          ], 422);
-      } catch (Exception $e) {
-          return response()->json([
-              'status' => false,
-              'message' => 'An unexpected error occurred.',
-              'error' => $e->getMessage(),
-          ], 500);
-      }
-  }
+//       } catch (ValidationException $e) {
+//           return response()->json([
+//               'status' => false,
+//               'message' => 'Validation error.',
+//               'errors' => $e->errors()
+//           ], 422);
+//       } catch (Exception $e) {
+//           return response()->json([
+//               'status' => false,
+//               'message' => 'An unexpected error occurred.',
+//               'error' => $e->getMessage(),
+//           ], 500);
+//       }
+//   }
   
 
   

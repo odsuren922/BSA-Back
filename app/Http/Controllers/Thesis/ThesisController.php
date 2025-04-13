@@ -19,55 +19,81 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ThesisController extends Controller
 {
-
-
     //Thesis awah
     public function supervisodThesis()
-{
-    try {
-        $user = Auth::user();
+    {
+        try {
+            $user = Auth::user();
 
+            $thesis = Thesis::with(['student', 'supervisor', 'thesisCycle', 'thesisPlanStatus', 'scores'])
+                ->where('supervisor_id', $user->id)
+                ->get();
+
+            if ($thesis->isEmpty()) {
+                return response()->json(['status' => false, 'message' => 'No thesis found.'], 404);
+            }
+
+            return response()->json(
+                [
+                    'status' => true,
+                    'thesis' => ThesisResource::collection($thesis),
+                ],
+                200,
+            );
+        } catch (\Exception $e) {
+            \Log::error('Error in thesisByRole: ' . $e->getMessage());
+            return response()->json(
+                [
+                    'status' => false,
+                    'message' => 'An error occurred while fetching thesis.',
+                    'error' => $e->getMessage(),
+                ],
+                500,
+            );
+        }
+    }
+
+    public function index($id)
+    {
         $thesis = Thesis::with([
-            'student',
             'supervisor',
-            'thesisCycle',
+            'student',
+            // 'thesisCycle',
+            'thesisCycle.gradingSchema.gradingComponents',
             'thesisPlanStatus',
             'scores',
-          
-        ])->where('supervisor_id', $user->id)->get();
+        ])->findOrFail($id);
 
-        if ($thesis->isEmpty()) {
-            return response()->json(['status' => false, 'message' => 'No thesis found.'], 404);
-        }
-
-        return response()->json([
-            'status' => true,
-            'thesis' => ThesisResource::collection($thesis),
-    
-        ], 200);
-    } catch (\Exception $e) {
-        \Log::error('Error in thesisByRole: ' . $e->getMessage());
-        return response()->json([
-            'status' => false,
-            'message' => 'An error occurred while fetching thesis.',
-            'error' => $e->getMessage(),
-        ], 500);
+        return new ThesisResource($thesis);
     }
-}
 
+    public function getThesis($id)
+    {
+        try {
+            $thesis = Thesis::with([
+                'supervisor',
+                // 'student',
+                'thesisCycle',
+                'tasks.subtasks',
+                // 'thesisCycle.gradingSchema.gradingComponents',
+                'thesisPlanStatus',
+                'scores',
 
-public function index($id){
-    $thesis =Thesis::with([
-        'supervisor',
-        'student',
-       // 'thesisCycle',
-        'thesisCycle.gradingSchema.gradingComponents',
-        'thesisPlanStatus',
-        'scores'
-    ])->findOrFail($id);
+            ])->findOrFail($id);
 
-    return new ThesisResource($thesis);
-}
+            return new ThesisResource($thesis);
+        } catch (\Exception $e) {
+            \Log::error('Алдаа гарлаа ' . $e->getMessage());
+
+            return response()->json(
+                [
+                    'status' => false,
+                    'message' => 'An error occurred while fetching the thesis.',
+                ],
+                500,
+            );
+        }
+    }
     //TODO::
     public function pdf($id)
     {
@@ -207,46 +233,4 @@ public function index($id){
 
         return response()->json($programCounts);
     }
-
-
-
-
-
-    public function getThesis($id)
-    {
-        try {
-            $thesis = Thesis::with('thesisCycle', 'thesisPlanStatus')->findOrFail($id);
-
-            return response()->json(
-                [
-                    'status' => true,
-                    'data' => $thesis,
-                ],
-                200,
-            );
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json(
-                [
-                    'status' => false,
-                    'message' => 'Thesis not found',
-                ],
-                404,
-            );
-        } catch (\Exception $e) {
-            \Log::error('Error in fetching thesis: ' . $e->getMessage());
-
-            return response()->json(
-                [
-                    'status' => false,
-                    'message' => 'An error occurred while fetching the thesis.',
-                ],
-                500,
-            );
-        }
-    }
-
-
-
-
 }
-

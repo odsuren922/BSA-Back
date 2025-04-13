@@ -12,7 +12,7 @@ class Task extends Model
 
     public function subtasks()
     {
-        return $this->hasMany(Subtask::class, 'task_id');
+        return $this->hasMany(Subtask::class, 'task_id')->orderBy('created_at', 'asc');;
     }
 
     public function thesis()

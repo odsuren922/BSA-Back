@@ -32,4 +32,6 @@ class Department extends Model
     {
         return $this->hasMany(ProposalForm::class, 'dep_id');
     }
+
+    
 }

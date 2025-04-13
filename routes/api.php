@@ -57,15 +57,15 @@ Route::middleware('auth:sanctum')->group(function () {
     // ------------------------------
     //ҮЕЧИЛСЭН ТӨЛӨВЛӨГӨӨ ҮҮСГЭХ
     // ------------------------------
-
+    // Route::get('/tasks', [TaskController::class, 'index']);
     Route::post('/tasks', [TaskController::class, 'store']);
     Route::put('/tasks/{id}', [TaskController::class, 'updateTask']);
-    Route::get('/tasks', [TaskController::class, 'index']);
     Route::delete('/tasks/{id}', [TaskController::class, 'destroy']);
 
     Route::post('/subtask', [SubtaskController::class, 'store']);
     Route::put('/subtask/{id}', [SubtaskController::class, 'updateSubTask']);
     Route::delete('/subtask/{id}', [SubtaskController::class, 'destroy']);
+    
     Route::get('/thesis/{id}', [ThesisController::class, 'pdf']); //PDF ҮҮСГЭХД ХЭРЭГЛЭХ МЭДЭЭЛЭЛ
     // ------------------------------
     //ҮЕЧИЛСЭН ТӨЛӨВЛӨГӨӨ ТӨЛӨВ ӨӨРЧЛӨХ
@@ -88,7 +88,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/onethesis/{id}', [ThesisController::class, 'getThesis']); // id- гаар ганц БСА ХАРАХ
 
 
-    
+
     //ThesisCycle id гаар бүх БСА-н мэдээллийг багш сурагчидтай хамт авах
     Route::get('/cycles/{id}/theses', [ThesisController::class, 'getThesesByCycle']);
     //getActiveThesesByCycle багш сурагчидын мэдээлэлтэй 

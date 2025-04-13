@@ -26,7 +26,7 @@ class Thesis extends Model
     }
     public function tasks()
     {
-        return $this->hasMany(Task::class);
+        return $this->hasMany(Task::class)->orderBy('created_at', 'asc');
     }
 
     public function thesisPlanStatus()
