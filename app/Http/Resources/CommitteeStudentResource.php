@@ -15,10 +15,11 @@ class CommitteeStudentResource extends JsonResource
     public function toArray($request)
     {
         // return parent::toArray($request);
+        $latestThesis = $this->student->thesis->last();
+
         return [
             'id' => $this->id,
             'status' => $this->status,
-            //'joinedAt' => $this->joined_at,
             'student' => [
                 'id' => $this->student->id,
                 'lastname' => $this->student->lastname,
@@ -26,19 +27,24 @@ class CommitteeStudentResource extends JsonResource
                 'studentId' => $this->student->id,
                 'sisi_id' => $this->student->sisi_id,
                 'mail' => $this->student->mail,
-                'program' => $this->student->program, 
-                'thesis' => $this->student->thesis,
-               
-                
+                'program' => $this->student->program,
+                'thesis' => $latestThesis ? [
+                    'id' => $latestThesis->id,
+                    'name_mongolian' => $latestThesis->name_mongolian,
+                    'name_english' => $latestThesis->name_english,
+                    'supervisor' => $latestThesis->supervisor ? [
+                        'id' => $latestThesis->supervisor->id,
+                        'firstname' => $latestThesis->supervisor->firstname,
+                        'lastname' => $latestThesis->supervisor->lastname,
+                        'email' => $latestThesis->supervisor->email,
+                    ] : null
+                ] : null
             ],
-            // 'committee' => $this->whenLoaded('committee', fn() => [
-            //     'id' => $this->committee->id,
-            //     'name' => $this->committee->name
-            // ]),
             'meta' => [
                 'createdAt' => $this->created_at->toIso8601String(),
                 'updatedAt' => $this->updated_at->toIso8601String()
             ]
         ];
+        
     }
 }

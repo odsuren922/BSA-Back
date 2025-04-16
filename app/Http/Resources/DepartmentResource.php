@@ -14,15 +14,15 @@ class DepartmentResource extends JsonResource
      */
     public function toArray($request)
     {
-        return parent::toArray($request);
+       // return parent::toArray($request);
         return [
             'id' => $this->id,
             'name' => $this->name,
             'teachers' => TeacherResource::collection($this->whenLoaded('teachers')),
-            'supervisors' => SupervisorResource::collection($this->whenLoaded('supervisors')),
             'students' => StudentResource::collection($this->whenLoaded('students')),
-            'head_of_department' => new TeacherResource($this->whenLoaded('headOfDepartment')),
-
+'head_of_department' => $this->headOfDepartment
+    ? new TeacherResource($this->headOfDepartment)
+    : null,
             // 'proposalForms' => ProposalFormResource::collection($this->whenLoaded('proposalForms')),
             // 'createdAt' => $this->created_at->toDateTimeString(),
             // 'updatedAt' => $this->updated_at->toDateTimeString(),

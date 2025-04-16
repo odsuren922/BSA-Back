@@ -11,7 +11,7 @@ class Thesis extends Model
     use HasFactory;
 
     protected $table = 'thesis';
-    protected $fillable = ['supervisor_id', 'student_id', 'status', 'submitted_to_teacher_at', 'submitted_to_dep_at', 'name_mongolian', 'name_english','description', 'thesis_cycle_id'];
+    protected $fillable = ['supervisor_id', 'student_id', 'status', 'submitted_to_teacher_at', 'submitted_to_dep_at', 'name_mongolian', 'name_english','description', 'thesis_cycle_id',   'approved_plan_pdf_path'];
     protected $casts = [
         'topic' => 'array', // Automatically converts JSON to an array
     ];

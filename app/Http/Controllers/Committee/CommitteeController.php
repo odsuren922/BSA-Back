@@ -88,6 +88,23 @@ class CommitteeController extends Controller
 
         return new CommitteeResource($committee);
     }
+    public function getCommitteesByTeacher($teacherId, Request $request)
+{
+    $committees = Committee::with([
+        'gradingComponent',
+        'schedules',
+        'thesis_cycle',
+        'members.teacher', 'students', 'schedules',
+    ])
+    ->whereHas('members', function ($query) use ($teacherId) {
+        $query->where('teacher_id', $teacherId);
+    })
+    ->where('dep_id', $request->user()->dep_id)
+    ->get();
+
+    return CommitteeResource::collection($committees);
+}
+
 
     public function show(Committee $committee)
     {

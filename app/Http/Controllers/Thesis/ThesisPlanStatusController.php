@@ -95,6 +95,7 @@ class ThesisPlanStatusController extends Controller
             }
     
             $status->save();
+            
     
             return response()->json(['message' => 'Багшийн төлөв амжилттай шинэчлэгдлээ.'], 200);
         } catch (\Exception $e) {

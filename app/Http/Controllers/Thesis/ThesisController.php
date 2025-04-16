@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ThesisController extends Controller
 {
-    //Thesis awah
+    //с
     public function supervisodThesis()
     {
         try {
@@ -62,6 +62,7 @@ class ThesisController extends Controller
             'thesisCycle.gradingSchema.gradingComponents',
             'thesisPlanStatus',
             'scores.teacher',
+            'tasks.subtasks',
         ])->findOrFail($id);
 
         return new ThesisResource($thesis);
@@ -72,7 +73,7 @@ class ThesisController extends Controller
         try {
             $thesis = Thesis::with([
                 'supervisor',
-                // 'student',
+             
                 'thesisCycle',
                 'tasks.subtasks',
                 // 'thesisCycle.gradingSchema.gradingComponents',
@@ -100,44 +101,14 @@ class ThesisController extends Controller
         try {
     
 
-            $thesis = Thesis::findOrFail($id);
+            $thesis =Thesis::with([
+                'supervisor',
+                'student.department.headOfDepartment',
 
-            $student = Student::where('id', $thesis->student_id)->first();
-            $supervisor = Teacher::where('id', $thesis->supervisor_id)->first();
+            ])
+            ->findOrFail($id);
+            return new ThesisResource($thesis);
 
-            if (!$student || !$supervisor) {
-                return response()->json(
-                    [
-                        'status' => false,
-                        'message' => 'Student or Supervisor not found',
-                    ],
-                    404,
-                );
-            }
-
-            // Fetch Head of Department
-            $head_dep = Teacher::where('dep_id', $student->dep_id)->where('superior', 'head')->first();
-            //TODO:: START AND END DATE
-            return response()->json(
-                [
-                    'status' => true,
-                    'supervisor' => "{$supervisor->lastname} {$supervisor->firstname}",
-                    'student' => "{$student->lastname} {$student->firstname}",
-                    'num_id' => $student->sisi_id,
-                    'head_dep' => $head_dep ? "{$head_dep->degree}. {$head_dep->lastname} {$head_dep->firstname}" : 'Not assigned',
-                    'phone' => $student->phone,
-                    'start_date' => $thesis->start_date ?? '2025-02-03', // Replace with dynamic date
-                    'end_date' => $thesis->end_date ?? '2025-05-16', // Replace with dynamic date
-                    'name_of_plan' => '7 хоногийн үйлчлэлсэн төлөвлөгөө',
-                    'weeks_num' => '15',
-                    'major_short_name' => 'МТ',
-                    'name_mongolian' => $thesis->name_mongolian,
-                    'name_english' => $thesis->name_english,
-                    'description' => $thesis->description,
-                    'program' => $student->program,
-                ],
-                200,
-            );
         } catch (\Exception $e) {
             // Log the error for debugging
             \Log::error('Error in Thesis Index: ' . $e->getMessage());

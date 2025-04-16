@@ -282,6 +282,25 @@ public function index($id)
 }
 
 
+public function getScoresByCycleAndComponent($cycleId, $componentId)
+{
+    $students = \App\Models\Thesis::with('student')
+        ->where('thesis_cycle_id', $cycleId)
+        ->get();
+
+    foreach($students as $student) {
+        $student->scores = ThesisScoreResource::collection(
+            \App\Models\ThesisScore::with(['teacher', 'committee', 'gradingComponent'])
+                ->whereHas('thesis', function($q) use ($student) {
+                    $q->where('student_id', $student->student_id);
+                })
+                ->where('grading_component_id', $componentId)
+                ->get()
+        );
+    }
+
+    return response()->json($students);
+}
 
 
 
