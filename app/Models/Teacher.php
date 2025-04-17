@@ -22,4 +22,7 @@ class Teacher extends Model
     {
         return $this->morphMany(Topic::class, 'created_by');
     }
+    public function advisedTopics() {
+        return $this->hasMany(Topic::class, 'advisor_id');
+    }
 }

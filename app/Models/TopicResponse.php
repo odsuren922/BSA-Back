@@ -25,4 +25,12 @@ class TopicResponse extends Model
     {
         return $this->belongsTo(Supervisor::class, 'supervisor_id');
     }
+    public function topicRequest() {
+        return $this->belongsTo(TopicRequest::class, 'topic_request_id');
+    }
+    
+    public function teacher() {
+        return $this->belongsTo(Teacher::class, 'teacher_id');
+    }
+    
 }

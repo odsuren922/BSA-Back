@@ -4,182 +4,63 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\TopicRequest;
-use App\Models\RequestsWithTopicAndStudent;
+use App\Models\Teacher;
+use App\Models\Student;
+use App\Models\Topic;
+use Illuminate\Support\Facades\Log;
 
 class TopicRequestController extends Controller
 {
-    /**
-     * Store a new topic request.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'topic_id' => 'required|integer|exists:topics,id',
-            'student_id' => 'required|string|exists:students,sisi_id',
-            'note' => 'nullable|string',
-            'selection_date' => 'required|date_format:Y-m-d H:i:s',
-        ]);
-
-        try {
-            $topicRequest = TopicRequest::create([
-                'topic_id' => $validated['topic_id'],
-                'requested_by_id' => 1,
-                'requested_by_type' => "student",
-                'req_note' => $validated['note'],
-                'is_selected' => false,
-                'selected_at' => $validated['selection_date'],
-            ]);
-
-            return response()->json([
-                'message' => 'Topic request saved successfully!',
-                'data' => $topicRequest,
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to save topic request.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-        /**
-     * Store a new topic request.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function storebyteacher(Request $request)
-    {
-        $validated = $request->validate([
-            'topic_id' => 'required|integer|exists:topics,id',
-            'teacher_id' => 'required|string|exists:teachers,id',
-            'note' => 'nullable|string',
-            'selection_date' => 'required|date_format:Y-m-d H:i:s',
-        ]);
-
-        try {
-            $topicRequest = TopicRequest::create([
-                'topic_id' => $validated['topic_id'],
-                'requested_by_id' => "1",
-                'requested_by_type' => "teacher",
-                'req_note' => $validated['note'],
-                'is_selected' => false,
-                'selected_at' => $validated['selection_date'],
-            ]);
-
-            return response()->json([
-                'message' => 'Topic request saved successfully!',
-                'data' => $topicRequest,
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to save topic request.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-
-    /**
-     * Display a list of topic requests with topics and students.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function index()
     {
-        try {
-            $data = RequestsWithTopicAndStudent::where('created_by_type', 'teacher')
-                                                ->where('status', 'approved')
-                                                ->get();
+        $requests = TopicRequest::with(['teacher', 'student', 'topic'])->get();
 
-            return response()->json([
-                'message' => 'Requests retrieved successfully!',
-                'data' => $data,
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to retrieve requests.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        $data = $requests->map(function ($req) {
+            return [
+                'id' => $req->id,
+                'topic_id' => $req->topic_id,
+                'req_note' => $req->req_note,
+                'is_selected' => $req->is_selected,
+                'selected_date' => $req->selected_date,
+                'created_by_type' => $req->created_by_type,
+                'created_by_id' => $req->created_by_id,
+                'firstname' => $req->created_by_type === 'student'
+                    ? optional($req->student)->first_name
+                    : optional($req->teacher)->name,
+                'lastname' => $req->created_by_type === 'student'
+                    ? optional($req->student)->last_name
+                    : '',
+                'sisi_id' => $req->created_by_type === 'student'
+                    ? optional($req->student)->sisi_id
+                    : '',
+                'fields' => optional($req->topic)->fields,
+            ];
+        });
+
+        return response()->json(['data' => $data]);
     }
 
-
-        /**
-     * Display a list of topic requests with topics and students.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function getRequestedTopicByTeacher()
+    public function store(Request $request)
     {
-        try {
-            $data = RequestsWithTopicAndStudent::where('created_by_type', 'student')
-                                                ->where('status', 'approved')
-                                                ->get();
+        $validatedData = $request->validate([
+            'topic_id' => 'required|integer|exists:topics,id',
+            'req_note' => 'nullable|string|max:500',
+            'created_by_id' => 'required|integer',
+            'created_by_type' => 'required|in:student,teacher',
+        ]);
 
-            return response()->json([
-                'message' => 'Requests retrieved successfully!',
-                'data' => $data,
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to retrieve requests.',
-                'error' => $e->getMessage(),
-            ], 500);
+        $existing = TopicRequest::where([
+            'topic_id' => $validatedData['topic_id'],
+            'created_by_id' => $validatedData['created_by_id'],
+            'created_by_type' => $validatedData['created_by_type'],
+        ])->first();
+
+        if ($existing) {
+            return response()->json(['message' => 'Хүсэлт аль хэдийн илгээгдсэн байна.'], 409);
         }
+
+        TopicRequest::create($validatedData);
+
+        return response()->json(['message' => 'Хүсэлт амжилттай илгээгдлээ.']);
     }
-
-
-    /**
-     * Display a list of topic requests with topics and students.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function getConfirmedTopics()
-    {
-        try {
-            $data = RequestsWithTopicAndStudent::where('created_by_type', 'teacher')
-                                                ->where('status', 'confirmed')
-                                                ->get();
-
-            return response()->json([
-                'message' => 'Requests retrieved successfully!',
-                'data' => $data,
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to retrieve requests.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    /**
-     * Display a list of topic requests with topics and students.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function getConfirmedTopicOnStudent()
-    {
-        try {
-            $data = RequestsWithTopicAndStudent::where('created_by_type', 'teacher')
-                                                ->where('status', 'confirmed')
-                                                ->where('sisi_id', '20B1NUM0250')
-                                                ->get();
-
-            return response()->json([
-                'message' => 'Requests retrieved successfully!',
-                'data' => $data,
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to retrieve requests.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
 }

@@ -24,20 +24,20 @@ class TopicRequest extends Model
     // Disable the automatic timestamps
     public $timestamps = false;
 
-    public function topic()
-    {
-        return $this->belongsTo(Topic::class, 'topic_id');
-    }
+public function student()
+{
+    return $this->belongsTo(Student::class, 'created_by_id')->where('created_by_type', 'student');
+}
 
 public function teacher()
 {
-    return $this->belongsTo(Teacher::class);
+    return $this->belongsTo(Teacher::class, 'created_by_id')->where('created_by_type', 'teacher');
+}
+public function topic() {
+    return $this->belongsTo(Topic::class, 'topic_id');
 }
 
-public function approvedBy()
-{
-    return $this->belongsTo(Teacher::class, 'approved_by_id');
-}
+
 
 
 }

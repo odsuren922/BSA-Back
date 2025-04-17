@@ -31,12 +31,6 @@ class Topic extends Model
     {
         return $this->hasMany(TopicDetail::class, 'topic_id');
     }
-
-    public function topicRequests()
-    {
-        return $this->hasMany(TopicRequest::class, 'topic_id');
-    }
-
     public function topicResponses()
     {
         return $this->hasMany(TopicResponse::class, 'topic_id');
@@ -46,4 +40,16 @@ class Topic extends Model
     {
         return $this->morphTo();
     }
+    public function advisor() {
+        return $this->belongsTo(Teacher::class, 'advisor_id');
+    }
+    
+    public function student() {
+        return $this->belongsTo(Student::class, 'student_id');
+    }
+    
+    public function topicRequests() {
+        return $this->hasMany(TopicRequest::class);
+    }
+    
 }
