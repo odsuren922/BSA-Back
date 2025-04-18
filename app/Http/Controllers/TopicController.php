@@ -218,4 +218,40 @@ class TopicController extends Controller
         $topic->update($request->all());
         return response()->json($topic);
     }
+    public function getConfirmedTopicsByTeacher(Request $request)
+{
+    $user = auth()->user();
+    
+    if (!$user || $user->role !== 'teacher') {
+        return response()->json(['error' => 'Unauthorized.'], 403);
+    }
+
+    $topics = Topic::with(['student'])
+        ->where('advisor_id', $user->id)
+        ->where('status', 'confirmed')
+        ->get();
+
+    $data = $topics->map(function ($topic) {
+        $fieldsArray = json_decode($topic->fields, true) ?? [];
+        $fields = [];
+        foreach ($fieldsArray as $field) {
+            $fields[$field['field']] = $field['value'];
+            $fields[$field['field'].'_name'] = $field['field2'];
+        }
+
+        return array_merge($fields, [
+            'id' => $topic->id,
+            'topic_id' => $topic->id,
+            'fields' => $topic->fields,
+            'sisi_id' => optional($topic->student)->sisi_id,
+            'firstname' => optional($topic->student)->first_name,
+            'lastname' => optional($topic->student)->last_name,
+            'created_by_id' => $topic->student_id,
+            'req_id' => $topic->request_id ?? null,
+        ]);
+    });
+
+    return response()->json(['data' => $data]);
+}
+
 }

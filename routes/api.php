@@ -26,6 +26,9 @@ Route::put('/teachers/{id}', [TeacherController::class, 'update']);
 Route::delete('/teachers/{id}', [TeacherController::class, 'destroy']);
 Route::get('/teachers/{id}/topics', [TeacherController::class, 'getTeacherTopics']);
 Route::get('/topics/confirmed-by-teacher', [TopicController::class, 'getConfirmedTopicsByTeacher']);
+Route::get('/submitted/{type}', [TopicController::class, 'getSubmittedTopicsByType']);
+
+
 
 
 // ───── Supervisor ─────
