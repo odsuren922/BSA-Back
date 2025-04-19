@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ThesisController extends Controller
 {
-    //с
+    //TODO:: NOT USE AUTH USE ID FROM REQUEST
     public function supervisodThesis()
     {
         try {
@@ -52,21 +52,44 @@ class ThesisController extends Controller
             );
         }
     }
-
+//Thesis id gaar thesis iig avna
     public function index($id)
     {
         $thesis = Thesis::with([
             'supervisor',
             'student',
-            // 'thesisCycle',
             'thesisCycle.gradingSchema.gradingComponents',
             'thesisPlanStatus',
             'scores.teacher',
             'tasks.subtasks',
-        ])->findOrFail($id);
-
+        ])->find($id); 
+    
+        if (!$thesis) {
+         
+            return new ThesisResource(new Thesis()); 
+        }
+    
         return new ThesisResource($thesis);
     }
+    //Student id gaar thesis iig avna
+    public function thesisbyStudentId($studentId)
+{
+    $thesis = Thesis::with([
+        'supervisor',
+        'student',
+        'thesisCycle.gradingSchema.gradingComponents',
+        'thesisPlanStatus',
+        'scores.teacher',
+        'tasks.subtasks',
+    ])->where('student_id', $studentId)->first(); // 👈 find by student_id
+
+    if (!$thesis) {
+        return new ThesisResource(new Thesis()); // or: return response()->json(null);
+    }
+
+    return new ThesisResource($thesis);
+}
+
 
     public function getThesis($id)
     {
@@ -89,7 +112,7 @@ class ThesisController extends Controller
             return response()->json(
                 [
                     'status' => false,
-                    'message' => 'An error occurred while fetching the thesis.',
+                    'message' => 'Судалгааны ажлын өгөгдөл татахад алдаа гарлаа.',
                 ],
                 500,
             );
@@ -200,7 +223,7 @@ class ThesisController extends Controller
                     'student_count' => $theses->count(),
                 ];
             })
-            ->values(); // Re-index after grouping
+            ->values(); 
 
         return response()->json($programCounts);
     }

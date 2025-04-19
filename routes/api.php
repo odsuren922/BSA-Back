@@ -73,6 +73,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/theses', [ThesisController::class, 'supervisodThesis']); //нэвтэрсэн багштай харьяатай бүр БСА
     Route::get('/thesisInfo/{id}', [ThesisController::class, 'index']); //БСА холбоотой мэдээлэл авах
+    Route::get('/thesisInfoBySid/{id}', [ThesisController::class, 'thesisbyStudentId']); //БСА холбоотой мэдээлэл  student id -гааравах
+
     Route::get('/onethesis/{id}', [ThesisController::class, 'getThesis']); //БСА-н мэдээлэл авах( төлөвлөгөө, статус)
     Route::get('/thesis/{id}', [ThesisController::class, 'pdf']); //PDF ҮҮСГЭХЭД ХЭРЭГЛЭХ МЭДЭЭЛЭЛ
 

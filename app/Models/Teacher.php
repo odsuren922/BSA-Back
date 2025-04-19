@@ -28,4 +28,17 @@ class Teacher extends Model
         return $this->hasMany(Thesis::class, 'supervisor_id');
     }
 
+    public function committeeMemberships()
+{
+    return $this->hasMany(CommitteeMember::class);
+}
+
+public function committees()
+{
+    return $this->belongsToMany(Committee::class, 'committee_members')
+                ->withPivot('role', 'status', 'is_chairperson', 'assigned_at')
+                ->withTimestamps();
+}
+
+
 }

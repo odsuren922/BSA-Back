@@ -24,8 +24,8 @@ class TeacherResource extends JsonResource
         'mail' => $this->mail,
         'numof_choosed_stud' => $this->numof_choosed_stud,
         'department' => new DepartmentResource($this->whenLoaded('department')),
-        // 'topics' => TopicResource::collection($this->whenLoaded('topics')),
         'theses' => ThesisResource::collection($this->whenLoaded('thesis')),
+        // 'topics' => TopicResource::collection($this->whenLoaded('topics')),
     ];
 
     }

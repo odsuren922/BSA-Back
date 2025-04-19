@@ -94,7 +94,7 @@ class AuthController extends Controller
         }
         
 
-         if (!$user || $request->password !== 'password123') {
+         if (!$user || $request->password !== '123456') {
             return response()->json([
                 'status' => false,
                 'message' => 'Invalid credentials.'
@@ -147,10 +147,12 @@ class AuthController extends Controller
                 'id' => $user->id,
                  'mail' => $user->mail,
                  'role' => $role,
-                 'name' => $user->firstname . ' ' . $user->lastname,
+                 'dep_id' => $user->dep_id,
+                 'firstname' => $user->firstname,
+                 'lastname' => $user->lastname,
                  'program' => $user->program ?? "N/A",
-                 'thesis' => $thesis ?? "",
-                 'thesis_cycle' => $thesis->thesisCycle ?? "N/A"
+                //  'thesis' => $thesis ?? "",
+                //  'thesis_cycle' => $thesis->thesisCycle ?? "N/A"
 
              ]
          ], 200);
