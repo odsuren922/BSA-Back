@@ -9,11 +9,12 @@
     ],
     "license": "MIT",
     "require": {
-        "php": "^7.4|^8.0",
+        "php": "^7.4|^8.1",
         "arcanedev/log-viewer": "8.x",
+        "cache/filesystem-adapter": "^1.2",
         "darkghosthunter/laraguard": "^3.0",
         "fruitcake/laravel-cors": "^3.0",
-        "guzzlehttp/guzzle": "^7.0.1",
+        "guzzlehttp/guzzle": "^7.9",
         "jamesmills/laravel-timezone": "^1.9",
         "lab404/laravel-impersonate": "^1.6",
         "langleyfoxall/laravel-nist-password-rules": "^4.1",
@@ -23,6 +24,8 @@
         "laravel/tinker": "^2.5",
         "laravel/ui": "^3.0",
         "livewire/livewire": "^2.0",
+        "minishlink/web-push": "^9.0",
+        "mll-lab/graphql-php-scalars": "^6.4",
         "rappasoft/laravel-livewire-tables": "^1.0",
         "rappasoft/lockout": "^3.0",
         "spatie/laravel-activitylog": "^3.14",
@@ -39,8 +42,7 @@
         "laravel/sail": "^1.0.1",
         "mockery/mockery": "^1.4.2",
         "nunomaduro/collision": "^5.0",
-        "phpunit/phpunit": "^9.3.3",
-        "roave/security-advisories": "dev-master"
+        "phpunit/phpunit": "^9.3.3"
     },
     "autoload": {
         "psr-4": {

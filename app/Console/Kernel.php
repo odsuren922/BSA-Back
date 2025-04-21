@@ -17,6 +17,8 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         //
+        // \App\Console\Commands\SyncHubApi::class,
+        \App\Console\Commands\SendScheduledNotificationsCommand::class,
     ];
 
     /**
@@ -28,6 +30,8 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('activitylog:clean')->daily();
+        $schedule->command('notifications:send-scheduled')->everyMinute();
+        $schedule->command('notifications:deadline-reminders')->dailyAt('09:00');
     }
 
     /**

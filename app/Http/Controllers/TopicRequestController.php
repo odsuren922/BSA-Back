@@ -167,7 +167,7 @@ class TopicRequestController extends Controller
         try {
             $data = RequestsWithTopicAndStudent::where('created_by_type', 'teacher')
                                                 ->where('status', 'confirmed')
-                                                ->where('sisi_id', '21B1NUM0540')
+                                                ->where('sisi_id', '20B1NUM0250')
                                                 ->get();
 
             return response()->json([
@@ -181,5 +181,16 @@ class TopicRequestController extends Controller
             ], 500);
         }
     }
+
+    public function approve($id)
+{
+    $request = TopicRequest::findOrFail($id);
+    $request->is_selected = true;
+    $request->selected_at = now();
+    $request->approved_by_id = auth()->id(); // баталсан багш
+    $request->save();
+
+    return response()->json(['message' => 'Сэдэв батлагдлаа']);
+}
 
 }
