@@ -5,6 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\TopicResponse;
 use App\Models\Topic; // Import Topic model
+use App\Models\Student;
+use App\Models\Supervisor;
+use App\Events\TopicApproved;
+
 
 class TopicResponseController extends Controller
 {
