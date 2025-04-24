@@ -24,23 +24,10 @@ use Spatie\Permission\Traits\HasRoles;
 /**
  * Class User.
  */
-class User extends Authenticatable implements MustVerifyEmail, TwoFactorAuthenticatable
+class User extends Authenticatable
 {
-    use HasApiTokens,
-        HasFactory,
-        HasRoles,
-        Impersonate,
-        MustVerifyEmailTrait,
-        Notifiable,
-        SoftDeletes,
-        TwoFactorAuthentication,
-        UserAttribute,
-        UserMethod,
-        UserRelationship,
-        UserScope;
+    use HasApiTokens, HasFactory, Notifiable;
 
-    public const TYPE_ADMIN = 'admin';
-    public const TYPE_USER = 'user';
 
     /**
      * The attributes that are mass assignable.
@@ -61,6 +48,9 @@ class User extends Authenticatable implements MustVerifyEmail, TwoFactorAuthenti
         'to_be_logged_out',
         'provider',
         'provider_id',
+        'oauth_id',
+        'gid',
+        'role',
     ];
 
     /**

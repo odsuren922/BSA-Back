@@ -16,9 +16,8 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        //
-        // \App\Console\Commands\SyncHubApi::class,
         \App\Console\Commands\SendScheduledNotificationsCommand::class,
+        \App\Console\Commands\CleanExpiredSessions::class,
     ];
 
     /**
@@ -29,8 +28,13 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('activitylog:clean')->daily();
+        // Clean up expired sessions daily
+        $schedule->command('sessions:clean')->daily()->at('02:00');
+        
+        // Send scheduled notifications every minute
         $schedule->command('notifications:send-scheduled')->everyMinute();
+        
+        // Send deadline reminders daily
         $schedule->command('notifications:deadline-reminders')->dailyAt('09:00');
     }
 

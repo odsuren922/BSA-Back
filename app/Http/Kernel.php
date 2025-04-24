@@ -40,14 +40,12 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class, // Add Sanctum middleware
             'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
 
         'admin' => [
-            /*
-             * This is configurable, disable boilerplate.access.user.admin_requires_2fa instead of removing this
-             */
             '2fa:enabled',
             'auth',
             'password.expires',
@@ -66,7 +64,7 @@ class Kernel extends HttpKernel
         '2fa' => \App\Domains\Auth\Http\Middleware\TwoFactorAuthenticationStatus::class,
         'auth' => \App\Http\Middleware\Authenticate::class,
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
-        'auth.api.token' => \App\Http\Middleware\TokenAuthentication::class, // New token middleware
+        'auth.session' => \Illuminate\Session\Middleware\AuthenticateSession::class, // Add session authentication
         'bindings' => \Illuminate\Routing\Middleware\SubstituteBindings::class,
         'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
         'can' => \Illuminate\Auth\Middleware\Authorize::class,
@@ -82,7 +80,8 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'type' => \App\Domains\Auth\Http\Middleware\UserTypeCheck::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-        'require.token' => \App\Http\Middleware\RequireValidAccessToken::class,
+        'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class, // Add Sanctum abilities middleware
+        'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class, // Add Sanctum ability middleware
     ];
 
     /**

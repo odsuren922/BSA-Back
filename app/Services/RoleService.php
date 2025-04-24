@@ -14,7 +14,7 @@ class RoleService
     public function __construct()
     {
         $this->client = new Client([
-            'verify' => false, // Disable SSL verification for testing purposes
+            'verify' => false,
             'timeout' => 30,
         ]);
         
@@ -104,7 +104,7 @@ class RoleService
      * @param string|null $gid
      * @return string
      */
-    protected function mapGidToRole($gid)
+    public function mapGidToRole($gid)
     {
         $roles = [
             '68' => 'department',
