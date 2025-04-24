@@ -11,10 +11,9 @@ class Thesis extends Model
     use HasFactory;
 
     protected $table = 'thesis';
-    protected $fillable = ['supervisor_id', 'student_id', 'status', 'submitted_to_teacher_at','submitted_to_teacher_at', 'name_mongolian',
-'name_english', 'description'];
+    protected $fillable = ['supervisor_id', 'student_id', 'status', 'submitted_to_teacher_at', 'submitted_to_dep_at', 'name_mongolian', 'name_english','description', 'thesis_cycle_id',   'approved_plan_pdf_path'];
     protected $casts = [
-        'topic' => 'array', // Automatically converts JSON to an array
+        'topic' => 'array', 
     ];
     public function student()
     {
@@ -23,11 +22,29 @@ class Thesis extends Model
 
     public function supervisor()
     {
-        return $this->belongsTo(Supervisor::class, 'supervisor_id');
+        return $this->belongsTo(Teacher::class, 'supervisor_id');
     }
-    public function projects()
+    public function tasks()
     {
-        return $this->hxasMany(Project::class);
+        return $this->hasMany(Task::class)->orderBy('created_at', 'asc');
     }
+
+    public function thesisPlanStatus()
+{
+    return $this->hasOne(ThesisPlanStatus::class, 'thesis_id');
+}
+
+    public function thesisCycle() {
+        return $this->belongsTo(ThesisCycle::class);
+    }
+    public function scores()
+    {
+        return $this->hasMany(ThesisScore::class, 'thesis_id');
+    }
+    public function thesisFile(){
+        
+        return $this->hasMany(ThesisFile::class, 'thesis_file');
+    }
+    
 
 }
