@@ -20,7 +20,8 @@ class CreateTopicResponsesTable extends Migration
             //$table->bigInteger('supervisor_id', 10);
             $table->foreignId('supervisor_id')->constrained('supervisors')->onDelete('cascade');
 
-            $table->bigInteger('res', 150);
+            $table->bigInteger('res'); 
+
             $table->date('res_date');
 
             //$table->foreign('topic_id')->references('id')->on('topics')->onDelete('cascade');

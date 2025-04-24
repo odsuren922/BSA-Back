@@ -14,7 +14,7 @@ class CreateProposalFormsTable extends Migration
     public function up()
     {
         Schema::create('proposal_forms', function (Blueprint $table) {
-            $$table->id();
+            $table->id();
             $table->foreignId('dep_id')->constrained('departments')->onDelete('cascade');
             // $table->string('dep_id', 10);
             $table->json('fields');

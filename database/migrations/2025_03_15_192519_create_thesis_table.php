@@ -15,23 +15,16 @@ class CreateThesisTable extends Migration
     {
         Schema::create('thesis', function (Blueprint $table) {
             $table->id();
-            $table->bigInteger('supervisor_id', 10);
             $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
-           // $table->json('topic'); 
-            $table->timestamps();
-            $table->enum('status', ['draft', 'sent_to_teacher', 'approved_by_teacher','cancelled_by_teacher','sent_to_dep', 'approved_by_dep', 'cancelled_by_dep'])
-          ->default('draft');
-       
-            $table->string('name_mongolian')->nullable();
-            $table->string('name_english')->nullable();
+            $table->foreignId('supervisor_id')->constrained('teachers')->onDelete('cascade');
+
+            $table->string('name_mongolian');
+            $table->string('name_english');
             $table->text('description')->nullable();
+            $table->enum('status', ['unactive','active', 'done', 'fail'])->default('active');
+            $table->timestamps();
 
-            $table->timestamp('submitted_to_teacher_at')->nullable();
-           // $table->timestamp('approved_by_teacher_at')->nullable();
-            $table->timestamp('submitted_to_dep_at')->nullable();
-            //$table->timestamp('approved_by_dep_at')->nullable();
-
-            $table->foreign('supervisor_id')->references('id')->on('teachers')->onDelete('cascade');
+          
            
 
             // need to add dep_id
