@@ -17,7 +17,9 @@ class CreateTopicRequestsTable extends Migration
 
         Schema::create('topic_requests', function (Blueprint $table) {
             $table->id();
-            $table->bigInteger('topic_id')->unsigned();
+            //$table->bigInteger('topic_id')->unsigned();
+            $table->foreignId('topic_id')->constrained('topics')->onDelete('cascade');
+
             $table->unsignedBigInteger('requested_by_id'); // References student or teacher ID
             $table->string('requested_by_type', 30);       // Stores 'student' or 'teacher'
             $table->text('req_note');
@@ -25,9 +27,9 @@ class CreateTopicRequestsTable extends Migration
             $table->timestamp('selected_at')->nullable();
             $table->timestamps();
 
-            $table->foreign('topic_id')
-                ->references('id')->on('topics')
-                ->onDelete('cascade');
+            // $table->foreign('topic_id')
+            //     ->references('id')->on('topics')
+            //     ->onDelete('cascade');
         });
     }
 

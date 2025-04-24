@@ -10,8 +10,9 @@ class CreateTopicsTable extends Migration
     {
         Schema::create('topics', function (Blueprint $table) {
             $table->id();
-            $table->string('form_id', 10);
-            $table->foreign('form_id')->references('id')->on('proposal_forms')->onDelete('cascade');
+            // $table->string('form_id', 10);
+            // $table->foreign('form_id')->references('id')->on('proposal_forms')->onDelete('cascade');
+            $table->foreignId('form_id')->constrained('proposal_forms')->onDelete('cascade');
             // $table->string('name_mongolian')->nullable();
             // $table->string('name_english')->nullable();
             // $table->text('description')->nullable();

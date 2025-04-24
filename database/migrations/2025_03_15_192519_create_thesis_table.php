@@ -15,7 +15,7 @@ class CreateThesisTable extends Migration
     {
         Schema::create('thesis', function (Blueprint $table) {
             $table->id();
-            $table->string('supervisor_id', 10);
+            $table->bigInteger('supervisor_id', 10);
             $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
            // $table->json('topic'); 
             $table->timestamps();
