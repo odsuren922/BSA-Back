@@ -14,7 +14,7 @@ class CreateProposalFormsTable extends Migration
     public function up()
     {
         Schema::create('proposal_forms', function (Blueprint $table) {
-            $table->string('id', 10)->primary();
+            $$table->id();
             $table->string('dep_id', 10);
             $table->json('fields');
             $table->date('created_date');
