@@ -14,4 +14,16 @@ class GradingComponent extends Model {
     public function gradingCriteria() {
         return $this->hasMany(GradingCriteria::class);
     }
+
+   
+
+    public function scores()
+    {
+        return $this->hasMany(Score::class, 'component_id');
+    }
+
+    public function committeeScores()
+    {
+        return $this->hasMany(CommitteeScore::class, 'component_id');
+    }
 }

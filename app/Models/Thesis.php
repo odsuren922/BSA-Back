@@ -37,9 +37,14 @@ class Thesis extends Model
     public function thesisCycle() {
         return $this->belongsTo(ThesisCycle::class);
     }
+    // public function scores()
+    // {
+    //     return $this->hasMany(ThesisScore::class, 'thesis_id');
+    // }
+
     public function scores()
     {
-        return $this->hasMany(ThesisScore::class, 'thesis_id');
+        return $this->hasMany(Score::class);
     }
     public function thesisFile(){
         

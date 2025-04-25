@@ -19,7 +19,7 @@ use App\Http\Controllers\NotificationSettingController;
 
 use App\Http\Controllers\Thesis\ThesisController;
 use App\Http\Controllers\Thesis\ThesisCycleController;
-use App\Http\Controllers\Thesis\ThesisScoreController;
+// use App\Http\Controllers\Thesis\ThesisScoreController;
 use App\Http\Controllers\Thesis\ThesisPlanStatusController;
 
 use App\Http\Controllers\TaskController;
@@ -205,19 +205,19 @@ Route::middleware('auth.api.token')->group(function () {
         // ------------------------------
         // Grading Component Management
         // ------------------------------
-        Route::post('grading-components', [GradingComponentController::class, 'store']);
-        Route::get('grading-components', [GradingComponentController::class, 'index']);
-        Route::get('grading-components/{id}', [GradingComponentController::class, 'show']);
-        Route::put('grading-components/{id}', [GradingComponentController::class, 'update']);
-        Route::delete('grading-components/{id}', [GradingComponentController::class, 'destroy']);
+        // Route::post('grading-components', [GradingComponentController::class, 'store']);
+        // Route::get('grading-components', [GradingComponentController::class, 'index']);
+        // Route::get('grading-components/{id}', [GradingComponentController::class, 'show']);
+        // Route::put('grading-components/{id}', [GradingComponentController::class, 'update']);
+        // Route::delete('grading-components/{id}', [GradingComponentController::class, 'destroy']);
     
         // Grading Criteria Management
         //үнэлэх аргын дэлгэрэнгүй
-        Route::post('grading-criteria', [GradingCriteriaController::class, 'store']);
-        Route::get('grading-criteria', [GradingCriteriaController::class, 'index']);
-        Route::get('grading-criteria/{id}', [GradingCriteriaController::class, 'show']);
-        Route::put('grading-criteria/{id}', [GradingCriteriaController::class, 'update']);
-        Route::delete('grading-criteria/{id}', [GradingCriteriaController::class, 'destroy']);
+        // Route::post('grading-criteria', [GradingCriteriaController::class, 'store']);
+        // Route::get('grading-criteria', [GradingCriteriaController::class, 'index']);
+        // Route::get('grading-criteria/{id}', [GradingCriteriaController::class, 'show']);
+        // Route::put('grading-criteria/{id}', [GradingCriteriaController::class, 'update']);
+        // Route::delete('grading-criteria/{id}', [GradingCriteriaController::class, 'destroy']);
         // ------------------------------
         // Committees & Scheduling
         // ------------------------------
@@ -264,14 +264,14 @@ Route::middleware('auth.api.token')->group(function () {
         // ------------------------------
         // Thesis Scores
         // ------------------------------
-        Route::get('/thesis/{id}/scores', [ThesisScoreController::class, 'getThesisScores']);
-        Route::post('/supervisor/thesis-scores', [ThesisScoreController::class, 'storeScore']);
-        Route::post('/thesis/{thesisId}/give-scores', [ThesisScoreController::class, 'storeMultipleScores']);
-        Route::post('/committee-scores/bulk', [ThesisScoreController::class, 'storeBulk']);
-        Route::get('/committees/{committee}/scores', [ThesisScoreController::class, 'getCommitteeStudentScores']);
+        // Route::get('/thesis/{id}/scores', [ThesisScoreController::class, 'getThesisScores']);
+        // Route::post('/supervisor/thesis-scores', [ThesisScoreController::class, 'storeScore']);
+        // Route::post('/thesis/{thesisId}/give-scores', [ThesisScoreController::class, 'storeMultipleScores']);
+        // Route::post('/committee-scores/bulk', [ThesisScoreController::class, 'storeBulk']);
+        // Route::get('/committees/{committee}/scores', [ThesisScoreController::class, 'getCommitteeStudentScores']);
         
-        Route::get('/scores/{id}', [ThesisScoreController::class, 'index']);
-        Route::get('/thesis-cycles/{cycleId}/grading-components/{componentId}/scores', [ThesisScoreController::class, 'getScoresByCycleAndComponent']);
+        // Route::get('/scores/{id}', [ThesisScoreController::class, 'index']);
+        // Route::get('/thesis-cycles/{cycleId}/grading-components/{componentId}/scores', [ThesisScoreController::class, 'getScoresByCycleAndComponent']);
 
 
 
