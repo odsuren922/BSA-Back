@@ -15,13 +15,18 @@ class CreateTopicResponsesTable extends Migration
     {
         Schema::create('topic_responses', function (Blueprint $table) {
             $table->id();
-            $table->bigInteger('topic_id');
-            $table->string('supervisor_id', 10);
-            $table->string('res', 150);
+            $table->foreignId('topic_id')->constrained('topics')->onDelete('cascade');
+            // $table->bigInteger('topic_id');
+            //$table->bigInteger('supervisor_id', 10);
+            $table->foreignId('supervisor_id')->constrained('supervisors')->onDelete('cascade');
+
+            $table->bigInteger('res'); 
+
             $table->date('res_date');
 
-            $table->foreign('topic_id')->references('id')->on('topics')->onDelete('cascade');
-            $table->foreign('supervisor_id')->references('id')->on('supervisors')->onDelete('cascade');
+            //$table->foreign('topic_id')->references('id')->on('topics')->onDelete('cascade');
+            $table->foreignId('dep_id')->constrained('departments')->onDelete('cascade');
+            //$table->foreign('supervisor_id')->references('id')->on('supervisors')->onDelete('cascade');
         });
     }
 

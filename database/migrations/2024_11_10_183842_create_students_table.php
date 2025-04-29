@@ -18,7 +18,8 @@ class CreateStudentsTable extends Migration
 
         Schema::create('students', function (Blueprint $table) {
             $table->id();
-            $table->string('dep_id', 10);
+           // $table->string('dep_id', 10);
+           $table->foreignId('dep_id')->constrained('departments')->onDelete('cascade');
             $table->string('sisi_id', 12)->unique(); // Make sisi_id unique
             $table->string('firstname', 40);
             $table->string('lastname', 40);
@@ -28,9 +29,9 @@ class CreateStudentsTable extends Migration
             $table->boolean('is_choosed');
             $table->smallInteger('proposed_number');
 
-            $table->foreign('dep_id')
-                ->references('id')->on('departments')
-                ->onDelete('cascade');
+            // $table->foreign('dep_id')
+            //     ->references('id')->on('departments')
+            //     ->onDelete('cascade');
         });
     }
 

@@ -12,6 +12,17 @@ class TeacherController extends Controller
         return Teacher::all();
     }
 
+    public function dep_id($id)
+    {
+        $teachers = Teacher::where('dep_id', $id)->get();
+
+        if ($teachers->isEmpty()) {
+            return response()->json(['message' => 'No teachers found for this department'], 404);
+        }
+
+        return response()->json($teachers);
+    }
+    
     public function store(Request $request)
     {
         $request->validate([

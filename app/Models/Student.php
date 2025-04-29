@@ -9,7 +9,7 @@ class Student extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['id', 'dep_id', 'firstname', 'lastname', 'program', 'mail', 'phone', 'is_choosed', 'proposed_number'];
+    protected $fillable = ['id', 'dep_id', 'firstname', 'lastname', 'program', 'mail', 'phone', 'is_choosed', 'proposed_number', 'sisi_id'];
     public $incrementing = false;
     protected $keyType = 'string';
 
@@ -36,5 +36,16 @@ class Student extends Model
                     ->where('is_selected', true)
                     ->where('requested_by_type', 'student');
     }
+
+    public function thesis()
+    {
+        return $this->hasMany(Thesis::class, 'student_id');
+    }
+
+//     public function thesisScores()
+// {
+//     return $this->hasMany(ThesisScore::class, 'student_id')
+//         ->where('given_by', 'committee');
+// }
 
 }
