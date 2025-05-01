@@ -272,15 +272,7 @@ Route::get('/teachers/count/department/{dep_id}', [TeacherController::class, 'co
         // ------------------------------
         // Thesis Scores
         // ------------------------------
-        // Route::get('/thesis/{id}/scores', [ThesisScoreController::class, 'getThesisScores']);
-        // Route::post('/supervisor/thesis-scores', [ThesisScoreController::class, 'storeScore']);
-        // Route::post('/thesis/{thesisId}/give-scores', [ThesisScoreController::class, 'storeMultipleScores']);
-        // Route::post('/committee-scores/bulk', [ThesisScoreController::class, 'storeBulk']);
-        // Route::get('/committees/{committee}/scores', [ThesisScoreController::class, 'getCommitteeStudentScores']);
         
-        // Route::get('/scores/{id}', [ThesisScoreController::class, 'index']);
-        // Route::get('/thesis-cycles/{cycleId}/grading-components/{componentId}/scores', [ThesisScoreController::class, 'getScoresByCycleAndComponent']);
-
         Route::apiResource('scores', ScoreController::class);
         Route::get('/scores/getScoreByThesis/{id}', [ScoreController::class, 'getScoreByThesis']);
         Route::get('/scores/getDetailedScoreByThesis/{id}', [ScoreController::class, 'getScoreByThesisWithDetail']);
