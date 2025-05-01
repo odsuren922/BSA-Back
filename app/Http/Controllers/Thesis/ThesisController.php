@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Thesis;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-use App\Models\Project;
+// use App\Models\Project;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\Student;
@@ -14,6 +14,7 @@ use App\Models\Thesis;
 use App\Models\Department;
 use App\Models\ThesisCycle;
 use App\Models\ThesisPlanStatus;
+use App\Models\Score;
 use App\Http\Resources\ThesisResource;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
@@ -60,7 +61,8 @@ class ThesisController extends Controller
             'student',
             'thesisCycle.gradingSchema.gradingComponents',
             'thesisPlanStatus',
-            'scores.teacher',
+            // 'scores.teacher',
+            'scores',
             'tasks.subtasks',
         ])->find($id); 
     
@@ -79,7 +81,8 @@ class ThesisController extends Controller
         'student',
         'thesisCycle.gradingSchema.gradingComponents',
         'thesisPlanStatus',
-        'scores.teacher',
+        // 'scores.teacher',
+        'scores',
         'tasks.subtasks',
     ])->where('student_id', $studentId)->first(); // 👈 find by student_id
 

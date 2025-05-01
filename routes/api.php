@@ -19,7 +19,10 @@ use App\Http\Controllers\NotificationSettingController;
 
 use App\Http\Controllers\Thesis\ThesisController;
 use App\Http\Controllers\Thesis\ThesisCycleController;
-// use App\Http\Controllers\Thesis\ThesisScoreController;
+use App\Http\Controllers\ScoreController;
+use App\Http\Controllers\CommitteeScoreController;
+
+
 use App\Http\Controllers\Thesis\ThesisPlanStatusController;
 
 use App\Http\Controllers\TaskController;
@@ -138,6 +141,10 @@ Route::middleware('auth.api.token')->group(function () {
 
 
 Route::middleware('auth.api.token')->group(function () {
+
+    Route::get('/teachers/{id}', [TeacherController::class, 'dep_id']);
+Route::get('/teacher/{id}', [TeacherController::class, 'show']);
+Route::get('/teachers/count/department/{dep_id}', [TeacherController::class, 'countByDepartment']);
 // ------------------------------
         //Thesis Plan Tasks & Subtasks Үечилсэн төлөвлөгөө ажил & дэл ажил
         // ------------------------------
@@ -179,7 +186,8 @@ Route::middleware('auth.api.token')->group(function () {
         // Thesis Cycle
         //Тэнхмийн туслах шинэ cycle үүсгэх
         // ------------------------------
-    
+    // getTeachersAndThesisCountsByCycleId
+    Route::get('/thesis-cycles/{id}/counts', [ThesisCycleController::class, 'getTeachersAndThesisCountsByCycleId']);
         Route::post('/thesis-cycles', [ThesisCycleController::class, 'store']);
         Route::get('/thesis-cycles', [ThesisCycleController::class, 'index']);//✅ ThesisCycles awah 
         Route::get('/active-cycles', [ThesisCycleController::class, 'active']);//✅ AdminDashboard 
@@ -205,11 +213,11 @@ Route::middleware('auth.api.token')->group(function () {
         // ------------------------------
         // Grading Component Management
         // ------------------------------
-        // Route::post('grading-components', [GradingComponentController::class, 'store']);
-        // Route::get('grading-components', [GradingComponentController::class, 'index']);
-        // Route::get('grading-components/{id}', [GradingComponentController::class, 'show']);
-        // Route::put('grading-components/{id}', [GradingComponentController::class, 'update']);
-        // Route::delete('grading-components/{id}', [GradingComponentController::class, 'destroy']);
+        Route::post('grading-components', [GradingComponentController::class, 'store']);
+        Route::get('grading-components', [GradingComponentController::class, 'index']);
+        Route::get('grading-components/{id}', [GradingComponentController::class, 'show']);
+        Route::put('grading-components/{id}', [GradingComponentController::class, 'update']);
+        Route::delete('grading-components/{id}', [GradingComponentController::class, 'destroy']);
     
         // Grading Criteria Management
         //үнэлэх аргын дэлгэрэнгүй
@@ -273,6 +281,21 @@ Route::middleware('auth.api.token')->group(function () {
         // Route::get('/scores/{id}', [ThesisScoreController::class, 'index']);
         // Route::get('/thesis-cycles/{cycleId}/grading-components/{componentId}/scores', [ThesisScoreController::class, 'getScoresByCycleAndComponent']);
 
+        Route::apiResource('scores', ScoreController::class);
+        Route::get('/scores/getScoreByThesis/{id}', [ScoreController::class, 'getScoreByThesis']);
+        Route::get('/scores/getDetailedScoreByThesis/{id}', [ScoreController::class, 'getScoreByThesisWithDetail']);
+        // Route::apiResource('committee-scores', CommitteeScoreController::class);
+
+        //SAVES SCORES
+        Route::post('/committee-scores/batch', [CommitteeScoreController::class, 'storeBatch']);
+        //CHECK ALL MEMBER GIVES SCORES TO A STUDENT
+        Route::post('/committee-scores/finalize/{studentId}/{componentId}', [CommitteeScoreController::class, 'finalizeCommitteeScores']);
+        Route::post('/committee-scores/batch-finalize-by-committee', [CommitteeScoreController::class, 'batchFinalizeByCommittee']);
+
+
 
 
 });
+Route::get('/committees/{id}/members-scores', [CommitteeController::class, 'getCommitteeMembersWithStudentsAndScores']);
+
+Route::apiResource('committee-scores', CommitteeScoreController::class);

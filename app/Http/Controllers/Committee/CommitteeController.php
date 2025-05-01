@@ -22,20 +22,33 @@ class CommitteeController extends Controller
             'students',
             'schedules',
             'thesis_cycle', // Load thesis cycle
-        ])
+        ]);
             // ->where('dep_id', $request->user()->dep_id)
-            ->paginate(10);
+            // ->paginate(10);
 
         return CommitteeResource::collection($committees);
     }
+    public function getCommitteeMembersWithStudentsAndScores($committeeId)
+{
+    $committee = Committee::with([
+        'gradingComponent',
+        'members.teacher',                      // load teacher info
+        'members.committeeScores.student',      // student info through scores
+        'members.committeeScores.component',
+        'students',    // grading component info
+    ])->findOrFail($committeeId);
+
+    return new CommitteeResource($committee);
+}
+
 
     // thesis_cycle id tai
     public function getByThesisCycle(ThesisCycle $thesisCycle, Request $request)
     {
         $committees = Committee::with(['department', 'gradingComponent', 'members.teacher', 'students', 'schedules', 'thesis_cycle'])
             // ->where('dep_id', $request->user()->dep_id)
-            ->where('thesis_cycle_id', $thesisCycle->id)
-            ->paginate(10);
+            ->where('thesis_cycle_id', $thesisCycle->id);
+            // ->paginate(10);
 
         return CommitteeResource::collection($committees);
     }
@@ -43,11 +56,12 @@ class CommitteeController extends Controller
 
     public function getByCycleAndComponent(ThesisCycle $thesisCycle, GradingComponent $gradingComponent, Request $request)
     {
-        $committees = Committee::with(['department', 'gradingComponent', 'members.teacher', 'students', 'schedules', 'thesis_cycle'])
+        //student.the component scoer maybe need to send 
+        $committees = Committee::with(['department', 'gradingComponent', 'members.teacher', 'members.committeeScores.student', 'students', 'schedules', 'thesis_cycle','scores'])
             ->where('thesis_cycle_id', $thesisCycle->id)
             ->where('grading_component_id', $gradingComponent->id)
             // ->where('dep_id', $request->user()->dep_id)
-            ->paginate(10);
+             ->paginate(10);
 
         return CommitteeResource::collection($committees);
  
@@ -69,8 +83,8 @@ class CommitteeController extends Controller
             $query->where('status', 'Идэвхитэй');
         })
         // ->where('dep_id', $request->user()->dep_id)
-        ->whereNotIn('status', ['cancelled', 'done'])
-        ->paginate(10);
+        ->whereNotIn('status', ['cancelled', 'done']);
+        // ->paginate(10);
 
     return CommitteeResource::collection($committees);
 }

@@ -235,45 +235,12 @@ public function index($id)
     $gradingComponents = $thesis->thesisCycle->gradingSchema->gradingComponents->map(function ($component) use ($thesis) {
         $componentScores = $thesis->scores->where('grading_component_id', $component->id);
 
-        if (in_array($component->by_who, ['teacher', 'supervisor'])) {
+       
             $average = $componentScores->avg('score');
         
             $component->given_score = [
                 'average_score' => $average,
             ];
-                 // Just add the first score for supervisor/teacher.
-        } elseif ($component->by_who === 'committee') {
-            $firstScoreWithCommittee = $componentScores->firstWhere('committee_id', '!=', null);
-
-            if ($firstScoreWithCommittee && $firstScoreWithCommittee->committee) {
-                $committee = $firstScoreWithCommittee->committee;
-                $committeeId = $firstScoreWithCommittee->committee_id;
-
-                $committeeScores = $componentScores->where('committee_id', $committeeId);
-                $memberCount = $committee->members->count();
-                $submittedCount = $committeeScores->count();
-                $average = $committeeScores->avg('score');
-
-                // Store committee scores separately under `given_score` field in the component
-                $component->given_score = [
-                    'committee_scores' => $committeeScores->values(),
-                    'average_score' => $submittedCount < $memberCount ? null : $average, // if not all gave score -> null
-                    'submitted_count' => $submittedCount,
-                    'member_count' => $memberCount,
-                    'note' => $submittedCount < $memberCount 
-                        ? "Only $submittedCount of $memberCount committee members have submitted scores." 
-                        : null,
-                ];
-                
-            } else {
-                // No committee scores submitted yet
-                $component->given_score = [
-                    'committee_scores' => [],
-                    'average_score' => null,
-                    'note' => "No committee scores submitted yet.",
-                ];
-            }
-        }
 
         return $component;
     });

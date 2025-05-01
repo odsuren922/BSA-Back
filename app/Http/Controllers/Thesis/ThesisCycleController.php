@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 use App\Models\ThesisCycle;
+use App\Models\Teacher;
 use App\Models\GradingSchema;
 
 
@@ -140,4 +141,29 @@ class ThesisCycleController extends Controller
         ThesisCycle::destroy($id);
         return response()->json(['message' => 'Төгсөлтийн ажлын мөчлөг амжилттай устгагдлаа']);
     }
+    public function getTeachersAndThesisCountsByCycleId($id)
+    {
+        $thesisCycle = ThesisCycle::findOrFail($id);
+    
+        // Group thesis by student program and count
+        $programCounts = $thesisCycle->theses
+            ->groupBy('student.program')
+            ->map(function ($theses, $program) {
+                return [
+                    'program' => $program,
+                    'student_count' => $theses->count(),
+                ];
+            })
+            ->values();
+    
+        // Get teacher count from the same department
+        $teacherCount = Teacher::where('dep_id', $thesisCycle->dep_id)->count();
+    
+        // Return both as one JSON object
+        return response()->json([
+            'teacher_count' => $teacherCount,
+            'program_counts' => $programCounts,
+        ]);
+    }
+    
 }

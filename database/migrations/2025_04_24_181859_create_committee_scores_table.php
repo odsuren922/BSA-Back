@@ -18,7 +18,7 @@ class CreateCommitteeScoresTable extends Migration
              $table->id();
  
              // Foreign key to final score entry
-             $table->foreignId('score_id')->constrained('scores')->onDelete('cascade');
+             $table->foreignId('score_id')->nullable()->constrained('scores')->onDelete('cascade');
              $table->foreignId('thesis_id')->nullable()->constrained('thesis')->cascadeOnDelete();
              $table->foreignId('student_id')->constrained()->onDelete('cascade');
              $table->foreignId('committee_member_id')->constrained()->onDelete('cascade');

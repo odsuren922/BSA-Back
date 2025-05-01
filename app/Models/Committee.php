@@ -52,6 +52,17 @@ class Committee extends Model
         return $this->hasMany(Schedule::class, 'committee_id');
     }
 
+    public function scores()
+    {
+        return $this->hasMany(Score::class, 'given_by_id')
+            ->where('given_by_type', 'committee');
+    }
+    
+    // public function scores()
+    // {
+    //     return $this->hasMany(CommitteeScore::class, 'committee_id');
+    // }
+
 
 
 }

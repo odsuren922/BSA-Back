@@ -36,7 +36,7 @@ class Score extends Model
     {
         return $this->belongsTo(CommitteeStudent::class);
     }
-
+//Dep, Admin, Committee, Outside person
     public function givenBy(): MorphTo
     {
         return $this->morphTo();
