@@ -28,6 +28,25 @@ class ThesisSeeder extends Seeder
                     'status' => 'active',
                     'thesis_cycle_id' => 1
                 ],
+                [
+                    'student_id' => 2,
+                    'supervisor_id' => 1,
+                    'name_mongolian' => 'Хиймэл оюун ухаанд суурилсан сургалтын систем',
+                    'name_english' => 'AI-Based Learning System',
+                    'description' => 'Machine Learning ашиглан сурагчдад тохирсон сургалтын систем хөгжүүлэх',
+                    'status' => 'active',
+                    'thesis_cycle_id' => 1,
+                
+                ],
+                [
+                    'student_id' => 3,
+                    'supervisor_id' => 1,
+                    'name_mongolian' => 'Блокчейн технологи дээр суурилсан санхүүгийн систем',
+                    'name_english' => 'Blockchain-Based Financial System',
+                    'description' => 'Санхүүгийн үйлчилгээнд блокчейн ашиглах боломжууд',
+                    'status' => 'active',
+                    'thesis_cycle_id' => 1,
+                ],
 
             ]
             

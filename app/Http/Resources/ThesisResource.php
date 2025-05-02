@@ -14,7 +14,6 @@ class ThesisResource extends JsonResource
      */
     public function toArray($request)
     {
-
         return [
             'id' => $this->id,
             'name_mongolian' => $this->name_mongolian,
@@ -25,10 +24,9 @@ class ThesisResource extends JsonResource
             'student' => new StudentResource($this->whenLoaded('student')),
             'thesis_cycle' => new ThesisCycleResource($this->whenLoaded('thesisCycle')),
             'thesisPlanStatus' => new ThesisPlanStatusResource($this->whenLoaded('thesisPlanStatus')),
-            // 'scores' => ThesisScoreResource::collection($this->whenLoaded('scores')),
+            'tasks' => TaskResource::collection($this->whenLoaded('tasks')),
             'scores' => ScoreResource::collection($this->whenLoaded('scores')),
 
-            'tasks' => TaskResource::collection($this->whenLoaded('tasks')),
             'submitted_to_teacher_at' => $this->submitted_to_teacher_at,
             'submitted_to_dep_at' => $this->submitted_to_dep_at,
             'status' => $this->status,

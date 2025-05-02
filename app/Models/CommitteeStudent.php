@@ -28,9 +28,5 @@ class CommitteeStudent extends Model
         return $this->hasMany(Score::class);
     }
     
-    // public function scores()
-    // {
-    //     return $this->hasMany(ThesisScore::class, 'student_id', 'student_id')
-    //         ->where('given_by', 'committee');
-    // }
+   
 }
