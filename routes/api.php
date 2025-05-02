@@ -35,6 +35,7 @@ use App\Http\Controllers\Grading\GradingCriteriaController;
 use App\Http\Controllers\Committee\CommitteeController;
 use App\Http\Controllers\Committee\CommitteeMemberController;
 use App\Http\Controllers\Committee\CommitteeStudentController;
+use App\Http\Controllers\AssignedGradingController;
 
 use App\Http\Controllers\ScheduleController;
 
@@ -205,6 +206,8 @@ Route::get('/teachers/count/department/{dep_id}', [TeacherController::class, 'co
         Route::post('/grading-schemas', [GradingSchemaController::class, 'store']);
         Route::get('/grading-schemas', [GradingSchemaController::class, 'index']);//✅ grading Schemas awah 
         Route::get('/thesis-cycles/{id}/grading-schema', [GradingSchemaController::class, 'showByThesisCycle']);////✅ AdminDashboard
+        Route::get('/thesis-cycles/{id}/grading-schema-filter', [GradingSchemaController::class, 'filteredGradingSchema']);////✅ AdminDashboard
+
         Route::get('/grading-schemas/{id}', [GradingSchemaController::class, 'show']);
         Route::put('/grading-schemas/{id}', [GradingSchemaController::class, 'update']);
         Route::patch('/grading-schemas/{id}', [GradingSchemaController::class, 'addComponents']);
@@ -272,7 +275,7 @@ Route::get('/teachers/count/department/{dep_id}', [TeacherController::class, 'co
         // ------------------------------
         // Thesis Scores
         // ------------------------------
-        
+
         Route::apiResource('scores', ScoreController::class);
         Route::get('/scores/getScoreByThesis/{id}', [ScoreController::class, 'getScoreByThesis']);
         Route::get('/scores/getDetailedScoreByThesis/{id}', [ScoreController::class, 'getScoreByThesisWithDetail']);
@@ -285,7 +288,15 @@ Route::get('/teachers/count/department/{dep_id}', [TeacherController::class, 'co
         Route::post('/committee-scores/batch-finalize-by-committee', [CommitteeScoreController::class, 'batchFinalizeByCommittee']);
 
 
+        Route::post('/committees/check-assignment', [CommitteeController::class, 'isTeacherAndStudentInSameCommittee']);
 
+        Route::prefix('assigned-grading')->group(function () {
+            Route::get('/', [AssignedGradingController::class, 'index']); // list all
+            Route::post('/', [AssignedGradingController::class, 'store']); // store multiple
+            Route::post('/check-assignment', [AssignedGradingController::class, 'checkAssignment']); // permission check
+            Route::delete('/{assignedGrading}', [AssignedGradingController::class, 'destroy']); // delete
+        });
+        Route::get('/assigned-grading/component/{componentId}/cycle/{cycleId}', [AssignedGradingController::class, 'getByComponentAndCycle']);
 
 });
 Route::get('/committees/{id}/members-scores', [CommitteeController::class, 'getCommitteeMembersWithStudentsAndScores']);

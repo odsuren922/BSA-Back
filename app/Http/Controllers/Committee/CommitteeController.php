@@ -9,7 +9,9 @@ use App\Models\Committee;
 use App\Http\Resources\CommitteeResource;
 use App\Models\ThesisCycle;
 use App\Models\GradingComponent;
-use App\Models\ThesisScore;
+use App\Models\CommitteeStudent;
+use App\Models\CommitteeMember;
+
 
 class CommitteeController extends Controller
 {
@@ -113,15 +115,54 @@ class CommitteeController extends Controller
         'gradingComponent',
         'schedules',
         'thesis_cycle',
-        'members.teacher', 'students', 'schedules',
     ])
     ->whereHas('members', function ($query) use ($teacherId) {
         $query->where('teacher_id', $teacherId);
     })
-    ->where('dep_id', $request->user()->dep_id)
+    // ->where('dep_id', $request->user()->dep_id)
     ->get();
 
     return CommitteeResource::collection($committees);
+}
+
+public function isTeacherAndStudentInSameCommittee(Request $request)
+{
+    $validated = $request->validate([
+        'thesis_cycle_id' => 'required|exists:thesis_cycles,id',
+        'grading_component_id' => 'required|exists:grading_components,id',
+        'student_id' => 'required|exists:students,id',
+        'teacher_id' => 'required|exists:teachers,id',
+    ]);
+
+    $cycleId = $validated['thesis_cycle_id'];
+    $componentId = $validated['grading_component_id'];
+    $studentId = $validated['student_id'];
+    $teacherId = $validated['teacher_id'];
+
+    // Step 1: Get committee IDs that match cycle and component
+    $committeeIds = Committee::where('thesis_cycle_id', $cycleId)
+        ->where('grading_component_id', $componentId)
+        ->pluck('id');
+
+    if ($committeeIds->isEmpty()) {
+        return response()->json(['match' => false]);
+    }
+
+    // Step 2: Find if any of those committees have this student
+    $studentCommitteeIds = CommitteeStudent::whereIn('committee_id', $committeeIds)
+        ->where('student_id', $studentId)
+        ->pluck('committee_id');
+
+    if ($studentCommitteeIds->isEmpty()) {
+        return response()->json(['match' => false]);
+    }
+
+    // Step 3: Check if teacher is in one of the same committees
+    $match = CommitteeMember::whereIn('committee_id', $studentCommitteeIds)
+        ->where('teacher_id', $teacherId)
+        ->exists();
+
+    return response()->json(['match' => $match]);
 }
 
 

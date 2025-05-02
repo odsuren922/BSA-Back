@@ -24,7 +24,11 @@ class ThesisController extends Controller
     public function supervisodThesis()
     {
         try {
-            $user = Auth::user();
+            // $user = Auth::user();
+            
+        
+            $user = Teacher::findOrFail(1);
+
 
             $thesis = Thesis::with(['student', 'supervisor', 'thesisCycle', 'thesisPlanStatus', 'scores'])
                 ->where('supervisor_id', $user->id)
