@@ -26,6 +26,11 @@ class VerifyCsrfToken extends Middleware
         'oauth/*',
         'api/oauth/*',
         'sanctum/csrf-cookie',
+        'api/oauth/exchange-token',
+        'oauth/exchange-token',
+        'api/oauth/refresh-token',
+        'api/oauth/token',
+
         
         // API routes
         'api/*',

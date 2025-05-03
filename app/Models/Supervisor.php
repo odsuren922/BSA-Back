@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Supervisor extends Model
 {
-    use HasFactory;
+    use HasFactory, HasApiTokens;
 
     protected $fillable = ['id', 'dep_id', 'firstname', 'lastname', 'mail', 'phone'];
     public $incrementing = false;

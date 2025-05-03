@@ -22,35 +22,22 @@ use App\Http\Controllers\NotificationSettingController;
 
 // OAuth token exchange and refresh endpoints
 Route::post('/oauth/exchange-token', [\App\Http\Controllers\Auth\OAuthController::class, 'exchangeToken']);
+Route::post('/api/oauth/exchange-token', [\App\Http\Controllers\Auth\OAuthController::class, 'exchangeToken']);
 Route::post('/oauth/refresh-token', [\App\Http\Controllers\Auth\OAuthController::class, 'refreshToken']);
+Route::post('/api/oauth/refresh-token', [\App\Http\Controllers\Auth\OAuthController::class, 'refreshToken']);
 Route::post('/oauth/token', [\App\Http\Controllers\Auth\OAuthController::class, 'exchangeCodeForToken']);
 
 // User information for current authenticated user
 Route::middleware('auth:sanctum')->get('/user', [OAuthController::class, 'getUserData']);
 Route::middleware('auth:sanctum')->get('/user/role', [RoleController::class, 'getUserRole']);
 
-// Notifications - protected by Sanctum
-Route::middleware('auth:sanctum')->group(function () {
-    // Notification routes
-    Route::prefix('notifications')->group(function () {
-        Route::get('/unread', [NotificationController::class, 'getUnread']);
-        Route::post('/{id}/read', [NotificationController::class, 'markAsRead']);
-        Route::post('/subscribe', [NotificationController::class, 'subscribe']);
-        Route::post('/unsubscribe', [NotificationController::class, 'unsubscribe']);
-        Route::post('/', [NotificationController::class, 'store']);
-        Route::post('/template', [NotificationController::class, 'sendTemplateNotification']);
-    });
-    
-    // Notification template management
-    Route::apiResource('notification-templates', NotificationTemplateController::class);
-    
-    // Notification settings
-    Route::get('/notification-settings', [NotificationSettingController::class, 'index']);
-    Route::post('/notification-settings', [NotificationSettingController::class, 'update']);
-});
 
 // Thesis management API routes - Protected by auth:sanctum
 Route::middleware('auth:sanctum')->group(function () {
+    // User information for current authenticated user
+    Route::middleware('auth:sanctum')->get('/user', [OAuthController::class, 'getUserData']);
+    Route::middleware('auth:sanctum')->get('/user/role', [RoleController::class, 'getUserRole']);
+
     // ProposalForm routes
     Route::get('/proposalform', [App\Http\Controllers\ProposalFormController::class, 'index']);
     Route::post('/proposalform', [App\Http\Controllers\ProposalFormController::class, 'store']);

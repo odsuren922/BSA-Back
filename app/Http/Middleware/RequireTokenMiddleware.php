@@ -27,7 +27,9 @@ class RequireTokenMiddleware
             if (!$tokenData || !isset($tokenData['access_token'])) {
                 Log::warning('No token found for API request', [
                     'path' => $request->path(),
-                    'ip' => $request->ip()
+                    'ip' => $request->ip(),
+                    'session_id' => session()->getId(),
+                    'has_session' => session()->has(config('oauth.token_session_key')),
                 ]);
                 
                 return response()->json([
@@ -47,7 +49,7 @@ class RequireTokenMiddleware
             
             if (isset($tokenData['expires_in']) && isset($tokenData['created_at'])) {
                 $expiresAt = $tokenData['created_at'] + $tokenData['expires_in'];
-                $buffer = 300; // 5 minutes buffer
+                $buffer = config('oauth.token_refresh_buffer', 300); // Default 5 minutes buffer
                 
                 // If token expires within buffer time, try to refresh
                 if (time() >= ($expiresAt - $buffer) && isset($tokenData['refresh_token'])) {

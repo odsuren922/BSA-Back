@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Teacher extends Model
 {
-    use HasFactory;
+    use HasFactory, HasApiTokens;
 
     protected $fillable = ['id', 'dep_id', 'firstname', 'lastname', 'degree', 'superior','mail', 'numof_choosed_stud'];
     public $incrementing = false;
