@@ -92,27 +92,12 @@ class TaskController extends Controller
         try {
             // Validate the incoming request data
             $validatedData = $request->validate([
-                'role' => 'required|string|in:student,supervisor',
+        
                 'thesis_id' => 'required|exists:thesis,id',
             ]);
 
-            // $user = Auth::user();
+
             $thesis = Thesis::findOrFail($validatedData['thesis_id']);
-
-            // Authorization: Check based on role
-            // if ($request->role === 'student' && $user->id !== $thesis->student_id) {
-            //     return response()->json([
-            //         'status' => false,
-            //         'message' => 'Unauthorized. Only the assigned student can create a task.',
-            //     ], 403);
-            // }
-
-            // if ($request->role === 'supervisor' && $user->id !== $thesis->supervisor_id) {
-            //     return response()->json([
-            //         'status' => false,
-            //         'message' => 'Unauthorized. Only the assigned supervisor can create a task.',
-            //     ], 403);
-            // }
 
             // Create the task with default name
             $task = Task::create([
@@ -252,17 +237,17 @@ class TaskController extends Controller
                     404,
                 );
             }
-
-            // Authorization check
-            if (!$thesis || ($user->id !== $thesis->student_id && $user->id !== $thesis->supervisor_id)) {
-                return response()->json(
-                    [
-                        'status' => false,
-                        'message' => 'Unauthorized. You are not allowed to delete this task.',
-                    ],
-                    403,
-                );
-            }
+//TODO::
+            // // Authorization check
+            // if (!$thesis || ($user->id !== $thesis->student_id && $user->id !== $thesis->supervisor_id)) {
+            //     return response()->json(
+            //         [
+            //             'status' => false,
+            //             'message' => 'Unauthorized. You are not allowed to delete this task.',
+            //         ],
+            //         403,
+            //     );
+            // }
 
             // Delete the task and related subtasks
             $task->subtasks()->delete();

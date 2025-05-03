@@ -27,6 +27,7 @@ class StudentResource extends JsonResource
             'sisi_id' => $this->sisi_id,
             'department' => new DepartmentResource($this->whenLoaded('department')),
             'theses' => ThesisResource::collection($this->whenLoaded('thesis')),
+        
             //  'topics' => TopicResource::collection($this->whenLoaded('topics')),
         ];
 

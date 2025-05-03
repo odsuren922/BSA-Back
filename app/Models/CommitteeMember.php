@@ -19,4 +19,8 @@ class CommitteeMember extends Model
     {
         return $this->belongsTo(Teacher::class);
     }
+    public function committeeScores()
+    {
+        return $this->hasMany(CommitteeScore::class);
+    }
 }

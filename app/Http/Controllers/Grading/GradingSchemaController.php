@@ -42,6 +42,23 @@ class GradingSchemaController extends Controller
         return response()->json(['message' => 'Thesis Cycle not found'], 404);
     }
 
+    public function filteredGradingSchema($thesisCycleId)
+{
+    $thesisCycle = ThesisCycle::find($thesisCycleId);
+
+    if ($thesisCycle) {
+        return GradingSchema::where('id', $thesisCycle->grading_schema_id)
+            ->with(['gradingComponents' => function ($query) {
+                $query->whereNotIn('by_who', ['supervisor', 'committee']);
+            }, 'gradingComponents.gradingCriteria'])
+            ->orderBy('year', 'desc')
+            ->get();
+    }
+
+    return response()->json(['message' => 'Thesis Cycle not found'], 404);
+}
+
+
     public function storeonlySchema(Request $request)
     {
         $validated = $request->validate([
@@ -64,12 +81,13 @@ class GradingSchemaController extends Controller
             'description' => 'nullable|string',
             'step_num' => 'nullable|integer',
             'dep_id' => 'nullable|exists:departments,id',
-            'grading_components' => 'required|array', // Ensure grading_components is an array
-            'grading_components.*.name' => 'required_if:grading_components.*.score,!=,null|string|max:255', // Validate name if score is not null
-            'grading_components.*.score' => 'nullable|numeric', // Allow score to be nullable but only if the name exists
-            'grading_components.*.by_who' => 'nullable|string', // Optional field for who assigns
+            'grading_components' => 'required|array|min:1',
+            'grading_components.*.name' => 'required|string|max:255',
+            'grading_components.*.score' => 'required|numeric',
+            'grading_components.*.by_who' => 'nullable|string',
             'grading_components.*.scheduled_week' => 'nullable|numeric',
         ]);
+        
 
         // If no grading components were sent
         if (empty($validated['grading_components'])) {

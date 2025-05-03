@@ -15,21 +15,22 @@ class ThesisDeadline extends Model
      *
      * @var array
      */
+
+
     protected $fillable = [
-        'name',
-        'description',
-        'deadline_date',
         'department_id',
-        'program_id',
+        'thesis_cycle_id',
+        'target_people', 
+        'name',          
+        'description',
+        'grading_component_id',
+            //     'program_id',
+             //     'created_by',
+        'deadline_date',
         'reminder_days',
-        'created_by',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array
-     */
+
     protected $casts = [
         'deadline_date' => 'datetime',
         'reminder_days' => 'array',
@@ -42,6 +43,17 @@ class ThesisDeadline extends Model
     {
         return $this->belongsTo(Department::class, 'department_id');
     }
+    public function thesisCycle()
+{
+    return $this->belongsTo(ThesisCycle::class);
+}
+
+public function gradingComponent()
+{
+    return $this->belongsTo(GradingComponent::class);
+}
+// 
+
 
     /**
      * Calculate the next reminder date for this deadline.
@@ -74,6 +86,23 @@ class ThesisDeadline extends Model
      * 
      * @return \Illuminate\Database\Eloquent\Collection
      */
+    public function getTargetPeople()
+{
+    switch ($this->target_people) {
+        case 'student':
+            return $this->getTargetStudents();
+        case 'teacher':
+            return $this->getTargetTeacher();
+        // case 'committee':
+        //     return $this->getTargetCommitteeMembers();
+        // case 'assistant':
+        //     return $this->getTargetAssistants();
+        default:
+            return collect(); // empty collection
+    }
+}
+
+
     public function getTargetStudents()
     {
         $query = Student::query();
@@ -81,11 +110,31 @@ class ThesisDeadline extends Model
         if ($this->department_id) {
             $query->where('dep_id', $this->department_id);
         }
-        
-        if ($this->program_id) {
-            $query->where('program', $this->program_id);
-        }
-
+       
         return $query->get();
     }
+
+    public function getTargetSupervisors()
+{
+    $query = Teacher::query();
+
+    if ($this->department_id) {
+        $query->where('department_id', $this->department_id);
+    }
+      
+    return $query->get();
+
+
+}
+
+public function getTargetCommitteeMembers()
+{
+    return Teacher::whereHas('committeeMembers', function ($q) {
+        $q->whereHas('committee', function ($q2) {
+            $q2->where('thesis_cycle_id', $this->thesis_cycle_id);
+        });
+    })->get();
+}
+
+
 }

@@ -42,6 +42,21 @@ class Student extends Model
         return $this->hasMany(Thesis::class, 'student_id');
     }
 
+    public function scores()
+    {
+        return $this->hasMany(Score::class);
+    }
+
+    public function committeeScores()
+    {
+        return $this->hasMany(CommitteeScore::class);
+    }
+
+    public function committeeAssignments()
+    {
+        return $this->hasMany(CommitteeStudent::class);
+    }
+
 //     public function thesisScores()
 // {
 //     return $this->hasMany(ThesisScore::class, 'student_id')

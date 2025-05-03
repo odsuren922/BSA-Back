@@ -23,6 +23,15 @@ class TeacherController extends Controller
         return response()->json($teachers);
     }
     
+    public function countByDepartment($dep_id)
+    {
+        $count = Teacher::where('dep_id', $dep_id)->count();
+        return response()->json([
+           
+            'count' => $count
+        ]);
+    }
+    
     public function store(Request $request)
     {
         $request->validate([

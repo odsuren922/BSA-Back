@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class GradingCriteria extends Model {
     use HasFactory;
-    protected $table = 'grading_criteria';
+    protected $table = 'grading_criterias';
     protected $fillable = ['grading_component_id', 'name', 'score'];
 
     public function gradingComponent() {

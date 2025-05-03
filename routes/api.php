@@ -19,7 +19,10 @@ use App\Http\Controllers\NotificationSettingController;
 
 use App\Http\Controllers\Thesis\ThesisController;
 use App\Http\Controllers\Thesis\ThesisCycleController;
-use App\Http\Controllers\Thesis\ThesisScoreController;
+use App\Http\Controllers\ScoreController;
+use App\Http\Controllers\CommitteeScoreController;
+
+
 use App\Http\Controllers\Thesis\ThesisPlanStatusController;
 
 use App\Http\Controllers\TaskController;
@@ -32,6 +35,7 @@ use App\Http\Controllers\Grading\GradingCriteriaController;
 use App\Http\Controllers\Committee\CommitteeController;
 use App\Http\Controllers\Committee\CommitteeMemberController;
 use App\Http\Controllers\Committee\CommitteeStudentController;
+use App\Http\Controllers\AssignedGradingController;
 
 use App\Http\Controllers\ScheduleController;
 
@@ -134,6 +138,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 
 Route::middleware('auth.api.token')->group(function () {
+
+    Route::get('/teachers/{id}', [TeacherController::class, 'dep_id']);
+Route::get('/teacher/{id}', [TeacherController::class, 'show']);
+Route::get('/teachers/count/department/{dep_id}', [TeacherController::class, 'countByDepartment']);
 // ------------------------------
         //Thesis Plan Tasks & Subtasks Үечилсэн төлөвлөгөө ажил & дэл ажил
         // ------------------------------
@@ -175,7 +183,8 @@ Route::middleware('auth.api.token')->group(function () {
         // Thesis Cycle
         //Тэнхмийн туслах шинэ cycle үүсгэх
         // ------------------------------
-    
+    // getTeachersAndThesisCountsByCycleId
+    Route::get('/thesis-cycles/{id}/counts', [ThesisCycleController::class, 'getTeachersAndThesisCountsByCycleId']);
         Route::post('/thesis-cycles', [ThesisCycleController::class, 'store']);
         Route::get('/thesis-cycles', [ThesisCycleController::class, 'index']);//✅ ThesisCycles awah 
         Route::get('/active-cycles', [ThesisCycleController::class, 'active']);//✅ AdminDashboard 
@@ -193,6 +202,8 @@ Route::middleware('auth.api.token')->group(function () {
         Route::post('/grading-schemas', [GradingSchemaController::class, 'store']);
         Route::get('/grading-schemas', [GradingSchemaController::class, 'index']);//✅ grading Schemas awah 
         Route::get('/thesis-cycles/{id}/grading-schema', [GradingSchemaController::class, 'showByThesisCycle']);////✅ AdminDashboard
+        Route::get('/thesis-cycles/{id}/grading-schema-filter', [GradingSchemaController::class, 'filteredGradingSchema']);////✅ AdminDashboard
+
         Route::get('/grading-schemas/{id}', [GradingSchemaController::class, 'show']);
         Route::put('/grading-schemas/{id}', [GradingSchemaController::class, 'update']);
         Route::patch('/grading-schemas/{id}', [GradingSchemaController::class, 'addComponents']);
@@ -209,11 +220,11 @@ Route::middleware('auth.api.token')->group(function () {
     
         // Grading Criteria Management
         //үнэлэх аргын дэлгэрэнгүй
-        Route::post('grading-criteria', [GradingCriteriaController::class, 'store']);
-        Route::get('grading-criteria', [GradingCriteriaController::class, 'index']);
-        Route::get('grading-criteria/{id}', [GradingCriteriaController::class, 'show']);
-        Route::put('grading-criteria/{id}', [GradingCriteriaController::class, 'update']);
-        Route::delete('grading-criteria/{id}', [GradingCriteriaController::class, 'destroy']);
+        // Route::post('grading-criteria', [GradingCriteriaController::class, 'store']);
+        // Route::get('grading-criteria', [GradingCriteriaController::class, 'index']);
+        // Route::get('grading-criteria/{id}', [GradingCriteriaController::class, 'show']);
+        // Route::put('grading-criteria/{id}', [GradingCriteriaController::class, 'update']);
+        // Route::delete('grading-criteria/{id}', [GradingCriteriaController::class, 'destroy']);
         // ------------------------------
         // Committees & Scheduling
         // ------------------------------
@@ -260,15 +271,30 @@ Route::middleware('auth.api.token')->group(function () {
         // ------------------------------
         // Thesis Scores
         // ------------------------------
-        Route::get('/thesis/{id}/scores', [ThesisScoreController::class, 'getThesisScores']);
-        Route::post('/supervisor/thesis-scores', [ThesisScoreController::class, 'storeScore']);
-        Route::post('/thesis/{thesisId}/give-scores', [ThesisScoreController::class, 'storeMultipleScores']);
-        Route::post('/committee-scores/bulk', [ThesisScoreController::class, 'storeBulk']);
-        Route::get('/committees/{committee}/scores', [ThesisScoreController::class, 'getCommitteeStudentScores']);
-        
-        Route::get('/scores/{id}', [ThesisScoreController::class, 'index']);
-        Route::get('/thesis-cycles/{cycleId}/grading-components/{componentId}/scores', [ThesisScoreController::class, 'getScoresByCycleAndComponent']);
+
+        Route::apiResource('scores', ScoreController::class);
+        Route::get('/scores/getScoreByThesis/{id}', [ScoreController::class, 'getScoreByThesis']);
+        Route::get('/scores/getDetailedScoreByThesis/{id}', [ScoreController::class, 'getScoreByThesisWithDetail']);
+        // Route::apiResource('committee-scores', CommitteeScoreController::class);
+
+        //SAVES SCORES
+        Route::post('/committee-scores/batch', [CommitteeScoreController::class, 'storeBatch']);
+        //CHECK ALL MEMBER GIVES SCORES TO A STUDENT
+        Route::post('/committee-scores/finalize/{studentId}/{componentId}', [CommitteeScoreController::class, 'finalizeCommitteeScores']);
+        Route::post('/committee-scores/batch-finalize-by-committee', [CommitteeScoreController::class, 'batchFinalizeByCommittee']);
 
 
+        Route::post('/committees/check-assignment', [CommitteeController::class, 'isTeacherAndStudentInSameCommittee']);
+
+        Route::prefix('assigned-grading')->group(function () {
+            Route::get('/', [AssignedGradingController::class, 'index']); // list all
+            Route::post('/', [AssignedGradingController::class, 'store']); // store multiple
+            Route::post('/check-assignment', [AssignedGradingController::class, 'checkAssignment']); // permission check
+            Route::delete('/{assignedGrading}', [AssignedGradingController::class, 'destroy']); // delete
+        });
+        Route::get('/assigned-grading/component/{componentId}/cycle/{cycleId}', [AssignedGradingController::class, 'getByComponentAndCycle']);
 
 });
+Route::get('/committees/{id}/members-scores', [CommitteeController::class, 'getCommitteeMembersWithStudentsAndScores']);
+
+Route::apiResource('committee-scores', CommitteeScoreController::class);
