@@ -20,19 +20,11 @@ return [
     
     'allowed_methods' => ['*'],
     
-    'allowed_headers' => [
-        'X-CSRF-TOKEN',
-        'X-XSRF-TOKEN',
-        'Content-Type',
-        'X-Requested-With',
-        'Authorization',
-        'Origin',
-        'Accept',
-    ],
+    'allowed_headers' => ['*'],
     
-    'exposed_headers' => ['Authorization'],
+    'exposed_headers' => [],
     
-    'max_age' => 86400, // 24 hours
+    'max_age' => 0,
     
     'supports_credentials' => true, // Important: must be true for Sanctum to work with SPA
 ];

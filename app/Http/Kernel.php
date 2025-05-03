@@ -23,8 +23,7 @@ class Kernel extends HttpKernel
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
         \App\Http\Middleware\TrimStrings::class,
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
-
-
+        \App\Http\Middleware\LogRequests::class, // Added for request logging
     ];
 
     /**
@@ -39,6 +38,7 @@ class Kernel extends HttpKernel
             \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class, // CSRF Middleware
+            \App\Http\Middleware\TrackUserSession::class, // Added for session tracking
         ],
 
         'api' => [
@@ -84,6 +84,8 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class, // Add Sanctum abilities middleware
         'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class, // Add Sanctum ability middleware
+        'oauth' => \App\Http\Middleware\OAuthAuthentication::class, // Added OAuth middleware
+        'require.token' => \App\Http\Middleware\RequireTokenMiddleware::class, // Added middleware to check for tokens
     ];
 
     /**
@@ -101,5 +103,6 @@ class Kernel extends HttpKernel
         \Illuminate\Session\Middleware\AuthenticateSession::class,
         \Illuminate\Routing\Middleware\SubstituteBindings::class,
         \Illuminate\Auth\Middleware\Authorize::class,
+        \App\Http\Middleware\OAuthAuthentication::class, // Added OAuth middleware at high priority
     ];
 }

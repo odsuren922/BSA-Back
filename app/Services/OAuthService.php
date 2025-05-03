@@ -4,8 +4,8 @@ namespace App\Services;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class OAuthService
 {
@@ -64,22 +64,26 @@ class OAuthService
      * Exchange authorization code for an access token
      *
      * @param string $code The authorization code received
+     * @param string|null $state The state parameter for verification
+     * @param string|null $redirectUri Custom redirect URI if different from default
      * @return array|null The token response or null on failure
      */
-    public function getAccessToken($code)
+    public function getAccessToken($code, $state = null, $redirectUri = null)
     {
         try {
             // Log attempt without sensitive data
             Log::info('Exchanging authorization code for access token');
             
+            $formParams = [
+                'grant_type' => 'authorization_code',
+                'client_id' => $this->clientId,
+                'client_secret' => $this->clientSecret,
+                'redirect_uri' => $redirectUri ?: $this->redirectUri,
+                'code' => $code,
+            ];
+            
             $response = $this->client->post($this->tokenEndpoint, [
-                'form_params' => [
-                    'grant_type' => 'authorization_code',
-                    'client_id' => $this->clientId,
-                    'client_secret' => $this->clientSecret,
-                    'redirect_uri' => $this->redirectUri,
-                    'code' => $code,
-                ],
+                'form_params' => $formParams,
             ]);
 
             $tokenData = json_decode($response->getBody(), true);
