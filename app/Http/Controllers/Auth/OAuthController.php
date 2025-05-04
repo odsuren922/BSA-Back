@@ -37,8 +37,8 @@ class OAuthController extends Controller
             // Generate and store a random state to prevent CSRF attacks
             $state = Str::random(40);
             
-            // Store state in cookie rather than session
-            $cookie = cookie('oauth_state', $state, 5, '/', null, config('session.secure'), config('session.http_only'));
+            // Store state in cookie rather than session for better cross-domain support
+            $cookie = cookie('oauth_state', $state, 5, '/', null, config('app.env') === 'production', false);
             
             // Build the authorization URL
             $authUrl = $this->oauthService->getAuthorizationUrl($state);
@@ -150,7 +150,7 @@ class OAuthController extends Controller
             }
             
             // Store user data in session
-            session(['user_data' => [
+            session(['oauth_user' => [
                 'id' => $user['id'],
                 'role' => $role,
                 'email' => $email,
@@ -160,7 +160,10 @@ class OAuthController extends Controller
             ]]);
             
             // Create Sanctum token for the user
-            $this->createSanctumToken($user['model'], $role);
+            $tokenPlaintext = $this->createSanctumToken($user['model'], $role);
+            
+            // Store the Sanctum token for later use in the frontend
+            session(['sanctum_token' => $tokenPlaintext]);
             
             // Record the new session
             $this->recordUserSession($request, $user['id'], $role);
@@ -171,8 +174,9 @@ class OAuthController extends Controller
                 'email' => $email
             ]);
             
-            // Redirect to the home page for the role
-            return redirect()->intended('/');
+            // Redirect to the frontend with success
+            return redirect()->away(config('oauth.frontend_url'))
+                ->withCookie(cookie('auth_success', 'true', 5, '/', null, false, false));
         } catch (\Exception $e) {
             Log::error('OAuth callback error: ' . $e->getMessage(), [
                 'exception' => get_class($e),
@@ -254,7 +258,7 @@ class OAuthController extends Controller
      *
      * @param \Illuminate\Database\Eloquent\Model $user
      * @param string $role
-     * @return string
+     * @return string The plain text token
      */
     protected function createSanctumToken($user, $role)
     {
@@ -262,7 +266,10 @@ class OAuthController extends Controller
         $user->tokens()->delete();
         
         // Create a new token with role-based abilities
-        return $user->createToken('auth_token', [$role])->plainTextToken;
+        $token = $user->createToken('auth_token', [$role]);
+        
+        // Return the plain text token
+        return $token->plainTextToken;
     }
     
     /**
@@ -347,6 +354,7 @@ class OAuthController extends Controller
             $tokenData['created_at'] = time();
             $tokenData['token_time'] = time();
 
+            // Store token in session
             session([config('oauth.token_session_key') => $tokenData]);
             
             // Get user data to include in the response
@@ -378,6 +386,12 @@ class OAuthController extends Controller
             if (!$user) {
                 return response()->json(['error' => 'User not found in system'], 404);
             }
+
+            // Create a Sanctum token for this user
+            $sanctumToken = '';
+            if (isset($user['model'])) {
+                $sanctumToken = $this->createSanctumToken($user['model'], $role);
+            }
             
             // Format user data for response
             $formattedUser = [
@@ -390,6 +404,9 @@ class OAuthController extends Controller
                 'lnamem' => $lastName,
             ];
             
+            // Store user data in session
+            session(['oauth_user' => $formattedUser]);
+            
             Log::info('Token exchange successful', [
                 'has_user_data' => !empty($formattedUser),
                 'token_type' => $tokenData['token_type'] ?? 'unknown',
@@ -400,7 +417,8 @@ class OAuthController extends Controller
                 'refresh_token' => $tokenData['refresh_token'] ?? null,
                 'expires_in' => $tokenData['expires_in'] ?? 3600,
                 'token_time' => $tokenData['created_at'],
-                'user' => $formattedUser
+                'user' => $formattedUser,
+                'sanctum_token' => $sanctumToken
             ]);
         } catch (\Exception $e) {
             Log::error('Token exchange error: ' . $e->getMessage(), [
@@ -414,7 +432,6 @@ class OAuthController extends Controller
         }
     }
 
-    
     /**
      * Refresh an expired access token
      *
@@ -482,23 +499,15 @@ class OAuthController extends Controller
                 'has_session_token' => session()->has(config('oauth.token_session_key')),
             ]);
             
-            // Get token from session or Authorization header
-            $token = null;
-            
-            if (session()->has(config('oauth.token_session_key'))) {
-                $tokenData = session(config('oauth.token_session_key'));
-                $token = $tokenData['access_token'] ?? null;
-                Log::info('Using token from session');
+            // Check if we have user data in session
+            if (session()->has('oauth_user')) {
+                $userData = session('oauth_user');
+                Log::info('Using user data from session');
+                return response()->json($userData);
             }
             
-            if (!$token && $request->hasHeader('Authorization')) {
-                // Extract token from Bearer header
-                $authHeader = $request->header('Authorization');
-                if (strpos($authHeader, 'Bearer ') === 0) {
-                    $token = substr($authHeader, 7);
-                    Log::info('Using token from Authorization header');
-                }
-            }
+            // Get token from Authorization header or session
+            $token = $this->getTokenFromRequest($request);
             
             if (!$token) {
                 Log::warning('No authentication token found');
@@ -506,19 +515,19 @@ class OAuthController extends Controller
             }
             
             // Fetch user data from OAuth service
-            $userData = $this->oauthService->getUserData($token);
+            $oauthUserData = $this->oauthService->getUserData($token);
             
-            if (!$userData) {
+            if (!$oauthUserData) {
                 Log::error('Failed to fetch user data from OAuth service');
                 return response()->json(['error' => 'Failed to fetch user data'], 401);
             }
             
             // Extract user info from OAuth response
-            $email = $this->findValueByType($userData, 'nummail') ?? $this->findValueByType($userData, 'email');
-            $username = $this->findValueByType($userData, 'username');
-            $gid = $this->findValueByType($userData, 'gid');
-            $firstName = $this->findValueByType($userData, 'fnamem') ?? $this->findValueByType($userData, 'fname');
-            $lastName = $this->findValueByType($userData, 'lnamem') ?? $this->findValueByType($userData, 'lname');
+            $email = $this->findValueByType($oauthUserData, 'nummail') ?? $this->findValueByType($oauthUserData, 'email');
+            $username = $this->findValueByType($oauthUserData, 'username');
+            $gid = $this->findValueByType($oauthUserData, 'gid');
+            $firstName = $this->findValueByType($oauthUserData, 'fnamem') ?? $this->findValueByType($oauthUserData, 'fname');
+            $lastName = $this->findValueByType($oauthUserData, 'lnamem') ?? $this->findValueByType($oauthUserData, 'lname');
             
             // Determine role from GID
             $role = $this->roleService->mapGidToRole($gid);
@@ -547,6 +556,9 @@ class OAuthController extends Controller
                 'lastName' => $lastName,
             ];
             
+            // Store in session for future requests
+            session(['oauth_user' => $formattedUser]);
+            
             Log::info('Successfully retrieved user data');
             
             return response()->json($formattedUser);
@@ -562,16 +574,45 @@ class OAuthController extends Controller
     }
     
     /**
+     * Get token from various sources in the request
+     *
+     * @param Request $request
+     * @return string|null
+     */
+    protected function getTokenFromRequest(Request $request)
+    {
+        // 1. Try Authorization header
+        $token = $request->bearerToken();
+        if ($token) {
+            return $token;
+        }
+        
+        // 2. Try session
+        $tokenData = session(config('oauth.token_session_key'));
+        if ($tokenData && isset($tokenData['access_token'])) {
+            return $tokenData['access_token'];
+        }
+        
+        // 3. Try request parameter
+        $token = $request->input('access_token');
+        if ($token) {
+            return $token;
+        }
+        
+        return null;
+    }
+    
+    /**
      * Logout the user
      *
      * @param Request $request
-     * @return \Illuminate\Http\RedirectResponse
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function logout(Request $request)
     {
         try {
             // Get user data from session
-            $userData = session('user_data');
+            $userData = session('oauth_user');
             
             if ($userData) {
                 // Record logout in session tracking
@@ -592,9 +633,14 @@ class OAuthController extends Controller
             
             // Clear session data
             session()->forget(config('oauth.token_session_key'));
-            session()->forget('user_data');
+            session()->forget('oauth_user');
+            session()->forget('sanctum_token');
             session()->invalidate();
             session()->regenerateToken();
+            
+            if ($request->expectsJson()) {
+                return response()->json(['success' => true, 'message' => 'Logged out successfully']);
+            }
             
             return redirect()->route('login')
                 ->with('success', 'You have been logged out successfully.');
@@ -604,6 +650,10 @@ class OAuthController extends Controller
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
             ]);
+            
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'error' => 'Logout failed']);
+            }
             
             return redirect()->route('login');
         }

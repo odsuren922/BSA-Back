@@ -8,13 +8,34 @@ use Illuminate\Support\Facades\Log;
 
 class OAuthAuthentication
 {
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @return mixed
+     */
     public function handle(Request $request, Closure $next)
     {
+        // Check if we have user data in session (most reliable)
+        if (session()->has('oauth_user')) {
+            Log::info('User authenticated via session data');
+            return $next($request);
+        }
+        
         // Check if token exists in session
         $tokenData = session(config('oauth.token_session_key'));
         
+        // No token in session, check if there's an Authorization header
+        if (!$tokenData && $request->bearerToken()) {
+            Log::info('Using token from Authorization header');
+            // Set the token in the request for downstream middleware
+            $request->headers->set('Authorization', 'Bearer ' . $request->bearerToken());
+            return $next($request);
+        }
+        
         if (!$tokenData || !isset($tokenData['access_token'])) {
-            Log::warning('No OAuth token found in session', [
+            Log::warning('No OAuth token found in session or Authorization header', [
                 'session_id' => session()->getId(),
                 'path' => $request->path()
             ]);
@@ -27,7 +48,7 @@ class OAuthAuthentication
                     'redirect' => '/login'
                 ], 401);
             } else {
-                return redirect()->route('login')->with('error', 'Your session has expired. Please log in again.');
+                return redirect()->route('oauth.redirect')->with('error', 'Your session has expired. Please log in again.');
             }
         }
         
@@ -48,6 +69,9 @@ class OAuthAuthentication
                             session([config('oauth.token_session_key') => $newTokenData]);
                             $tokenData = $newTokenData;
                             Log::info('Token refreshed successfully');
+                            
+                            // Update Authorization header for downstream middleware
+                            $request->headers->set('Authorization', 'Bearer ' . $newTokenData['access_token']);
                         } else {
                             Log::error('Token refresh failed');
                             
@@ -58,7 +82,7 @@ class OAuthAuthentication
                                     'redirect' => '/login'
                                 ], 401);
                             } else {
-                                return redirect()->route('login')->with('error', 'Your session has expired. Please log in again.');
+                                return redirect()->route('oauth.redirect')->with('error', 'Your session has expired. Please log in again.');
                             }
                         }
                     } else {
@@ -71,9 +95,12 @@ class OAuthAuthentication
                                 'redirect' => '/login'
                             ], 401);
                         } else {
-                            return redirect()->route('login')->with('error', 'Your session has expired. Please log in again.');
+                            return redirect()->route('oauth.redirect')->with('error', 'Your session has expired. Please log in again.');
                         }
                     }
+                } else {
+                    // Token is valid, set Authorization header for downstream middleware
+                    $request->headers->set('Authorization', 'Bearer ' . $tokenData['access_token']);
                 }
             }
             
@@ -92,9 +119,9 @@ class OAuthAuthentication
                     'success' => false, 
                     'message' => 'Authentication error. Please log in again.',
                     'redirect' => '/login'
-                ], 500);
+                ], 401);
             } else {
-                return redirect()->route('login')->with('error', 'An authentication error occurred. Please log in again.');
+                return redirect()->route('oauth.redirect')->with('error', 'Authentication error occurred. Please log in again.');
             }
         }
     }
