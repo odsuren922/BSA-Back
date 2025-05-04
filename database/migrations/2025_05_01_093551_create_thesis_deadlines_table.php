@@ -17,10 +17,10 @@ class CreateThesisDeadlinesTable extends Migration
             $table->id();
             $table->foreignId('department_id')->constrained('departments')->cascadeOnDelete();
             $table->foreignId('thesis_cycle_id')->constrained('thesis_cycles')->onDelete('cascade');
-            $table->string('target_people');
-            $table->text('reminder_days')->nullable();
+            $table->string('target_people'); // Role: student, supervisor, committee, assistant
+            $table->json('reminder_days')->nullable(); // Days before deadline to send reminders
             $table->string('name');
-            $table->string('description')->nullable();
+            $table->text('description')->nullable();
             $table->foreignId('grading_component_id')->nullable()->constrained('grading_components')->onDelete('set null');
             $table->date('deadline_date');
             $table->timestamps();

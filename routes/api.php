@@ -22,14 +22,11 @@ use App\Http\Controllers\NotificationSettingController;
 
 // OAuth token exchange and refresh endpoints
 Route::post('/oauth/exchange-token', [\App\Http\Controllers\Auth\OAuthController::class, 'exchangeToken']);
-Route::post('/api/oauth/exchange-token', [\App\Http\Controllers\Auth\OAuthController::class, 'exchangeToken']);
 Route::post('/oauth/refresh-token', [\App\Http\Controllers\Auth\OAuthController::class, 'refreshToken']);
-Route::post('/api/oauth/refresh-token', [\App\Http\Controllers\Auth\OAuthController::class, 'refreshToken']);
 Route::post('/oauth/token', [\App\Http\Controllers\Auth\OAuthController::class, 'exchangeCodeForToken']);
+Route::get('/user', [\App\Http\Controllers\Auth\OAuthController::class, 'getUserData'])->middleware('auth:sanctum');
+Route::get('/user/role', [\App\Http\Controllers\Api\RoleController::class, 'getUserRole'])->middleware('auth:sanctum');
 
-// User information for current authenticated user
-Route::middleware('auth:sanctum')->get('/user', [OAuthController::class, 'getUserData']);
-Route::middleware('auth:sanctum')->get('/user/role', [RoleController::class, 'getUserRole']);
 
 
 // Thesis management API routes - Protected by auth:sanctum
@@ -39,33 +36,36 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('auth:sanctum')->get('/user/role', [RoleController::class, 'getUserRole']);
 
     // ProposalForm routes
-    Route::get('/proposalform', [App\Http\Controllers\ProposalFormController::class, 'index']);
-    Route::post('/proposalform', [App\Http\Controllers\ProposalFormController::class, 'store']);
-    Route::get('/proposalform/{id}', [App\Http\Controllers\ProposalFormController::class, 'show']);
-    Route::put('/proposalform/{id}', [App\Http\Controllers\ProposalFormController::class, 'update']);
-    Route::delete('/proposalform/{id}', [App\Http\Controllers\ProposalFormController::class, 'destroy']);
+    Route::prefix('proposalform')->group(function () {
+        Route::get('/', [\App\Http\Controllers\ProposalFormController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\ProposalFormController::class, 'store']);
+        Route::get('/{id}', [\App\Http\Controllers\ProposalFormController::class, 'show']);
+        Route::put('/{id}', [\App\Http\Controllers\ProposalFormController::class, 'update']);
+        Route::delete('/{id}', [\App\Http\Controllers\ProposalFormController::class, 'destroy']);
+    });
     
     // Department routes
     Route::apiResource('departments', App\Http\Controllers\DepartmentController::class);
     
     // Teacher routes
-    Route::get('/teachers/{id}', [App\Http\Controllers\TeacherController::class, 'dep_id']);
-    Route::get('/teacher/{id}', [App\Http\Controllers\TeacherController::class, 'show']);
-    Route::get('/teachers/count/department/{dep_id}', [App\Http\Controllers\TeacherController::class, 'countByDepartment']);
+    Route::prefix('teachers')->group(function () {
+        Route::get('/{id}', [\App\Http\Controllers\TeacherController::class, 'dep_id']);
+        Route::get('/count/department/{dep_id}', [\App\Http\Controllers\TeacherController::class, 'countByDepartment']);
+    });
+    Route::get('/teacher/{id}', [\App\Http\Controllers\TeacherController::class, 'show']);
     
     // Topic routes
-    Route::post('/topic/storestudent', [App\Http\Controllers\TopicController::class, 'storestudent']);
-    Route::post('/topic/storeteacher', [App\Http\Controllers\TopicController::class, 'storeteacher']);
-    Route::get('/topics/submittedby/{type}', [App\Http\Controllers\TopicController::class, 'getSubmittedTopicsByType']);
-    Route::get('/topics/draftstudent', [App\Http\Controllers\TopicController::class, 'getDraftTopicsByStudent']);
-    Route::get('/topics/draftteacher', [App\Http\Controllers\TopicController::class, 'getDraftTopicsByTeacher']);
-    Route::get('/topics/checkedtopics', [App\Http\Controllers\TopicController::class, 'getCheckedTopics']);
-    Route::get('/topics/checkedtopicsbystud', [App\Http\Controllers\TopicController::class, 'getCheckedTopicsByStud']);
-    Route::get('/topics/reviewedtopicList', [App\Http\Controllers\TopicController::class, 'getRefusedOrApprovedTopics']);
-    Route::get('/topics/topiclistproposedbyuser', [App\Http\Controllers\TopicController::class, 'getTopicListProposedByUser']);
-    Route::post('/topic_confirm', [App\Http\Controllers\TopicController::class, 'confirmTopic']);
-    Route::post('/topic_decline', [App\Http\Controllers\TopicController::class, 'declineTopic']);
-    Route::apiResource('topics', App\Http\Controllers\TopicController::class);
+    Route::prefix('topics')->group(function () {
+        Route::post('/storestudent', [\App\Http\Controllers\TopicController::class, 'storestudent']);
+        Route::post('/storeteacher', [\App\Http\Controllers\TopicController::class, 'storeteacher']);
+        Route::get('/submittedby/{type}', [\App\Http\Controllers\TopicController::class, 'getSubmittedTopicsByType']);
+        Route::get('/draftstudent', [\App\Http\Controllers\TopicController::class, 'getDraftTopicsByStudent']);
+        Route::get('/draftteacher', [\App\Http\Controllers\TopicController::class, 'getDraftTopicsByTeacher']);
+        Route::get('/checkedtopics', [\App\Http\Controllers\TopicController::class, 'getCheckedTopics']);
+        Route::get('/checkedtopicsbystud', [\App\Http\Controllers\TopicController::class, 'getCheckedTopicsByStud']);
+        Route::get('/reviewedtopicList', [\App\Http\Controllers\TopicController::class, 'getRefusedOrApprovedTopics']);
+        Route::get('/topiclistproposedbyuser', [\App\Http\Controllers\TopicController::class, 'getTopicListProposedByUser']);
+    });
     
     // Topic Request routes
     Route::post('/topic-requests', [App\Http\Controllers\TopicRequestController::class, 'store']);

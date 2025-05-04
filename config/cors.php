@@ -11,6 +11,7 @@ return [
         'X-CSRF-TOKEN',
         'X-Requested-With',
         'Content-Type',
+        'X-XSRF-TOKEN',
         'Accept',
         'Authorization',
         'Origin',

@@ -88,6 +88,9 @@ class OAuthService
 
             $tokenData = json_decode($response->getBody(), true);
             
+            // Add created_at timestamp for expiration tracking
+            $tokenData['created_at'] = time();
+            
             // Log success without exposing tokens
             Log::info('Successfully obtained access token', [
                 'token_type' => $tokenData['token_type'] ?? 'unknown',

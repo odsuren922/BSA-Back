@@ -23,7 +23,7 @@ class HubApiService
             'timeout' => 30,
         ]);
 
-        $this->endpoint = config('services.hub_api.endpoint', 'http://localhost:8000/graphql');
+        $this->endpoint = config('services.hub_api.endpoint', 'http://localhost:8080/graphql');
         $this->clientId = config('services.hub_api.client_id', 'thesis_management_system');
         $this->clientSecret = config('services.hub_api.client_secret', 'your_secret_here');
     }
