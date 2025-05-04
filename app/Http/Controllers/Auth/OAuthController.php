@@ -346,11 +346,14 @@ class OAuthController extends Controller
             // Add creation timestamp for expiration tracking
             $tokenData['created_at'] = time();
             $tokenData['token_time'] = time();
-            
-            // Store token in session
+
             session([config('oauth.token_session_key') => $tokenData]);
             
-            // Get user data
+            // Get user data to include in the response
+            Log::info('Fetching user data using token', [
+                'token' => $this->maskString($tokenData['access_token']),
+            ]);
+            
             $userData = $this->oauthService->getUserData($tokenData['access_token']);
             
             if (!$userData) {
@@ -358,9 +361,10 @@ class OAuthController extends Controller
                 return response()->json(['error' => 'Failed to get user data'], 401);
             }
             
-            // Extract user info
+            // Extract user info from OAuth response
             $email = $this->findValueByType($userData, 'nummail') ?? $this->findValueByType($userData, 'email');
             $username = $this->findValueByType($userData, 'username');
+            $uid = $this->findValueByType($userData, 'uid');
             $gid = $this->findValueByType($userData, 'gid');
             $firstName = $this->findValueByType($userData, 'fnamem') ?? $this->findValueByType($userData, 'fname');
             $lastName = $this->findValueByType($userData, 'lnamem') ?? $this->findValueByType($userData, 'lname');
@@ -368,7 +372,7 @@ class OAuthController extends Controller
             // Determine role from GID
             $role = $this->roleService->mapGidToRole($gid);
             
-            // Find the user in our database
+            // Find or identify the user based on email/username
             $user = $this->findUserInDatabase($email, $username, $role);
             
             if (!$user) {
@@ -386,50 +390,18 @@ class OAuthController extends Controller
                 'lnamem' => $lastName,
             ];
             
-            // Create Sanctum token if the model supports it
-            $sanctumToken = null;
+            Log::info('Token exchange successful', [
+                'has_user_data' => !empty($formattedUser),
+                'token_type' => $tokenData['token_type'] ?? 'unknown',
+            ]);
             
-            try {
-                if (method_exists($user['model'], 'createToken')) {
-                    $user['model']->tokens()->delete(); // Delete existing tokens
-                    $sanctumToken = $user['model']->createToken('auth_token', [$role])->plainTextToken;
-                    Log::info('Created Sanctum token for user', [
-                        'user_id' => $user['id'],
-                        'model_type' => get_class($user['model'])
-                    ]);
-                } else {
-                    Log::warning('Model does not support Sanctum tokens', [
-                        'model_type' => get_class($user['model'])
-                    ]);
-                }
-            } catch (\Exception $e) {
-                Log::error('Failed to create Sanctum token: ' . $e->getMessage(), [
-                    'user_id' => $user['id'],
-                    'model_type' => get_class($user['model'])
-                ]);
-                // Continue without Sanctum token
-            }
-            
-            // Return response with or without Sanctum token
-            $response = [
+            return response()->json([
                 'access_token' => $tokenData['access_token'],
                 'refresh_token' => $tokenData['refresh_token'] ?? null,
                 'expires_in' => $tokenData['expires_in'] ?? 3600,
                 'token_time' => $tokenData['created_at'],
                 'user' => $formattedUser
-            ];
-            
-            if ($sanctumToken) {
-                $response['sanctum_token'] = $sanctumToken;
-            }
-            
-            Log::info('Token exchange successful', [
-                'has_user_data' => !empty($formattedUser),
-                'has_sanctum_token' => !empty($sanctumToken),
-                'token_type' => $tokenData['token_type'] ?? 'unknown',
             ]);
-            
-            return response()->json($response);
         } catch (\Exception $e) {
             Log::error('Token exchange error: ' . $e->getMessage(), [
                 'exception' => get_class($e),
@@ -438,7 +410,7 @@ class OAuthController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
             
-            return response()->json(['error' => 'Token exchange error: ' . $e->getMessage()], 500);
+            return response()->json(['error' => 'Failed to exchange code for token: ' . $e->getMessage()], 500);
         }
     }
 

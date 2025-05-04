@@ -3,10 +3,7 @@
 return [
     'paths' => ['api/*', 'oauth/*', 'sanctum/csrf-cookie', 'login', 'logout'],
     
-    'allowed_origins' => [
-        'http://localhost:4000',
-        'http://127.0.0.1:4000',
-    ],
+    'allowed_origins' => ['http://localhost:4000'],
     
     'allowed_methods' => ['*'],
     
