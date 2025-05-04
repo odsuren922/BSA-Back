@@ -343,10 +343,7 @@ class OAuthController extends Controller
             $tokenData = $this->oauthService->getAccessToken($code, $state, $redirectUri);
             
             if (!$tokenData || !isset($tokenData['access_token'])) {
-                Log::error('Failed to obtain access token', [
-                    'token_data' => $tokenData ? 'exists but no access_token' : 'null',
-                ]);
-                
+                Log::error('Failed to obtain access token');
                 return response()->json(['error' => 'Failed to obtain access token'], 401);
             }
             
@@ -358,10 +355,6 @@ class OAuthController extends Controller
             session([config('oauth.token_session_key') => $tokenData]);
             
             // Get user data to include in the response
-            Log::info('Fetching user data using token', [
-                'token' => $this->maskString($tokenData['access_token']),
-            ]);
-            
             $userData = $this->oauthService->getUserData($tokenData['access_token']);
             
             if (!$userData) {

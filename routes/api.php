@@ -21,8 +21,8 @@ use App\Http\Controllers\NotificationSettingController;
 */
 
 // OAuth token exchange and refresh endpoints
-Route::post('/oauth/exchange-token', [\App\Http\Controllers\Auth\OAuthController::class, 'exchangeToken']);
-Route::post('/oauth/refresh-token', [\App\Http\Controllers\Auth\OAuthController::class, 'refreshToken']);
+Route::post('/oauth/exchange-token', [OAuthController::class, 'exchangeToken']);
+Route::post('/oauth/refresh-token', [OAuthController::class, 'refreshToken']);
 Route::post('/oauth/token', [\App\Http\Controllers\Auth\OAuthController::class, 'exchangeCodeForToken']);
 Route::get('/user', [\App\Http\Controllers\Auth\OAuthController::class, 'getUserData'])->middleware('auth:sanctum');
 Route::get('/user/role', [\App\Http\Controllers\Api\RoleController::class, 'getUserRole'])->middleware('auth:sanctum');
@@ -30,7 +30,7 @@ Route::get('/user/role', [\App\Http\Controllers\Api\RoleController::class, 'getU
 
 
 // Thesis management API routes - Protected by auth:sanctum
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('require.token')->group(function () {
     // User information for current authenticated user
     Route::middleware('auth:sanctum')->get('/user', [OAuthController::class, 'getUserData']);
     Route::middleware('auth:sanctum')->get('/user/role', [RoleController::class, 'getUserRole']);

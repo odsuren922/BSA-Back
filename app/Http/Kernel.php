@@ -85,7 +85,7 @@ class Kernel extends HttpKernel
         'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class, // Add Sanctum abilities middleware
         'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class, // Add Sanctum ability middleware
         'oauth' => \App\Http\Middleware\OAuthAuthentication::class, // Added OAuth middleware
-        'require.token' => \App\Http\Middleware\RequireTokenMiddleware::class, // Added middleware to check for tokens
+        'require.token' => \App\Http\Middleware\RequireTokenMiddleware::class,
     ];
 
     /**

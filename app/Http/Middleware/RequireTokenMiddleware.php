@@ -8,24 +8,15 @@ use Illuminate\Support\Facades\Log;
 
 class RequireTokenMiddleware
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @return mixed
-     */
     public function handle(Request $request, Closure $next)
     {
-        // Check all possible token sources
+        // Check multiple token sources
         $token = $this->getTokenFromRequest($request);
         
         if (!$token) {
-            Log::warning('No token found for API request', [
+            Log::warning('No authentication token found for API request', [
                 'path' => $request->path(),
                 'ip' => $request->ip(),
-                'session_id' => session()->getId(),
-                'has_session' => session()->has(config('oauth.token_session_key')),
             ]);
             
             return response()->json([
@@ -34,18 +25,12 @@ class RequireTokenMiddleware
             ], 401);
         }
         
-        // Set the token for downstream middleware
+        // Set token for downstream middleware
         $request->headers->set('Authorization', 'Bearer ' . $token);
         
         return $next($request);
     }
     
-    /**
-     * Get token from various sources in the request
-     * 
-     * @param Request $request
-     * @return string|null
-     */
     protected function getTokenFromRequest(Request $request)
     {
         // 1. Check Authorization header
@@ -60,10 +45,10 @@ class RequireTokenMiddleware
             return $tokenData['access_token'];
         }
         
-        // 3. Check for Sanctum token in session
-        $sanctumToken = session('sanctum_token');
-        if ($sanctumToken) {
-            return $sanctumToken;
+        // 3. Check for token in session or cookie
+        $sessionToken = session('oauth_token') ?? $request->cookie('oauth_token');
+        if ($sessionToken) {
+            return $sessionToken;
         }
         
         // 4. Check for access_token parameter
