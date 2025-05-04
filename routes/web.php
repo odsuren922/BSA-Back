@@ -87,54 +87,6 @@ Route::middleware(['require.token'])->group(function () {
     Route::get('/sync/students', [DataSyncController::class, 'syncStudents']);
     Route::get('/sync/all', [DataSyncController::class, 'syncAll']);
     
-    // Test routes for notifications
-    Route::get('/test-push', function () {
-        // Get authenticated user or first student
-        $user = auth()->user() ?? \App\Models\Student::first();
-        
-        // Get the user ID
-        $userId = $user->sisi_id ?? $user->id;
-        
-        // Check if the user has a subscription
-        $subscription = \App\Models\PushSubscription::where('user_id', $userId)->first();
-        
-        if (!$subscription) {
-            return "No subscription found for user ID: $userId. Please subscribe first.";
-        }
-        
-        $notificationService = app(\App\Services\NotificationService::class);
-        
-        $result = $notificationService->storePushNotification(
-            $userId,
-            'Test Notification',
-            'This is a test notification from your thesis management system',
-            null,
-            url('/')
-        );
-        
-        if ($result) {
-            return "Notification queued with ID: $result. Check your browser notifications!";
-        } else {
-            return "Failed to create notification. Check logs for details.";
-        }
-    });
-    
-    // Test routes
-    Route::get('/test-email', function() {
-        $notificationService = app(\App\Services\NotificationService::class);
-        
-        $result = $notificationService->sendEmailNotification(
-            '21b1num0435@stud.num.edu.mn',
-            'Test Email Notification',
-            'This is a test email notification from your thesis management system.',
-            ['url' => 'http://localhost:4000']
-        );
-        
-        return [
-            'success' => $result,
-            'message' => $result ? 'Email sent successfully' : 'Failed to send email'
-        ];
-    });
     
     Route::get('/test-hub-api', function (HubApiService $hubApiService) {
         // Test departments
@@ -151,9 +103,4 @@ Route::middleware(['require.token'])->group(function () {
         
         return 'Check the dumped data above';
     });
-});
-
-// Public routes for push notifications
-Route::get('/subscribe-push', function () {
-    return view('subscribe-push');
 });
