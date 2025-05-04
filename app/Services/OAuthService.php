@@ -67,6 +67,7 @@ class OAuthService
      * @param string|null $state The state parameter for verification
      * @param string|null $redirectUri Custom redirect URI if different from default
      * @return array|null The token response or null on failure
+     * @throws \Exception If the token request fails
      */
     public function getAccessToken($code, $state = null, $redirectUri = null)
     {
@@ -88,6 +89,12 @@ class OAuthService
 
             $tokenData = json_decode($response->getBody(), true);
             
+            if (!$tokenData || !isset($tokenData['access_token'])) {
+                $errorMsg = 'Token endpoint returned invalid response: missing access_token';
+                Log::error($errorMsg, ['response' => $tokenData]);
+                throw new \Exception($errorMsg);
+            }
+            
             // Add created_at timestamp for expiration tracking
             $tokenData['created_at'] = time();
             
@@ -100,13 +107,103 @@ class OAuthService
             
             return $tokenData;
         } catch (GuzzleException $e) {
+            $this->logDetailedGuzzleException('Failed to get access token', $e);
+            throw new \Exception('Failed to obtain access token: ' . $this->getSafeErrorMessage($e), 0, $e);
+        } catch (\Exception $e) {
             Log::error('Failed to get access token: ' . $e->getMessage(), [
-                'code' => $e->getCode(),
-                'response' => $e->hasResponse() ? (string) $e->getResponse()->getBody() : 'No response',
+                'exception' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
             ]);
-            
-            return null;
+            throw $e;
         }
+    }
+
+    /**
+     * Log detailed information about a Guzzle exception
+     * 
+     * @param string $message
+     * @param GuzzleException $e
+     * @return void
+     */
+    protected function logDetailedGuzzleException($message, GuzzleException $e)
+    {
+        $context = [
+            'exception' => get_class($e),
+            'code' => $e->getCode(),
+        ];
+        
+        // Add response info if available
+        if (method_exists($e, 'getResponse') && $e->getResponse()) {
+            $response = $e->getResponse();
+            $context['status_code'] = $response->getStatusCode();
+            $context['reason'] = $response->getReasonPhrase();
+            
+            // Try to get response body but don't include credentials
+            try {
+                $body = (string) $response->getBody();
+                $context['response_body_size'] = strlen($body);
+                
+                // Try to decode as JSON for structured error info
+                $json = json_decode($body, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    foreach (['error', 'error_description', 'message'] as $key) {
+                        if (isset($json[$key])) {
+                            $context['response_' . $key] = $json[$key];
+                        }
+                    }
+                }
+            } catch (\Exception $bodyEx) {
+                $context['body_parse_error'] = $bodyEx->getMessage();
+            }
+        }
+        
+        // Add request information if available
+        if (method_exists($e, 'getRequest') && $e->getRequest()) {
+            $request = $e->getRequest();
+            $context['request_method'] = $request->getMethod();
+            $context['request_uri'] = $this->sanitizeUrl((string) $request->getUri());
+        }
+        
+        Log::error($message, $context);
+    }
+    
+    /**
+     * Get a safe error message without sensitive information
+     * 
+     * @param \Exception $e
+     * @return string
+     */
+    protected function getSafeErrorMessage(\Exception $e)
+    {
+        $message = $e->getMessage();
+        
+        // Remove tokens, keys, secrets from error message
+        $message = preg_replace('/Bearer\s+[a-zA-Z0-9\._\-]+/', 'Bearer [REDACTED]', $message);
+        $message = preg_replace('/client_secret=[^&]+/', 'client_secret=[REDACTED]', $message);
+        $message = preg_replace('/password=[^&]+/', 'password=[REDACTED]', $message);
+        $message = preg_replace('/access_token=[^&]+/', 'access_token=[REDACTED]', $message);
+        $message = preg_replace('/refresh_token=[^&]+/', 'refresh_token=[REDACTED]', $message);
+        
+        return $message;
+    }
+    
+    /**
+     * Sanitize a URL for logging by removing sensitive parameters
+     * 
+     * @param string $url
+     * @return string
+     */
+    protected function sanitizeUrl($url)
+    {
+        $sensitiveParams = ['client_secret', 'password', 'access_token', 'refresh_token', 'token'];
+        
+        foreach ($sensitiveParams as $param) {
+            $url = preg_replace('/(' . preg_quote($param) . '=)[^&]+/', '$1[REDACTED]', $url);
+        }
+        
+        return $url;
     }
 
     /**
