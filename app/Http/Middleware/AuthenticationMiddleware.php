@@ -16,93 +16,53 @@ class AuthenticationMiddleware
         $this->tokenService = $tokenService;
     }
 
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @param  string|null  $guard
-     * @return mixed
-     */
+
+
+
+
+
+    
     public function handle(Request $request, Closure $next, $guard = null)
     {
-        Log::debug('Processing request in AuthenticationMiddleware', [
-            'path' => $request->path(),
-            'method' => $request->method(),
-            'time' => now()->toDateTimeString()
-        ]);
+        // Generate a request ID for logging
+        $requestId = $request->header('X-Request-ID') ?? substr(md5(uniqid()), 0, 8);
         
         // Skip authentication for certain paths
         if ($this->shouldSkipAuthentication($request)) {
-            Log::debug('Skipping authentication for route', [
-                'path' => $request->path(),
-                'time' => now()->toDateTimeString()
-            ]);
             return $next($request);
         }
         
-        try {
-            // Get token from request
-            $token = $this->tokenService->getTokenFromRequest($request);
-            
-            if (!$token) {
-                Log::warning('No authentication token found', [
-                    'path' => $request->path(),
-                    'ip' => $request->ip(),
-                    'time' => now()->toDateTimeString()
-                ]);
-                
-                return $this->handleUnauthenticated($request);
-            }
-            
-            // Check if token data is in session
+        // Get token from Authorization header (primary method)
+        $token = $request->bearerToken();
+        
+        // Fallback to session for web routes if no Authorization header
+        if (!$token && session()->has(config('oauth.token_session_key'))) {
             $tokenData = session(config('oauth.token_session_key'));
-            
-            // Try to refresh token if needed
-            if ($tokenData) {
-                $newTokenData = $this->tokenService->refreshTokenIfNeeded($token);
+            if (isset($tokenData['access_token'])) {
+                $token = $tokenData['access_token'];
                 
-                if ($newTokenData) {
-                    // Update token in request for downstream middleware
-                    $request->headers->set('Authorization', 'Bearer ' . $newTokenData['access_token']);
-                    
-                    // Update cookies if needed
-                    if (config('oauth.use_cookies', false)) {
-                        Log::debug('Setting token cookie after refresh', [
-                            'time' => now()->toDateTimeString()
-                        ]);
-                        
-                        $cookie = cookie(
-                            'oauth_token', 
-                            $newTokenData['access_token'], 
-                            config('oauth.cookie_lifetime', 60), 
-                            '/', 
-                            null, 
-                            config('app.env') === 'production', 
-                            true // HttpOnly
-                        );
-                        
-                        return $next($request)->withCookie($cookie);
-                    }
-                }
+                // Set token in header for downstream middleware
+                $request->headers->set('Authorization', 'Bearer ' . $token);
             }
-            
-            // Set the token in the request headers for downstream middleware
-            $request->headers->set('Authorization', 'Bearer ' . $token);
-            
-            // If all is well, proceed with the request
-            return $next($request);
-        } catch (\Exception $e) {
-            Log::error('Authentication middleware error: ' . $e->getMessage(), [
-                'exception' => get_class($e),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-                'time' => now()->toDateTimeString()
-            ]);
-            
-            return $this->handleUnauthenticated($request);
         }
+        
+        // Proceed if token was found, otherwise redirect to login
+        if ($token) {
+            return $next($request);
+        }
+        
+        // Handle unauthenticated user
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated',
+                'redirect' => '/login',
+                'request_id' => $requestId
+            ], 401);
+        }
+        
+        return redirect()->route('oauth.redirect')
+            ->with('error', 'Authentication required. Please log in.');
     }
     
     /**

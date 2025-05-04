@@ -330,10 +330,14 @@ class OAuthController extends Controller
      */
     public function exchangeToken(Request $request)
     {
-        Log::info('Token exchange request received', [
+        $requestId = $request->header('X-Request-ID') ?? $request->input('request_id') ?? substr(md5(uniqid()), 0, 8);
+    
+        Log::info("[Auth-{$requestId}] Token exchange request received", [
             'has_code' => $request->has('code'),
             'has_state' => $request->has('state'),
             'time' => now()->toDateTimeString(),
+            'ip' => $request->ip(),
+            'user_agent' => substr($request->userAgent(), 0, 100),
         ]);
 
         $code = $request->input('code');
@@ -341,16 +345,17 @@ class OAuthController extends Controller
         $redirectUri = $request->input('redirect_uri');
         
         if (!$code) {
+            Log::warning("[Auth-{$requestId}] No authorization code provided");
             return response()->json(['error' => 'No authorization code provided'], 400);
         }
         
         try {
             // Exchange the code for access token
-            Log::info('Exchanging authorization code for access token', [
+            Log::info("[Auth-{$requestId}] Exchanging authorization code for access token", [
                 'time' => now()->toDateTimeString()
             ]);
             
-            $tokenData = $this->oauthService->getAccessToken($code, $state, $redirectUri);
+            $tokenData = $this->oauthService->getAccessToken($code, $state, $redirectUri, $requestId);
             
             if (!$tokenData || !isset($tokenData['access_token'])) {
                 Log::error('Failed to obtain access token');
@@ -430,7 +435,7 @@ class OAuthController extends Controller
                 'user' => $formattedUser
             ]);
         } catch (\Exception $e) {
-            Log::error('Token exchange error: ' . $e->getMessage(), [
+            Log::error("[Auth-{$requestId}] Token exchange error: " . $e->getMessage(), [
                 'exception' => get_class($e),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
@@ -440,7 +445,8 @@ class OAuthController extends Controller
             
             return response()->json([
                 'error' => 'Failed to exchange code for token: ' . $e->getMessage(),
-                'time' => now()->toDateTimeString()
+                'time' => now()->toDateTimeString(),
+                'request_id' => $requestId
             ], 500);
         }
     }

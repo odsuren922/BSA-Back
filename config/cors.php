@@ -25,6 +25,7 @@ return [
     'allowed_headers' => [
         'X-CSRF-TOKEN',
         'X-XSRF-TOKEN',
+        'X-REQUEST-ID',
         'X-Requested-With',
         'Content-Type',
         'Accept',

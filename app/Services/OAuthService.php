@@ -66,14 +66,17 @@ class OAuthService
      * @param string $code The authorization code received
      * @param string|null $state The state parameter for verification
      * @param string|null $redirectUri Custom redirect URI if different from default
+     * @param string|null $requestId For log correlation
      * @return array|null The token response or null on failure
      * @throws \Exception If the token request fails
      */
-    public function getAccessToken($code, $state = null, $redirectUri = null)
+    public function getAccessToken($code, $state = null, $redirectUri = null, $requestId = null)
     {
+        $logId = $requestId ?? substr(md5(uniqid()), 0, 8);
+        
         try {
             // Log attempt without sensitive data
-            Log::info('Exchanging authorization code for access token');
+            Log::info("[Auth-{$logId}] Exchanging authorization code for access token");
             
             $formParams = [
                 'grant_type' => 'authorization_code',
@@ -107,7 +110,7 @@ class OAuthService
             
             return $tokenData;
         } catch (GuzzleException $e) {
-            $this->logDetailedGuzzleException('Failed to get access token', $e);
+            $this->logDetailedGuzzleException("[Auth-{$logId}] Failed to get access token", $e);
             throw new \Exception('Failed to obtain access token: ' . $this->getSafeErrorMessage($e), 0, $e);
         } catch (\Exception $e) {
             Log::error('Failed to get access token: ' . $e->getMessage(), [

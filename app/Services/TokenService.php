@@ -16,51 +16,36 @@ class TokenService
     }
 
     /**
-     * Get token from various sources in the request
+     * Get token from request
      *
      * @param Request $request
      * @return string|null
      */
     public function getTokenFromRequest(Request $request)
     {
-        Log::debug('Attempting to get token from request', [
-            'has_auth_header' => $request->hasHeader('Authorization'),
-            'has_session' => session()->has(config('oauth.token_session_key')),
-            'time' => now()->toDateTimeString()
+        // Generate a unique request ID for logging
+        $requestId = substr(md5(uniqid()), 0, 8);
+        
+        Log::debug("[Auth-{$requestId}] Retrieving token from request", [
+            'path' => $request->path(),
+            'ip' => $request->ip()
         ]);
         
-        // 1. Try Authorization header
+        // Try Authorization header first (best practice)
         $token = $request->bearerToken();
         if ($token) {
-            Log::debug('Found token in Authorization header');
+            Log::debug("[Auth-{$requestId}] Token found in Authorization header");
             return $token;
         }
         
-        // 2. Try session
+        // Try session as fallback for web routes
         $tokenData = session(config('oauth.token_session_key'));
         if ($tokenData && isset($tokenData['access_token'])) {
-            Log::debug('Found token in session');
+            Log::debug("[Auth-{$requestId}] Token found in session");
             return $tokenData['access_token'];
         }
         
-        // 3. Try cookie
-        $token = $request->cookie('oauth_token');
-        if ($token) {
-            Log::debug('Found token in cookie');
-            return $token;
-        }
-        
-        // 4. Try database based on user ID in session
-        $userData = session('oauth_user');
-        if ($userData && isset($userData['id']) && isset($userData['role'])) {
-            $tokenData = $this->getTokenFromDatabase($userData['id'], $userData['role']);
-            if ($tokenData && isset($tokenData['access_token'])) {
-                Log::debug('Found token in database');
-                return $tokenData['access_token'];
-            }
-        }
-        
-        Log::debug('No token found in request');
+        Log::debug("[Auth-{$requestId}] No token found in request");
         return null;
     }
 
@@ -90,18 +75,35 @@ class TokenService
                 'time' => now()->toDateTimeString()
             ]);
             
-            // Store or update token in database
-            DB::table('user_tokens')
-                ->updateOrInsert(
-                    ['user_id' => $data['user_id'], 'user_type' => $data['user_type'] ?? null],
-                    [
+            // First check if the record exists
+            $existingRecord = DB::table('user_tokens')
+                ->where('user_id', $data['user_id'])
+                ->where('user_type', $data['user_type'] ?? null)
+                ->first();
+                
+            if ($existingRecord) {
+                // Update existing record
+                DB::table('user_tokens')
+                    ->where('user_id', $data['user_id'])
+                    ->where('user_type', $data['user_type'] ?? null)
+                    ->update([
                         'access_token' => $data['access_token'],
                         'refresh_token' => $data['refresh_token'] ?? null,
                         'expires_at' => $expiresAt,
-                        'updated_at' => now(),
-                        'created_at' => DB::raw('CASE WHEN created_at IS NULL THEN NOW() ELSE created_at END'),
-                    ]
-                );
+                        'updated_at' => now()
+                    ]);
+            } else {
+                // Insert new record
+                DB::table('user_tokens')->insert([
+                    'user_id' => $data['user_id'],
+                    'user_type' => $data['user_type'] ?? null,
+                    'access_token' => $data['access_token'],
+                    'refresh_token' => $data['refresh_token'] ?? null,
+                    'expires_at' => $expiresAt,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
             
             return true;
         } catch (\Exception $e) {
