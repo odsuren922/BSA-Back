@@ -26,6 +26,21 @@ class AuthenticationMiddleware
      */
     public function handle(Request $request, Closure $next, $guard = null)
     {
+        Log::debug('Processing request in AuthenticationMiddleware', [
+            'path' => $request->path(),
+            'method' => $request->method(),
+            'time' => now()->toDateTimeString()
+        ]);
+        
+        // Skip authentication for certain paths
+        if ($this->shouldSkipAuthentication($request)) {
+            Log::debug('Skipping authentication for route', [
+                'path' => $request->path(),
+                'time' => now()->toDateTimeString()
+            ]);
+            return $next($request);
+        }
+        
         try {
             // Get token from request
             $token = $this->tokenService->getTokenFromRequest($request);
@@ -34,6 +49,7 @@ class AuthenticationMiddleware
                 Log::warning('No authentication token found', [
                     'path' => $request->path(),
                     'ip' => $request->ip(),
+                    'time' => now()->toDateTimeString()
                 ]);
                 
                 return $this->handleUnauthenticated($request);
@@ -52,6 +68,10 @@ class AuthenticationMiddleware
                     
                     // Update cookies if needed
                     if (config('oauth.use_cookies', false)) {
+                        Log::debug('Setting token cookie after refresh', [
+                            'time' => now()->toDateTimeString()
+                        ]);
+                        
                         $cookie = cookie(
                             'oauth_token', 
                             $newTokenData['access_token'], 
@@ -67,6 +87,9 @@ class AuthenticationMiddleware
                 }
             }
             
+            // Set the token in the request headers for downstream middleware
+            $request->headers->set('Authorization', 'Bearer ' . $token);
+            
             // If all is well, proceed with the request
             return $next($request);
         } catch (\Exception $e) {
@@ -74,11 +97,42 @@ class AuthenticationMiddleware
                 'exception' => get_class($e),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'time' => now()->toDateTimeString()
             ]);
             
             return $this->handleUnauthenticated($request);
         }
+    }
+    
+    /**
+     * Check if authentication should be skipped for the current route
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return bool
+     */
+    protected function shouldSkipAuthentication(Request $request)
+    {
+        $path = $request->path();
+        
+        // Public routes that don't need authentication
+        $publicPaths = [
+            'login',
+            'oauth/redirect',
+            'oauth/callback',
+            'auth',
+            'api/oauth/exchange-token',
+            'api/oauth/refresh-token',
+            'sanctum/csrf-cookie',
+        ];
+        
+        foreach ($publicPaths as $publicPath) {
+            if (str_contains($path, $publicPath)) {
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     /**
@@ -92,15 +146,24 @@ class AuthenticationMiddleware
         // Store intended URL if it's a GET request
         if ($request->isMethod('get') && !$request->expectsJson() && !$this->isAuthRoute($request)) {
             session()->put('url.intended', $request->url());
+            Log::debug('Storing intended URL', [
+                'url' => $request->url(),
+                'time' => now()->toDateTimeString()
+            ]);
         }
         
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthenticated',
-                'redirect' => '/login'
+                'redirect' => '/login',
+                'time' => now()->toDateTimeString()
             ], 401);
         }
+        
+        Log::debug('Redirecting unauthenticated user to OAuth login', [
+            'time' => now()->toDateTimeString()
+        ]);
         
         return redirect()->route('oauth.redirect')
             ->with('error', 'Your session has expired. Please log in again.');

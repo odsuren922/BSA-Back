@@ -22,7 +22,8 @@ class CreateUserTokensTable extends Migration
             $table->timestamp('expires_at');
             $table->timestamps();
             
-            $table->unique(['user_id', 'user_type']);
+            // Add index on user_id and user_type
+            $table->index(['user_id', 'user_type']);
         });
     }
 

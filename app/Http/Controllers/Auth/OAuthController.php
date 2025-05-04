@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Services\OAuthService;
 use App\Services\RoleService;
+use App\Services\TokenService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -19,11 +20,16 @@ class OAuthController extends Controller
 {
     protected $oauthService;
     protected $roleService;
+    protected $tokenService;
 
-    public function __construct(OAuthService $oauthService, RoleService $roleService = null)
-    {
+    public function __construct(
+        OAuthService $oauthService, 
+        RoleService $roleService = null,
+        TokenService $tokenService = null
+    ) {
         $this->oauthService = $oauthService;
         $this->roleService = $roleService ?? new RoleService();
+        $this->tokenService = $tokenService ?? new TokenService($oauthService);
     }
 
     /**
@@ -317,7 +323,7 @@ class OAuthController extends Controller
     }
     
     /**
-     * Exchange authorization code for tokens
+     * Exchange authorization code for an access token via API endpoint
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -327,6 +333,7 @@ class OAuthController extends Controller
         Log::info('Token exchange request received', [
             'has_code' => $request->has('code'),
             'has_state' => $request->has('state'),
+            'time' => now()->toDateTimeString(),
         ]);
 
         $code = $request->input('code');
@@ -339,7 +346,10 @@ class OAuthController extends Controller
         
         try {
             // Exchange the code for access token
-            Log::info('Exchanging authorization code for access token');
+            Log::info('Exchanging authorization code for access token', [
+                'time' => now()->toDateTimeString()
+            ]);
+            
             $tokenData = $this->oauthService->getAccessToken($code, $state, $redirectUri);
             
             if (!$tokenData || !isset($tokenData['access_token'])) {
@@ -380,12 +390,6 @@ class OAuthController extends Controller
                 return response()->json(['error' => 'User not found in system'], 404);
             }
 
-            // Create a Sanctum token for this user
-            $sanctumToken = '';
-            if (isset($user['model'])) {
-                $sanctumToken = $this->createSanctumToken($user['model'], $role);
-            }
-            
             // Format user data for response
             $formattedUser = [
                 'id' => $user['id'],
@@ -400,9 +404,22 @@ class OAuthController extends Controller
             // Store user data in session
             session(['oauth_user' => $formattedUser]);
             
+            // Store token in the database
+            $this->tokenService->storeTokenInDatabase([
+                'user_id' => $user['id'],
+                'user_type' => $role,
+                'access_token' => $tokenData['access_token'],
+                'refresh_token' => $tokenData['refresh_token'] ?? null,
+                'expires_in' => $tokenData['expires_in'] ?? 3600,
+                'created_at' => $tokenData['created_at']
+            ]);
+            
             Log::info('Token exchange successful', [
                 'has_user_data' => !empty($formattedUser),
                 'token_type' => $tokenData['token_type'] ?? 'unknown',
+                'user_id' => $user['id'],
+                'user_role' => $role,
+                'time' => now()->toDateTimeString()
             ]);
             
             return response()->json([
@@ -410,8 +427,7 @@ class OAuthController extends Controller
                 'refresh_token' => $tokenData['refresh_token'] ?? null,
                 'expires_in' => $tokenData['expires_in'] ?? 3600,
                 'token_time' => $tokenData['created_at'],
-                'user' => $formattedUser,
-                'sanctum_token' => $sanctumToken
+                'user' => $formattedUser
             ]);
         } catch (\Exception $e) {
             Log::error('Token exchange error: ' . $e->getMessage(), [
@@ -419,9 +435,13 @@ class OAuthController extends Controller
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
+                'time' => now()->toDateTimeString()
             ]);
             
-            return response()->json(['error' => 'Failed to exchange code for token: ' . $e->getMessage()], 500);
+            return response()->json([
+                'error' => 'Failed to exchange code for token: ' . $e->getMessage(),
+                'time' => now()->toDateTimeString()
+            ], 500);
         }
     }
 
