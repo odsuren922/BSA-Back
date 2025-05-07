@@ -8,6 +8,18 @@ use Illuminate\Database\Eloquent\Model;
 class GradingComponent extends Model {
     use HasFactory;
     protected $fillable = ['grading_schema_id', 'score', 'by_who', 'name', 'order','scheduled_week'];
+
+    public function translateByWho()
+{
+    return match ($this->by_who) {
+        'supervisor' => 'Удирдагч багш',
+        'examiner' => 'Шүүмж багш',
+        'committee' => 'Комисс',
+        default => 'Тодорхойгүй',
+    };
+}
+
+
     public function gradingSchema() {
         return $this->belongsTo(GradingSchema::class);
     }

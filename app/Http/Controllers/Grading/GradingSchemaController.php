@@ -42,6 +42,9 @@ class GradingSchemaController extends Controller
         return response()->json(['message' => 'Thesis Cycle not found'], 404);
     }
 
+
+    
+
     public function filteredGradingSchema($thesisCycleId)
 {
     $thesisCycle = ThesisCycle::find($thesisCycleId);

@@ -24,10 +24,9 @@ class GradingComponentResource extends JsonResource
             'order' => $this->order,
             'by_who' => $this->by_who,
             'scheduled_week' => $this->scheduled_week,
-             'schema' => new GradingSchemaResource($this->whenLoaded('gradingSchema')),
+            'schema' => new GradingSchemaResource($this->whenLoaded('gradingSchema')),
             // 'criteria' => GradingCriteriaResource::collection($this->whenLoaded('gradingCriteria')),
-
-    
+            'by_who_label' => $this->translateByWho(),
             'createdAt' => $this->created_at->toDateTimeString(),
             'updatedAt' => $this->updated_at->toDateTimeString(),
         ];

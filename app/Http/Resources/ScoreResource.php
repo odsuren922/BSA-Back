@@ -13,18 +13,25 @@ class ScoreResource extends JsonResource
      * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
      */
     public function toArray($request)
-    {
-        return [
-            'id' => $this->id,
-            'student' => new StudentResource($this->whenLoaded('student')),
-            'thesis' => new ThesisResource($this->whenLoaded('thesis')),
-            'grading_component_id' => $this->component_id,
-            'component' => new GradingComponentResource($this->whenLoaded('component')),
-            'score' => $this->score,
-            'given_by_type' => $this->given_by_type,
-            'given_by_id' => $this->given_by_id,
-            'committee_student_id' => $this->committee_student_id,
-            'committee_scores' => CommitteeScoreResource::collection($this->whenLoaded('committeeScores')),
-        ];
-    }
+{
+    return [
+        'id' => $this->id,
+        'student_id'=>$this->student_id,
+        'student' => new StudentResource($this->whenLoaded('student')),
+        'thesis' => new ThesisResource($this->whenLoaded('thesis')),
+        'grading_component_id' => $this->component_id,
+        'component' => new GradingComponentResource($this->whenLoaded('component')),
+        'score' => $this->score,
+        'given_by_type' => $this->given_by_type,
+        'given_by_id' => $this->given_by_id,
+        'given_by' => $this->givenBy ? [
+            'id' => $this->givenBy->id,
+            'type' => class_basename($this->given_by_type),
+            'name' => $this->givenBy->firstname . ' ' . $this->givenBy->lastname,
+        ] : null,
+        'committee_student_id' => $this->committee_student_id,
+        'committee_scores' => CommitteeScoreResource::collection($this->whenLoaded('committeeScores')),
+    ];
+}
+
 }

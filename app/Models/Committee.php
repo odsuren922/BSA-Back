@@ -55,7 +55,7 @@ class Committee extends Model
     public function scores()
     {
         return $this->hasMany(Score::class, 'given_by_id')
-            ->where('given_by_type', 'committee');
+            ->where('given_by_type', 'App\Models\Committee');
     }
     
     // public function scores()

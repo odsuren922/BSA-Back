@@ -4,14 +4,14 @@ namespace App\Http\Controllers\Committee;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Committee;
+
 
 use App\Http\Resources\CommitteeResource;
 use App\Models\ThesisCycle;
 use App\Models\GradingComponent;
 use App\Models\CommitteeStudent;
 use App\Models\CommitteeMember;
-
+use App\Models\Committee;
 
 class CommitteeController extends Controller
 {
@@ -76,7 +76,7 @@ class CommitteeController extends Controller
     $committees = Committee::with([
         //'department',
         'gradingComponent',
-        // 'members.teacher',
+        'members.teacher',
         // 'students',
         'schedules',
        
@@ -85,7 +85,8 @@ class CommitteeController extends Controller
             $query->where('status', 'Идэвхитэй');
         })
         // ->where('dep_id', $request->user()->dep_id)
-        ->whereNotIn('status', ['cancelled', 'done']);
+        ->whereNotIn('status', ['cancelled', 'done'])
+        ->get();
         // ->paginate(10);
 
     return CommitteeResource::collection($committees);

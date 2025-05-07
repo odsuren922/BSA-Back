@@ -6,7 +6,7 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\Sanctum;
 use App\Services\NotificationService;
-
+use Illuminate\Database\Eloquent\Relations\Relation;
 /**
  * Class AppServiceProvider.
  */
@@ -34,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
         });
     }
 
+
     protected function schedule(Schedule $schedule)
     {
         // Send scheduled notifications every minute
@@ -48,5 +49,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         Paginator::useBootstrap();
+        Relation::morphMap([
+            'teacher' => \App\Models\Teacher::class,
+            // 'supervisor' => \App\Models\Supervisor::class,
+       
+        ]);
     }
 }

@@ -175,7 +175,7 @@ Route::get('/teachers/count/department/{dep_id}', [TeacherController::class, 'co
     
         Route::get('/theses', [ThesisController::class, 'supervisodThesis']); //нэвтэрсэн багштай харьяатай бүр БСА
         Route::get('/thesisInfo/{id}', [ThesisController::class, 'index']); //БСА холбоотой мэдээлэл авах
-        Route::get('/thesisInfoBySid/{id}', [ThesisController::class, 'thesisbyStudentId']); //БСА холбоотой мэдээлэл  student id -гааравах
+        Route::get('/thesisInfoBySid', [ThesisController::class, 'thesisbyStudentId']); //БСА холбоотой мэдээлэл  student id -гааравах
     
         Route::get('/onethesis/{id}', [ThesisController::class, 'getThesis']); //БСА-н мэдээлэл авах( төлөвлөгөө, статус)
         Route::get('/thesis/{id}', [ThesisController::class, 'pdf']); //PDF ҮҮСГЭХЭД ХЭРЭГЛЭХ МЭДЭЭЛЭЛ
@@ -247,6 +247,7 @@ Route::get('/teachers/count/department/{dep_id}', [TeacherController::class, 'co
 
             Route::post('/committees', [CommitteeController::class, 'storeWithCycleAndComponent']);
         });
+
         Route::get('/committees/by-teacher/{teacherId}', [CommitteeController::class, 'getCommitteesByTeacher']);
         // Route::get('/committees/by-student/{studentId}', [CommitteeController::class, 'getCommitteesByStudent']);
         Route::delete('/committee-members/{id}', [CommitteeMemberController::class, 'destroy']);
@@ -292,11 +293,19 @@ Route::get('/teachers/count/department/{dep_id}', [TeacherController::class, 'co
 
         Route::prefix('assigned-grading')->group(function () {
             Route::get('/', [AssignedGradingController::class, 'index']); // list all
+            Route::get('/teacher/{teacherId}', [AssignedGradingController::class, 'getByAssignedById']);
+ // list all
             Route::post('/', [AssignedGradingController::class, 'store']); // store multiple
             Route::post('/check-assignment', [AssignedGradingController::class, 'checkAssignment']); // permission check
             Route::delete('/{assignedGrading}', [AssignedGradingController::class, 'destroy']); // delete
+            
         });
+        Route::get('/assigned-grading/teacher/{teacherId}', [AssignedGradingController::class, 'getByAssignedById']);
+        Route::get('/assigned-grading/score/{teacherId}', [AssignedGradingController::class, 'getScoreByAssignedById']);
+        Route::get('/grading-assignments', [AssignedGradingController::class, 'getGradingAssignments']);
+
         Route::get('/assigned-grading/component/{componentId}/cycle/{cycleId}', [AssignedGradingController::class, 'getByComponentAndCycle']);
+        Route::get('thesis-cycles/{thesis_cycle_id}/grading-components/{component_id}/scores', [ScoreController::class, 'getScoresByComponentAndCycle']);
 
 });
 Route::get('/committees/{id}/members-scores', [CommitteeController::class, 'getCommitteeMembersWithStudentsAndScores']);

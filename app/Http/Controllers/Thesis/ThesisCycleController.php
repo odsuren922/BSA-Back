@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\DB;
 use App\Models\ThesisCycle;
 use App\Models\Teacher;
 use App\Models\GradingSchema;
+use App\Models\Committee;
+
 
 
 // TODO:: Шаардлагатай бол тэнхимийн ID-р шүүхийг нэмэх

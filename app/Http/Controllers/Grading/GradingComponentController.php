@@ -19,6 +19,8 @@ class GradingComponentController extends Controller
         return GradingComponent::with('gradingCriteria')->findOrFail($id);
     }
 
+
+
     public function store(Request $request)
     {
         $validated = $request->validate([

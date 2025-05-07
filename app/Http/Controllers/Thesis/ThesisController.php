@@ -78,8 +78,9 @@ class ThesisController extends Controller
         return new ThesisResource($thesis);
     }
     //Student id gaar thesis iig avna
-    public function thesisbyStudentId($studentId)
+    public function thesisbyStudentId()
 {
+    $user = Student::findOrFail(1);
     $thesis = Thesis::with([
         'supervisor',
         'student',
@@ -88,7 +89,7 @@ class ThesisController extends Controller
         // 'scores.teacher',
         'scores',
         'tasks.subtasks',
-    ])->where('student_id', $studentId)->first(); // 👈 find by student_id
+    ])->where('student_id', $user->id)->first(); // 👈 find by student_id
 
     if (!$thesis) {
         return new ThesisResource(new Thesis()); // or: return response()->json(null);
@@ -173,6 +174,7 @@ class ThesisController extends Controller
                 'supervisor_info' => [
                     'firstname' => $thesis->supervisor->firstname,
                     'lastname' => $thesis->supervisor->lastname,
+                    'id'=>$thesis->supervisor->id,
                 ],
                 'status' => $thesis->status,
                 'department' => $thesis->student->department->name,

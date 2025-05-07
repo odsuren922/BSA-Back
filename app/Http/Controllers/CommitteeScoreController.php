@@ -141,7 +141,7 @@ class CommitteeScoreController extends Controller
         //  Аль хэдийн finalize хийсэн оноо байгаа эсэхийг шалгах
         $existingScore = Score::where('student_id', $studentId)
             ->where('component_id', $componentId)
-            ->where('given_by_type', 'committee')
+            ->where('given_by_type', 'App\Models\Committee')
             ->where('given_by_id', $committeeId)
             ->first();
     
@@ -189,7 +189,7 @@ class CommitteeScoreController extends Controller
             'student_id' => $studentId,
             'component_id' => $componentId,
             'score' => $averageScore,
-            'given_by_type' => 'committee',
+            'given_by_type' => 'App\Models\Committee',
             'given_by_id' => $committeeId,
             'committee_student_id' => $committeeStudent->id,
         ]);
@@ -260,7 +260,7 @@ class CommitteeScoreController extends Controller
             // Handle existing or new score
             $existingScore = Score::where('student_id', $studentId)
                 ->where('component_id', $componentId)
-                ->where('given_by_type', 'committee')
+                ->where('given_by_type', 'App\Models\Committee')
                 ->where('given_by_id', $committeeId)
                 ->first();
     
@@ -278,7 +278,7 @@ class CommitteeScoreController extends Controller
                     'student_id' => $studentId,
                     'component_id' => $componentId,
                     'score' => $averageScore,
-                    'given_by_type' => 'committee',
+                    'given_by_type' => 'App\Models\Committee',
                     'given_by_id' => $committeeId,
                     'committee_student_id' => $committeeStudent->id,
                 ]);
