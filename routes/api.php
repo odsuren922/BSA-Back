@@ -24,6 +24,29 @@ Route::post('/oauth/token', [\App\Http\Controllers\Auth\OAuthController::class, 
 Route::get('/user', [\App\Http\Controllers\Auth\OAuthController::class, 'getUserData'])->middleware('auth:sanctum');
 Route::get('/user/role', [\App\Http\Controllers\Api\RoleController::class, 'getUserRole'])->middleware('auth:sanctum');
 
+Route::middleware('require.token')->prefix('hub-sync')->group(function () {
+    Route::get('/test-connection', [App\Http\Controllers\HubDataSyncController::class, 'testConnection']);
+    Route::post('/departments', [App\Http\Controllers\HubDataSyncController::class, 'syncDepartments']);
+    Route::post('/teachers', [App\Http\Controllers\HubDataSyncController::class, 'syncTeachers']);
+    Route::post('/students', [App\Http\Controllers\HubDataSyncController::class, 'syncStudents']);
+    Route::post('/all', [App\Http\Controllers\HubDataSyncController::class, 'syncAll']);
+});
+
+
+Route::middleware('require.token')->group(function () {
+    // Email Notification routes
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [App\Http\Controllers\NotificationController::class, 'index']);
+        Route::post('/', [App\Http\Controllers\NotificationController::class, 'store']);
+        Route::get('/{id}', [App\Http\Controllers\NotificationController::class, 'show']);
+        Route::post('/{id}/send', [App\Http\Controllers\NotificationController::class, 'send']);
+        Route::post('/{id}/cancel', [App\Http\Controllers\NotificationController::class, 'cancel']);
+    });
+    
+    // Tracking pixel route (no authentication required)
+    Route::get('/notification-track/{recipient}', [App\Http\Controllers\NotificationController::class, 'track'])->name('notification.track');
+});
+
 
 
 // Thesis management API routes - Protected by auth:sanctum
@@ -78,13 +101,6 @@ Route::middleware('require.token')->group(function () {
     // Student routes
     Route::get('/students/all', [App\Http\Controllers\StudentController::class, 'index']);
     
-    // Data Sync routes
-    Route::prefix('sync')->group(function () {
-        Route::post('/departments', [App\Http\Controllers\DataSyncController::class, 'syncDepartments']);
-        Route::post('/teachers', [App\Http\Controllers\DataSyncController::class, 'syncTeachers']);
-        Route::post('/students', [App\Http\Controllers\DataSyncController::class, 'syncStudents']);
-        Route::post('/all', [App\Http\Controllers\DataSyncController::class, 'syncAll']);
-    });
     
     // Thesis Plan and Subtasks routes
     Route::post('/thesis-plan/save-all', [App\Http\Controllers\TaskController::class, 'saveAll']);

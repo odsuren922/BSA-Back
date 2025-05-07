@@ -29,6 +29,9 @@ class Kernel extends ConsoleKernel
     {
         // Clean up expired sessions daily
         $schedule->command('sessions:clean')->daily()->at('02:00');
+
+        // Send scheduled notifications every minute
+        $schedule->command('notifications:send-scheduled')->everyMinute();
     }
 
     /**

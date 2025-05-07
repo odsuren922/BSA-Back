@@ -5,7 +5,6 @@ namespace App\Providers;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\Sanctum;
-use App\Services\NotificationService;
 
 /**
  * Class AppServiceProvider.
@@ -35,12 +34,14 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(AuthenticationMiddleware::class, function ($app) {
             return new AuthenticationMiddleware($app->make(TokenService::class));
         });
+
+        $this->app->singleton(\App\Services\HubApiService::class, function ($app) {
+            return new \App\Services\HubApiService($app->make(\App\Services\OAuthService::class));
+        });
     }
 
     protected function schedule(Schedule $schedule)
     {
-        // Send scheduled notifications every minute
-        $schedule->command('notifications:send-scheduled')->everyMinute();
     }
 
     /**
