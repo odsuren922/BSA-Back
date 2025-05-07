@@ -31,9 +31,10 @@ class VerifyCsrfToken extends Middleware
         'api/oauth/refresh-token',
         'api/oauth/token',
 
-        
-        // API routes
+        // API routes - make sure notifications are included
         'api/*',
+        'api/notifications',
+        'api/notifications/*',
         
         // Other excluded routes
         '2fa/*',

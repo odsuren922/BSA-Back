@@ -239,16 +239,29 @@ class NotificationService
     public function sendScheduledNotifications()
     {
         $now = Carbon::now();
-        $count = 0;
-
+        Log::info('Checking for scheduled notifications at: ' . $now->toDateTimeString() . ' (' . config('app.timezone') . ')');
+        
         // Get all notifications scheduled to be sent now or in the past
-        $notifications = EmailNotification::where('status', 'scheduled')
+        $scheduledNotifications = EmailNotification::where('status', 'scheduled')
             ->where('scheduled_at', '<=', $now)
             ->get();
+        
+        Log::info('Found ' . $scheduledNotifications->count() . ' scheduled notifications to send');
+        
+        // Log each notification for debugging
+        foreach ($scheduledNotifications as $notification) {
+            Log::info('Will send notification #' . $notification->id . 
+                ' scheduled for ' . $notification->scheduled_at);
+        }
+        
+        $count = 0;
 
-        foreach ($notifications as $notification) {
+        foreach ($scheduledNotifications as $notification) {
             if ($this->sendNotification($notification)) {
                 $count++;
+                Log::info('Successfully sent scheduled notification #' . $notification->id);
+            } else {
+                Log::error('Failed to send scheduled notification #' . $notification->id);
             }
         }
 

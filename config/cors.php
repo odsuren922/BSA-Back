@@ -10,6 +10,7 @@ return [
         'auth',
         'api/user',
         'api/oauth/*',
+        'notifications/*',
     ],
     
     'allowed_origins' => [

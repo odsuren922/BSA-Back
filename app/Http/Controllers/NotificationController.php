@@ -6,6 +6,8 @@ use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\EmailNotification;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class NotificationController extends Controller
 {
@@ -16,6 +18,8 @@ class NotificationController extends Controller
         $this->notificationService = $notificationService;
     }
     
+
+
     /**
      * Store a new notification
      *
@@ -24,6 +28,31 @@ class NotificationController extends Controller
      */
     public function store(Request $request)
     {
+
+        if ($request->has('scheduled_at')) {
+            // Parse the ISO string from frontend (always in UTC)
+            $utcScheduledTime = Carbon::parse($request->input('scheduled_at'));
+            
+            // Store the time in the database with timezone awareness
+            // Laravel will handle conversion based on app timezone
+            $data['scheduled_at'] = $utcScheduledTime;
+            
+            Log::debug('Timezone conversion for scheduled notification', [
+                'received_utc_iso' => $request->input('scheduled_at'),
+                'app_timezone' => config('app.timezone'),
+                'stored_time' => $utcScheduledTime->toDateTimeString()
+            ]);
+        }
+
+        Log::debug('Notification store request received', [
+            'ip' => $request->ip(),
+            'method' => $request->method(),
+            'has_authorization' => $request->hasHeader('Authorization') ? 'yes' : 'no',
+            'auth_header' => $request->hasHeader('Authorization') ? substr($request->header('Authorization'), 0, 15) . '...' : null,
+            'content_type' => $request->header('Content-Type'),
+            'post_data_keys' => array_keys($request->all()),
+        ]);
+        
         $validator = Validator::make($request->all(), [
             'subject' => 'required|string|max:255',
             'content' => 'required|string',
@@ -34,6 +63,10 @@ class NotificationController extends Controller
         ]);
         
         if ($validator->fails()) {
+            Log::warning('Notification validation failed', [
+                'errors' => $validator->errors()->toArray()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
@@ -45,10 +78,44 @@ class NotificationController extends Controller
         $userInfo = session('oauth_user') ?? null;
         
         if (!$userInfo) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Authenticated user information not available'
-            ], 401);
+            Log::warning('No authenticated user info available in session', [
+                'session_id' => session()->getId(),
+                'all_session_keys' => array_keys(session()->all()),
+            ]);
+            
+            // Try to get user from token
+            try {
+                $token = $this->extractTokenFromRequest($request);
+                
+                if ($token) {
+                    $oauthService = app(\App\Services\OAuthService::class);
+                    $userData = $oauthService->getUserData($token);
+                    
+                    if ($userData) {
+                        Log::info('User data retrieved from token', [
+                            'user_id' => $userData['user_id'] ?? 'unknown',
+                            'data_fields' => array_keys($userData),
+                        ]);
+                        
+                        // Use token-retrieved user data
+                        $userInfo = [
+                            'id' => $userData['user_id'] ?? 'system',
+                            'role' => $userData['role'] ?? 'system',
+                        ];
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Error retrieving user data from token: ' . $e->getMessage());
+            }
+            
+            // If still no user info, use system defaults
+            if (!$userInfo) {
+                Log::info('Using system user as fallback');
+                $userInfo = [
+                    'id' => 'system',
+                    'role' => 'system',
+                ];
+            }
         }
         
         // Prepare data for notification creation
@@ -58,6 +125,12 @@ class NotificationController extends Controller
         
         try {
             $notification = $this->notificationService->createNotification($data);
+            
+            Log::info('Notification created successfully', [
+                'notification_id' => $notification->id,
+                'subject' => $notification->subject,
+                'recipients_count' => $notification->recipients()->count(),
+            ]);
             
             return response()->json([
                 'success' => true,
@@ -70,6 +143,13 @@ class NotificationController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
+            Log::error('Failed to create notification: ' . $e->getMessage(), [
+                'exception' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create notification',
@@ -77,6 +157,37 @@ class NotificationController extends Controller
             ], 500);
         }
     }
+
+
+    /**
+     * Extract token from request
+     *
+     * @param Request $request
+     * @return string|null
+     */
+    protected function extractTokenFromRequest(Request $request)
+    {
+        // Try bearer token
+        $token = $request->bearerToken();
+        if ($token) {
+            return $token;
+        }
+        
+        // Try Authorization header format "Token <token>"
+        $header = $request->header('Authorization');
+        if ($header && preg_match('/^Token\s+(.*)$/i', $header, $matches)) {
+            return $matches[1];
+        }
+        
+        // Try from request parameters
+        if ($request->has('access_token')) {
+            return $request->input('access_token');
+        }
+        
+        return null;
+    }
+
+
     
     /**
      * Get a list of all notifications

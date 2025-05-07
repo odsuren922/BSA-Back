@@ -15,17 +15,20 @@ class AuthenticationMiddleware
     {
         $this->tokenService = $tokenService;
     }
-
-
-
-
-
-
     
     public function handle(Request $request, Closure $next, $guard = null)
     {
         // Generate a request ID for logging
         $requestId = $request->header('X-Request-ID') ?? substr(md5(uniqid()), 0, 8);
+        
+        // Log the authentication attempt for debugging
+        Log::debug('Authentication middleware processing request', [
+            'request_id' => $requestId,
+            'path' => $request->path(),
+            'method' => $request->method(),
+            'has_bearer_token' => $request->bearerToken() ? true : false,
+            'has_session_token' => session()->has(config('oauth.token_session_key')),
+        ]);
         
         // Skip authentication for certain paths
         if ($this->shouldSkipAuthentication($request)) {
@@ -43,21 +46,51 @@ class AuthenticationMiddleware
                 
                 // Set token in header for downstream middleware
                 $request->headers->set('Authorization', 'Bearer ' . $token);
+                
+                Log::debug('Using token from session', [
+                    'request_id' => $requestId,
+                    'token_preview' => substr($token, 0, 10) . '...',
+                ]);
             }
         }
         
-        // Proceed if token was found, otherwise redirect to login
+        // Additional check for API token in request
+        if (!$token && $request->input('access_token')) {
+            $token = $request->input('access_token');
+            $request->headers->set('Authorization', 'Bearer ' . $token);
+            
+            Log::debug('Using token from request parameter', [
+                'request_id' => $requestId,
+                'token_preview' => substr($token, 0, 10) . '...',
+            ]);
+        }
+        
+        // Proceed if token was found
         if ($token) {
+            // Optionally validate token here if needed
+            
+            Log::debug('Token found, proceeding with request', [
+                'request_id' => $requestId,
+                'path' => $request->path(),
+            ]);
+            
             return $next($request);
         }
         
         // Handle unauthenticated user
-        if ($request->expectsJson()) {
+        Log::warning('Authentication failed - no valid token found', [
+            'request_id' => $requestId,
+            'path' => $request->path(),
+            'method' => $request->method(),
+        ]);
+        
+        if ($request->expectsJson() || $request->is('api/*')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthenticated',
                 'redirect' => '/login',
-                'request_id' => $requestId
+                'request_id' => $requestId,
+                'timestamp' => now()->toDateTimeString(),
             ], 401);
         }
         
@@ -88,60 +121,6 @@ class AuthenticationMiddleware
         
         foreach ($publicPaths as $publicPath) {
             if (str_contains($path, $publicPath)) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-    
-    /**
-     * Handle unauthenticated user
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
-     */
-    protected function handleUnauthenticated(Request $request)
-    {
-        // Store intended URL if it's a GET request
-        if ($request->isMethod('get') && !$request->expectsJson() && !$this->isAuthRoute($request)) {
-            session()->put('url.intended', $request->url());
-            Log::debug('Storing intended URL', [
-                'url' => $request->url(),
-                'time' => now()->toDateTimeString()
-            ]);
-        }
-        
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthenticated',
-                'redirect' => '/login',
-                'time' => now()->toDateTimeString()
-            ], 401);
-        }
-        
-        Log::debug('Redirecting unauthenticated user to OAuth login', [
-            'time' => now()->toDateTimeString()
-        ]);
-        
-        return redirect()->route('oauth.redirect')
-            ->with('error', 'Your session has expired. Please log in again.');
-    }
-    
-    /**
-     * Check if the current route is an auth route
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return bool
-     */
-    protected function isAuthRoute(Request $request)
-    {
-        $path = $request->path();
-        $authRoutes = ['login', 'oauth/redirect', 'oauth/callback', 'auth'];
-        
-        foreach ($authRoutes as $route) {
-            if (strpos($path, $route) !== false) {
                 return true;
             }
         }

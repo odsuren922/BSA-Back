@@ -34,6 +34,17 @@ Route::middleware('require.token')->prefix('hub-sync')->group(function () {
 
 
 Route::middleware('require.token')->group(function () {
+    
+});
+
+
+
+// Thesis management API routes - Protected by auth:sanctum
+Route::middleware('require.token')->group(function () {
+    // User information for current authenticated user
+    Route::middleware('auth:sanctum')->get('/user', [OAuthController::class, 'getUserData']);
+    Route::middleware('auth:sanctum')->get('/user/role', [RoleController::class, 'getUserRole']);
+
     // Email Notification routes
     Route::prefix('notifications')->group(function () {
         Route::get('/', [App\Http\Controllers\NotificationController::class, 'index']);
@@ -45,15 +56,6 @@ Route::middleware('require.token')->group(function () {
     
     // Tracking pixel route (no authentication required)
     Route::get('/notification-track/{recipient}', [App\Http\Controllers\NotificationController::class, 'track'])->name('notification.track');
-});
-
-
-
-// Thesis management API routes - Protected by auth:sanctum
-Route::middleware('require.token')->group(function () {
-    // User information for current authenticated user
-    Route::middleware('auth:sanctum')->get('/user', [OAuthController::class, 'getUserData']);
-    Route::middleware('auth:sanctum')->get('/user/role', [RoleController::class, 'getUserRole']);
 
     // ProposalForm routes
     Route::prefix('proposalform')->group(function () {
