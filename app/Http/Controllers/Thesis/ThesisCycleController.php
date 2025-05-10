@@ -29,7 +29,7 @@ class ThesisCycleController extends Controller
     {
         $depId = $request->query('dep_id');
         return response()->json(
-            ThesisCycle::with('gradingSchema')
+            ThesisCycle::with('gradingSchema', 'reminders.schedules', 'deadlines')
                 ->where('status', '!=', 'Устгах')
                 ->when($depId, function ($query, $depId) {
                     return $query->where('dep_id', $depId);
@@ -53,7 +53,7 @@ class ThesisCycleController extends Controller
     
         $activeThesis = ThesisCycle::with('gradingSchema')
             ->withCount(['theses as totalTheses' => function ($query) {
-                $query->whereColumn('thesis_cycle_id', 'thesis_cycles.id');
+                $query->whereColumn('thesis_cycle_id', 'thesis_cycles.id',);
             }])
             ->where('start_date', '<=', now())
             ->where('end_date', '>=', now())

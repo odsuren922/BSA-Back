@@ -16,8 +16,9 @@ class ThesisCycleDeadlineController extends Controller
             'related_id' => 'required|exists:grading_components,id',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date',
-            'start_time' => 'nullable|date_format:H:i:s',
-            'end_time' => 'nullable|date_format:H:i:s',
+            // 'start_time' => 'nullable|date_format:H:i:s',
+            // 'end_time' => 'nullable|date_format:H:i:s',
+     
         ]);
 
         $deadline = ThesisCycleDeadline::updateOrCreate(
@@ -29,8 +30,8 @@ class ThesisCycleDeadlineController extends Controller
             [
                 'start_date' => $validated['start_date'],
                 'end_date' => $validated['end_date'],
-                'start_time' => $validated['start_time'],
-                'end_time' => $validated['end_time'],
+                // 'start_time' => $validated['start_time'],
+                // 'end_time' => $validated['end_time'],
             ]
         );
 

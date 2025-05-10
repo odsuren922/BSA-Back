@@ -20,10 +20,11 @@ class CreateRemindersTable extends Migration
             $table->string('title');
             $table->text('description')->nullable();
             $table->string('target_type')->default('all');
-            $table->timestamp('scheduled_at');
+            // $table->string('scheduled_at');
+            // $table->json('scheduled_at');
             $table->timestamps();
 
-            $table->index('scheduled_at');
+            // $table->index('scheduled_at');
             $table->index('component_id');
 
         });

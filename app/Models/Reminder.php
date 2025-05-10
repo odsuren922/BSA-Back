@@ -15,10 +15,9 @@ class Reminder extends Model
         'title',
         'description',
         'target_type',
-        'scheduled_at',
     ];
+    
 
-    protected $dates = ['scheduled_at'];
 
     /**
      * Relationships
@@ -32,5 +31,9 @@ class Reminder extends Model
     public function component()
     {
         return $this->belongsTo(GradingComponent::class, 'component_id');
+    }
+    public function schedules()
+    {
+        return $this->morphMany(ReminderSchedule::class, 'scheduleable');
     }
 }
