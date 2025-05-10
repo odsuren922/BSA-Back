@@ -10,6 +10,8 @@ use App\Models\ThesisCycle;
 use App\Models\Teacher;
 use App\Models\GradingSchema;
 use App\Models\Committee;
+use App\Models\ThesisCycleDeadline;
+
 
 
 
@@ -100,7 +102,7 @@ class ThesisCycleController extends Controller
      * Шинэ төгсөлтийн ажлын мөчлөг үүсгэх
      * - Нэр, он, улирал, эхлэх/дуусах огноо, үнэлгээний арга шаардлагатай
      */
-    public function store(Request $request)
+    public function storeCycle(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:100',
@@ -119,11 +121,56 @@ class ThesisCycleController extends Controller
         return response()->json($thesisCycle, 201); // 201 = Шинэ зүйл амжилттай үүссэн
     }
 
+    public function store(Request $request)
+{
+    $validated = $request->validate([
+        'name' => 'required|string|max:100',
+        'dep_id' => 'nullable|exists:departments,id',
+        'year' => 'required|integer',
+        'end_year' =>'required|integer',
+        'semester' => 'required|string|max:20',
+        'start_date' => 'required|date',
+        'end_date' => 'required|date|after:start_date',
+        'status'=>'required|string|max:100',
+        'grading_schema_id' => 'nullable|exists:grading_schemas,id',
+        'deadlines' => 'nullable|array',
+        'deadlines.*.grading_component_id' => 'required|exists:grading_components,id',
+        'deadlines.*.start_date' => 'required|date',
+        'deadlines.*.end_date' => 'required|date|after_or_equal:deadlines.*.start_date',
+    ]);
+
+    DB::beginTransaction();
+    try {
+        $thesisCycle = ThesisCycle::create($validated);
+
+        if (!empty($validated['deadlines'])) {
+            foreach ($validated['deadlines'] as $deadline) {
+                ThesisCycleDeadline::create([
+                    'thesis_cycle_id' => $thesisCycle->id,
+                    'type' => 'grading_component', // or other type logic
+                    'related_id' => $deadline['grading_component_id'],
+                    'title' => null, // optional
+                    'description' => null, // optional
+                    'start_date' => $deadline['start_date'],
+                    'end_date' => $deadline['end_date'],
+                ]);
+            }
+        }
+
+        DB::commit();
+        $thesisCycle->load('gradingSchema');
+        return response()->json($thesisCycle, 201);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json(['error' => 'Хадгалахад алдаа гарлаа.'], 500);
+    }
+}
+
     /**
      * Тодорхой мөчлөгийн мэдээллийг шинэчлэх
      * TODO:: Зөвхөн админ эрхтэй хэрэглэгч шинэчилж болохоор хязгаар тавих
      */
-    public function update(Request $request, $id)
+    public function updateCycle(Request $request, $id)
     {
         $thesisCycle = ThesisCycle::with('gradingSchema')->findOrFail($id);
         $thesisCycle->update($request->all());
@@ -133,6 +180,58 @@ class ThesisCycleController extends Controller
         
         return response()->json($thesisCycle);
     }
+    public function update(Request $request, $id)
+{
+    $validated = $request->validate([
+        'name' => 'required|string|max:100',
+        'dep_id' => 'nullable|exists:departments,id',
+        'year' => 'required|integer',
+        'end_year' =>'required|integer',
+        'semester' => 'required|string|max:20',
+        'start_date' => 'required|date',
+        'end_date' => 'required|date|after:start_date',
+        'status'=>'required|string|max:100',
+        'grading_schema_id' => 'nullable|exists:grading_schemas,id',
+        'deadlines' => 'nullable|array',
+        'deadlines.*.grading_component_id' => 'required|exists:grading_components,id',
+        'deadlines.*.start_date' => 'required|date',
+        'deadlines.*.end_date' => 'required|date|after_or_equal:deadlines.*.start_date',
+    ]);
+
+    DB::beginTransaction();
+
+    try {
+        $thesisCycle = ThesisCycle::findOrFail($id);
+        $thesisCycle->update($validated);
+
+        // Delete old deadlines
+        ThesisCycleDeadline::where('thesis_cycle_id', $thesisCycle->id)->delete();
+
+        // Create new deadlines if provided
+        if (!empty($validated['deadlines'])) {
+            foreach ($validated['deadlines'] as $deadline) {
+                ThesisCycleDeadline::create([
+                    'thesis_cycle_id' => $thesisCycle->id,
+                    'type' => 'grading_component',
+                    'related_id' => $deadline['grading_component_id'],
+                    'title' => null,
+                    'description' => null,
+                    'start_date' => $deadline['start_date'],
+                    'end_date' => $deadline['end_date'],
+                ]);
+            }
+        }
+
+        DB::commit();
+
+        $thesisCycle = $thesisCycle->fresh('gradingSchema');
+
+        return response()->json($thesisCycle);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json(['error' => 'Шинэчлэх үед алдаа гарлаа.'], 500);
+    }
+}
 
     /**
      * Төгсөлтийн ажлын мөчлөгийг устгах

@@ -21,6 +21,7 @@ class GradingComponentResource extends JsonResource
             'name' => $this->name,
             'score' => $this->score,
             'assessedBy' => $this->by_who,
+            'description' => $this->description,
             'order' => $this->order,
             'by_who' => $this->by_who,
             'scheduled_week' => $this->scheduled_week,

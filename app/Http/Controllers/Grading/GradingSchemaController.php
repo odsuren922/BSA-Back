@@ -89,6 +89,7 @@ class GradingSchemaController extends Controller
             'grading_components.*.score' => 'required|numeric',
             'grading_components.*.by_who' => 'nullable|string',
             'grading_components.*.scheduled_week' => 'nullable|numeric',
+            'grading_components.*.description' => 'nullable|string',
         ]);
         
 
@@ -116,6 +117,7 @@ class GradingSchemaController extends Controller
                     'dep_id' => $validated['dep_id'] ?? null,
                     'by_who' => $component['by_who'] ?? 'Supervisor', // Default to Supervisor if 'by_who' is not provided
                     'scheduled_week' => $component['scheduled_week'],
+                    'description' => $component['description'],
                 ]);
             }
         }
@@ -135,6 +137,7 @@ class GradingSchemaController extends Controller
             'grading_components.*.name' => 'required_if:grading_components.*.score,!=,null|string|max:255',
             'grading_components.*.score' => 'nullable|numeric',
             'grading_components.*.by_who' => 'nullable|string',
+            'grading_components.*.description' => 'nullable|string',
             'grading_components.*.scheduled_week' => 'nullable|numeric',
         ]);
 
@@ -162,6 +165,7 @@ class GradingSchemaController extends Controller
                     'score' => $component['score'],
                     'by_who' => $component['by_who'] ?? 'Supervisor',
                     'scheduled_week' => $component['scheduled_week'],
+                    'description' => $component['description'],
                 ]);
                 $keptComponentIds[] = $existingComponent->id;
             } else {
@@ -171,6 +175,7 @@ class GradingSchemaController extends Controller
                     'score' => $component['score'],
                     'by_who' => $component['by_who'] ?? 'Supervisor',
                     'scheduled_week' => $component['scheduled_week'],
+                    'description' => $component['description'],
                 ]);
                 $keptComponentIds[] = $newComponent->id;
             }
@@ -196,6 +201,7 @@ class GradingSchemaController extends Controller
             'grading_components.*.name' => 'required|string|max:255',
             'grading_components.*.score' => 'required|numeric|min:0|max:100',
             'grading_components.*.by_who' => 'required|string|max:255',
+            'grading_components.*.scheduled_week' => 'nullable|numeric',
         ]);
 
         // Find the grading schema
@@ -207,6 +213,7 @@ class GradingSchemaController extends Controller
                 'name' => $component['name'],
                 'score' => $component['score'],
                 'by_who' => $component['by_who'],
+                'description' => $component['description'],
             ]);
         }
 

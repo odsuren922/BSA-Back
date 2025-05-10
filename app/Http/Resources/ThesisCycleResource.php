@@ -28,6 +28,7 @@ class ThesisCycleResource extends JsonResource
 
             'grading_schema' => new GradingSchemaResource($this->whenLoaded('gradingSchema')),
             'theses' => ThesisResource::collection($this->whenLoaded('theses')),
+            'deadlines' => ThesisCycleDeadlineResource::collection($this->whenLoaded('deadlines')), // ✅ added
 
             //TODO COMMITTEE: INFO
         ];

@@ -190,14 +190,18 @@ Route::get('/teachers/count/department/{dep_id}', [TeacherController::class, 'co
     // getTeachersAndThesisCountsByCycleId
     Route::get('/thesis-cycles/{id}/counts', [ThesisCycleController::class, 'getTeachersAndThesisCountsByCycleId']);
         Route::post('/thesis-cycles', [ThesisCycleController::class, 'store']);
+        Route::post('/only-thesis-cycles', [ThesisCycleController::class, 'storeCycle']);
         Route::get('/thesis-cycles', [ThesisCycleController::class, 'index']);//✅ ThesisCycles awah 
         Route::get('/active-cycles', [ThesisCycleController::class, 'active']);//✅ AdminDashboard 
         // Route::get('/active-cycles/dep_id={dep_id}', [ThesisCycleController::class, 'active']);
-        
+        Route::get('/thesis-cycles/department/{dep_id}', [ThesisCycleController::class, 'getByDepartment']);
+
 
 
         Route::get('/thesis-cycles/{id}', [ThesisCycleController::class, 'show']);//✅ ThesisCyclePage 
         Route::put('/thesis-cycles/{id}', [ThesisCycleController::class, 'update']);
+        Route::put('/only-thesis-cycles/{id}', [ThesisCycleController::class, 'updateCycle']);
+
         Route::delete('/thesis-cycles/{id}', [ThesisCycleController::class, 'destroy']); //done
     
         // ------------------------------
@@ -306,8 +310,12 @@ Route::get('/teachers/count/department/{dep_id}', [TeacherController::class, 'co
 
         Route::get('/assigned-grading/component/{componentId}/cycle/{cycleId}', [AssignedGradingController::class, 'getByComponentAndCycle']);
         Route::get('thesis-cycles/{thesis_cycle_id}/grading-components/{component_id}/scores', [ScoreController::class, 'getScoresByComponentAndCycle']);
+        Route::get('/committees/{id}/members-scores', [CommitteeController::class, 'getCommitteeMembersWithStudentsAndScores']);
+
+        Route::apiResource('committee-scores', CommitteeScoreController::class);
+
+        //Deadlines
+        Route::post('/thesiscycle/component/deadline', [ThesisCycleDeadlineController::class, 'storeOrUpdate']);
 
 });
-Route::get('/committees/{id}/members-scores', [CommitteeController::class, 'getCommitteeMembersWithStudentsAndScores']);
 
-Route::apiResource('committee-scores', CommitteeScoreController::class);

@@ -16,4 +16,8 @@ class ThesisCycle extends Model {
     {
     return $this->hasMany(Thesis::class, 'thesis_cycle_id');
     }
+    public function deadlines()
+    {
+        return $this->hasMany(ThesisCycleDeadline::class);
+    }
 }
