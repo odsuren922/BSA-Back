@@ -228,6 +228,7 @@ Route::middleware('auth.api.token')->group(function () {
     Route::patch('/committee-members/{member}/role', [App\Http\Controllers\Committee\CommitteeMemberController::class, 'patchRole']);
 
     Route::prefix('committees/{committee}')->group(function () {
+
         Route::get('members', [App\Http\Controllers\Committee\CommitteeMemberController::class, 'index']);
         Route::post('members', [App\Http\Controllers\Committee\CommitteeMemberController::class, 'store']);
         Route::put('members/{member}', [App\Http\Controllers\Committee\CommitteeMemberController::class, 'update']);
@@ -292,4 +293,13 @@ Route::middleware('auth.api.token')->group(function () {
     Route::get('/thesiscycle/{id}/reminders', [App\Http\Controllers\ReminderController::class, 'getByCycle']);
     Route::patch('/thesiscycle/reminder/{reminder}', [App\Http\Controllers\ReminderController::class, 'update']);
     Route::delete('/thesiscycle/reminder/{reminder}', [App\Http\Controllers\ReminderController::class, 'destroy']);
+
+    Route::apiResource('external-reviewers', App\Http\Controllers\ExternalReviewerController::class);
+    Route::apiResource('external-reviewer-scores', App\Http\Controllers\ExternalReviewerScoreController::class);
+    Route::post('/external-reviewer-scores/batch', [App\Http\Controllers\ExternalReviewerScoreController::class, 'storeBatch']);
+    Route::post('/committee/external-reviewer-scores/batch', [App\Http\Controllers\ExternalReviewerScoreController::class, 'storeBatch2']);
+    Route::post('/committee-scores/save-editable-scores', [App\Http\Controllers\CommitteeScoreController::class, 'saveEditableScores']);
+
+
+
 });

@@ -1,10 +1,10 @@
-<!-- <?php
+<?php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateSchedulesTable extends Migration
+class CreateExternalReviewersTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,17 +13,16 @@ class CreateSchedulesTable extends Migration
      */
     public function up()
     {
-        Schema::create('schedules', function (Blueprint $table) {
+        Schema::create('external_reviewers', function (Blueprint $table) {
             $table->id();
+            $table->string('firstname');
+            $table->string('lastname');
             $table->foreignId('committee_id')->nullable()->constrained('committees')->cascadeOnDelete();
-            $table->string('event_type');
-            $table->timestampTz('start_datetime');
-            $table->timestampTz('end_datetime')->nullable(); 
-            $table->string('location');
-            $table->string('room')->nullable();
-            $table->text('notes')->nullable();
+            $table->string('email')->nullable();
+            $table->string('phone')->nullable();         
+            $table->string('organization')->nullable();  
+            $table->string('position')->nullable();      
             $table->timestamps();
-
         });
     }
 
@@ -34,6 +33,6 @@ class CreateSchedulesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('schedules');
+        Schema::dropIfExists('external_reviewers');
     }
-} 
+}

@@ -117,7 +117,7 @@ class GradingSchemaController extends Controller
                     'dep_id' => $validated['dep_id'] ?? null,
                     'by_who' => $component['by_who'] ?? 'Supervisor', // Default to Supervisor if 'by_who' is not provided
                     'scheduled_week' => $component['scheduled_week'],
-                    'description' => $component['description'],
+                    'description' => $component['description']?? null,
                 ]);
             }
         }

@@ -35,7 +35,7 @@ class Teacher extends Model
 public function committees()
 {
     return $this->belongsToMany(Committee::class, 'committee_members')
-                ->withPivot('role', 'status', 'is_chairperson', 'assigned_at')
+                ->withPivot('role', 'status', 'assigned_at')
                 ->withTimestamps();
 }
 }

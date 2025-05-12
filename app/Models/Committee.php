@@ -9,8 +9,7 @@ class Committee extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'grading_component_id', 'dep_id','thesis_cycle_id', 'status', 'color'];
-
+    protected $fillable = ['name', 'description', 'grading_component_id', 'dep_id', 'thesis_cycle_id', 'status', 'color'];
 
     public function translatedStatus()
     {
@@ -36,7 +35,13 @@ class Committee extends Model
 
     public function members()
     {
+        //teachers
         return $this->hasMany(CommitteeMember::class);
+    }
+    public function externalReviewers()
+    {
+        //gadnii tomilogson gishuuud
+        return $this->hasMany(ExternalReviewer::class);
     }
 
     public function students()
@@ -54,15 +59,11 @@ class Committee extends Model
 
     public function scores()
     {
-        return $this->hasMany(Score::class, 'given_by_id')
-            ->where('given_by_type', 'App\Models\Committee');
+        return $this->hasMany(Score::class, 'given_by_id')->where('given_by_type', 'App\Models\Committee');
     }
-    
+
     // public function scores()
     // {
     //     return $this->hasMany(CommitteeScore::class, 'committee_id');
     // }
-
-
-
 }

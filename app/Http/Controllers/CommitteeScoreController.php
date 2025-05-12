@@ -9,9 +9,13 @@ use App\Http\Resources\CommitteeScoreResource;
 use App\Http\Resources\ScoreResource;
 use App\Models\CommitteeStudent;
 use App\Models\CommitteeMember;
+use App\Models\Thesis;
 use App\Models\Committee;
-
+use App\Models\ExternalReviewerScore;
+use App\Models\ExternalReviewer;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CommitteeScoreController extends Controller
 {
@@ -66,6 +70,62 @@ class CommitteeScoreController extends Controller
         return new CommitteeScoreResource($score->fresh(['thesis', 'student', 'committeeMember', 'component']));
     }
 
+    public function saveEditableScores(Request $request)
+{
+    $data = $request->validate([
+        'committee_id' => 'required|exists:committees,id',
+        'component_id' => 'required|exists:grading_components,id',
+        'scores' => 'required|array',
+        'scores.*.student_id' => 'required|exists:students,id',
+        'scores.*.committee_member_id' => 'required|exists:committee_members,id',
+        'scores.*.score' => 'required|numeric|min:0|max:100',
+    ]);
+
+    $errors = [];
+    $processed = [];
+
+    foreach ($data['scores'] as $index => $item) {
+        try {
+            $thesis = Thesis::where('student_id', $item['student_id'])->firstOrFail();
+                $thesisId = $thesis->id;
+
+            $existing = CommitteeScore::where([
+                'student_id' => $item['student_id'],
+                'committee_member_id' => $item['committee_member_id'],
+                'component_id' => $data['component_id'],
+            ])->first();
+
+            if ($existing) {
+                $existing->update(['score' => $item['score']]);
+                $processed[] = $existing->id;
+            } else {
+                $new = CommitteeScore::create([
+                    'student_id' => $item['student_id'],
+                    'committee_member_id' => $item['committee_member_id'],
+                    'component_id' => $data['component_id'],
+                    'score' => $item['score'],
+                    'thesis_id' => $thesisId,
+                    
+                ]);
+                $processed[] = $new->id;
+            }
+        } catch (\Exception $e) {
+            $errors[$index] = $e->getMessage();
+        }
+    }
+
+    if (!empty($errors)) {
+        return response()->json(['errors' => $errors], 422);
+    }
+
+    return CommitteeScoreResource::collection(
+        CommitteeScore::whereIn('id', $processed)
+            ->with(['student', 'committeeMember'])
+            ->get()
+    );
+}
+
+
     public function storeBatch(Request $request)
     {
         $data = $request->all();
@@ -110,10 +170,11 @@ class CommitteeScoreController extends Controller
 
         return CommitteeScoreResource::collection(
             CommitteeScore::whereIn('id', collect($processed)->pluck('id'))
-                ->with(['thesis', 'student', 'committeeMember', 'component'])
+                ->with(['student', 'committeeMember'])
                 ->get(),
         );
     }
+
     //Нэг оюутан (student) + нэг үнэлгээний хэсэг (component) дээр
     // Бүх committee гишүүд оноогоо өгсөн эсэхийг шалгаад
     // Бүх гишүүд өгсөн байвал дундаж оноо тооцоод
@@ -121,69 +182,60 @@ class CommitteeScoreController extends Controller
 
     public function finalizeCommitteeScores($studentId, $componentId)
     {
-        $committeeScores = CommitteeScore::where('student_id', $studentId)
-            ->where('component_id', $componentId)
-            ->with('committeeMember')
-            ->get();
-    
+        $committeeScores = CommitteeScore::where('student_id', $studentId)->where('component_id', $componentId)->with('committeeMember')->get();
+
         if ($committeeScores->isEmpty()) {
             return response()->json(['error' => 'No committee scores found.'], 404);
         }
-    
+
         $firstCommitteeMember = $committeeScores->first()->committeeMember;
-    
+
         if (!$firstCommitteeMember) {
             return response()->json(['error' => 'Committee member information missing.'], 500);
         }
-    
+
         $committeeId = $firstCommitteeMember->committee_id;
-    
+
         //  Аль хэдийн finalize хийсэн оноо байгаа эсэхийг шалгах
-        $existingScore = Score::where('student_id', $studentId)
-            ->where('component_id', $componentId)
-            ->where('given_by_type', 'App\Models\Committee')
-            ->where('given_by_id', $committeeId)
-            ->first();
-    
+        $existingScore = Score::where('student_id', $studentId)->where('component_id', $componentId)->where('given_by_type', 'App\Models\Committee')->where('given_by_id', $committeeId)->first();
+
         if ($existingScore) {
             //  CommitteeScore хамгийн сүүлд хэзээ update болсон бэ?
             $latestCommitteeScoreUpdate = $committeeScores->max('updated_at');
-    
+
             //  Existing Score хамгийн сүүлд хэзээ update болсон бэ?
             $scoreLastUpdated = $existingScore->updated_at;
-    
+
             if ($latestCommitteeScoreUpdate <= $scoreLastUpdated) {
                 //  Хэрэв CommitteeScore өөрчлөгдөөгүй бол finalize хийхийг хориглоно
                 return response()->json(['error' => 'This score has already been finalized and no updates detected.'], 400);
             }
-    
+
             //  CommitteeScore шинэчлэгдсэн бол дараа нь үргэлжлүүлж шинэчилнэ
             $existingScore->update([
                 'score' => round($committeeScores->avg('score'), 2),
             ]);
-    
+
             return new ScoreResource($existingScore);
         }
-    
+
         // Коммитийн нийт гишүүдийн тоо
         $committeeMemberCount = \App\Models\CommitteeMember::where('committee_id', $committeeId)->count();
         $givenScoresCount = $committeeScores->count();
-    
+
         if ($committeeMemberCount !== $givenScoresCount) {
             return response()->json(['error' => 'Not all committee members have given scores yet.'], 400);
         }
-    
+
         $averageScore = round($committeeScores->avg('score'), 2);
-    
+
         //  Сурагчийн committee_student_id авах
-        $committeeStudent = \App\Models\CommitteeStudent::where('committee_id', $committeeId)
-            ->where('student_id', $studentId)
-            ->first();
-    
+        $committeeStudent = \App\Models\CommitteeStudent::where('committee_id', $committeeId)->where('student_id', $studentId)->first();
+
         if (!$committeeStudent) {
             return response()->json(['error' => 'Committee student not found.'], 404);
         }
-    
+
         $score = Score::create([
             'thesis_id' => $committeeScores->first()->thesis_id,
             'student_id' => $studentId,
@@ -193,132 +245,86 @@ class CommitteeScoreController extends Controller
             'given_by_id' => $committeeId,
             'committee_student_id' => $committeeStudent->id,
         ]);
-    
+
         return new ScoreResource($score);
     }
     public function batchFinalizeByCommittee(Request $request)
     {
         $data = $request->validate([
-            'committee_id' => 'required|integer|exists:committees,id',
+            'committee_id' => 'required|exists:committees,id',
+            'component_id' => 'required|exists:grading_components,id',
+            'scores' => 'required|array',
+            'scores.*.student_id' => 'required|integer|exists:students,id',
+            'scores.*.average' => 'nullable|numeric|min:0|max:100',
         ]);
-    
-        $committeeId = $data['committee_id'];
-        $committee = Committee::with('gradingComponent')->findOrFail($committeeId);
-        
-        // Validate grading component exists
-        if (!$committee->grading_component_id) {
-            return response()->json(['error' => 'Committee has no associated grading component.'], 400);
-        }
-    
-        $committeeStudents = CommitteeStudent::where('committee_id', $committeeId)
-            ->with('student')
-            ->get();
-    
-        if ($committeeStudents->isEmpty()) {
-            return response()->json(['error' => 'No students found in this committee.'], 404);
-        }
-    
-        $committeeMemberCount = CommitteeMember::where('committee_id', $committeeId)->count();
-        if ($committeeMemberCount === 0) {
-            return response()->json(['error' => 'No committee members found for this committee.'], 400);
-        }
-    
-        $results = [
-            'success' => [],
-            'failed' => [],
-        ];
-    
-        foreach ($committeeStudents as $committeeStudent) {
-            $studentId = $committeeStudent->student_id;
-            $componentId = $committee->grading_component_id;
-    
-            $committeeScores = CommitteeScore::where('student_id', $studentId)
-                ->where('component_id', $componentId)
-                ->with('committeeMember')
-                ->get();
-    
-            // Validation checks
-            if ($committeeScores->isEmpty()) {
-                $results['failed'][] = $this->createFailedResult($studentId, $componentId, 'No committee scores found');
-                continue;
-            }
-    
-            $firstCommitteeMember = $committeeScores->first()->committeeMember;
-            if (!$firstCommitteeMember) {
-                $results['failed'][] = $this->createFailedResult($studentId, $componentId, 'Committee member info missing');
-                continue;
-            }
-    
-            if ($committeeScores->count() !== $committeeMemberCount) {
-                $results['failed'][] = $this->createFailedResult($studentId, $componentId, 'Not all committee members have given scores');
-                continue;
-            }
-    
-            // Calculate average score
-            $averageScore = round($committeeScores->avg('score'), 2);
-    
-            // Handle existing or new score
-            $existingScore = Score::where('student_id', $studentId)
-                ->where('component_id', $componentId)
-                ->where('given_by_type', 'App\Models\Committee')
-                ->where('given_by_id', $committeeId)
-                ->first();
-    
-            if ($existingScore) {
-                $latestCommitteeScoreUpdate = $committeeScores->max('updated_at');
-                if ($latestCommitteeScoreUpdate > $existingScore->updated_at) {
-                    $existingScore->update(['score' => $averageScore]);
-                    $results['success'][] = $this->createSuccessResult($studentId, $componentId, 'updated');
-                } else {
-                    $results['failed'][] = $this->createFailedResult($studentId, $componentId, 'Already finalized and no updates detected');
-                }
-            } else {
-                Score::create([
-                    'thesis_id' => $committeeScores->first()->thesis_id,
-                    'student_id' => $studentId,
-                    'component_id' => $componentId,
-                    'score' => $averageScore,
-                    'given_by_type' => 'App\Models\Committee',
-                    'given_by_id' => $committeeId,
-                    'committee_student_id' => $committeeStudent->id,
-                ]);
-                $results['success'][] = $this->createSuccessResult($studentId, $componentId, 'created');
-            }
-        }
-    
-        return response()->json([
-            'message' => 'Batch finalization completed',
-            'results' => $results,
-            'stats' => [
-                'total_students' => $committeeStudents->count(),
-                'successful' => count($results['success']),
-                'failed' => count($results['failed']),
-            ]
-        ]);
-    }
-    
-    // Helper methods for consistent result formatting
-    private function createSuccessResult($studentId, $componentId, $status)
-    {
-        return [
-            'student_id' => $studentId,
-            'component_id' => $componentId,
-            'status' => $status,
-        ];
-    }
-    
-    private function createFailedResult($studentId, $componentId, $reason)
-    {
-        return [
-            'student_id' => $studentId,
-            'component_id' => $componentId,
-            'reason' => $reason,
-        ];
-    }
 
-    
-    
-    
+        $committeeId = $data['committee_id'];
+        $scores = $data['scores'];
+
+        $committee = Committee::with('gradingComponent')->findOrFail($committeeId);
+        $componentId = $data['component_id'];
+
+        $savedScores = [];
+        DB::beginTransaction();
+        try {
+            // Log::info('Комисс оноо хадгалах эхэллээ');
+
+            foreach ($scores as $scoreData) {
+                $studentId = $scoreData['student_id'];
+                $averageScore = $scoreData['average'];
+
+                // Log::info('Оюутан: ', ['student_id' => $studentId, 'avg' => $averageScore]);
+
+                $committeeStudent = CommitteeStudent::with('student.thesis')->where('committee_id', $committeeId)->where('student_id', $studentId)->first();
+
+                if (!$committeeStudent || !$committeeStudent->student || !$committeeStudent->student->thesis) {
+                    Log::warning('Оюутны эсвэл thesis мэдээлэл байхгүй', ['student_id' => $studentId]);
+                    continue;
+                }
+
+                // $thesisId = $committeeStudent->student->thesis->id;
+                $thesis = Thesis::where('student_id', $studentId)->firstOrFail();
+                $thesisId = $thesis->id;
+
+                Log::info('Thesis ID:', ['thesis_id' => $thesisId]);
+
+                $score = Score::updateOrCreate(
+                    [
+                        'student_id' => $studentId,
+                        'component_id' => $componentId,
+                        'given_by_type' => 'App\Models\Committee',
+                        'given_by_id' => $committeeId,
+                    ],
+                    [
+                        'thesis_id' => $thesisId,
+                        'score' => $averageScore,
+                        'committee_student_id' => $committeeStudent->id,
+                    ],
+                );
+                $savedScores[] = $score;
+
+                // Log::info('Score хадгаллаа.');
+            }
+            DB::commit();
+            return response()->json([
+                'message' => 'Комиссын оноонууд амжилттай хадгалагдлаа.',
+                'data' => ScoreResource::collection(collect($savedScores)),
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Finalizing scores error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(
+                [
+                    'error' => 'Оноо хадгалахад алдаа гарлаа.',
+                    'details' => $e->getMessage(),
+                ],
+                500,
+            );
+        }
+    }
 
     // DELETE /api/committee-scores/{id}
     public function destroy($id)

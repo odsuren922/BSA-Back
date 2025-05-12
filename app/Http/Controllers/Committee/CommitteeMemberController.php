@@ -43,7 +43,7 @@ class CommitteeMemberController extends Controller
                 'teacher_ids.*' => 'exists:teachers,id',
                 'role' => 'nullable|string|max:255',
                 'status' => 'nullable|in:active,inactive',
-                'is_chairperson' => 'nullable|boolean'
+    
             ]);
 
             $existingMembers = $committee->members()
@@ -64,7 +64,6 @@ class CommitteeMemberController extends Controller
                     'teacher_id' => $teacherId,
                     'role' => $validated['role'] ?? 'member',
                     'status' => $validated['status'] ?? 'active',
-                    'is_chairperson' => $validated['is_chairperson'] ?? false,
                     'assigned_at' => now(),
                 ]);
             }
@@ -91,7 +90,7 @@ class CommitteeMemberController extends Controller
             $validated = $request->validate([
                 'role' => 'sometimes|string|max:255',
                 'status' => 'sometimes|in:active,inactive',
-                'is_chairperson' => 'sometimes|boolean'
+                // 'is_chairperson' => 'sometimes|boolean'
             ]);
 
             $member->update($validated);

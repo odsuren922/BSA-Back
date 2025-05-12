@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class CommitteeMember extends Model
 {
     use HasFactory;
-    protected $fillable = ['committee_id', 'teacher_id', 'role', 'status', 'is_chairperson', 'assigned_at'];
+    protected $fillable = ['committee_id', 'teacher_id', 'role', 'status', 'assigned_at'];
 
     public function committee()
     {

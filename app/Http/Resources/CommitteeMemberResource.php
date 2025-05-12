@@ -20,7 +20,8 @@ class CommitteeMemberResource extends JsonResource
             'id' => $this->id,
             'role' => $this->role,
             'status' => $this->status,
-            'isChairperson' => $this->is_chairperson,
+        
+            // 'isChairperson' => $this->is_chairperson,
 
             'teacher' => [
                 'id' => $this->teacher->id,
@@ -28,6 +29,7 @@ class CommitteeMemberResource extends JsonResource
                 'lastname' => $this->teacher->lastname,
                 'email' => $this->teacher->mail,
             ],
+
             'committee' => $this->whenLoaded(
                 'committee',
                 fn() => [

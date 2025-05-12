@@ -31,6 +31,7 @@ class CommitteeResource extends JsonResource
             'students' => CommitteeStudentResource::collection($this->whenLoaded('students')),
             'schedules' => ScheduleResource::collection($this->whenLoaded('schedules')),
             'scores' => ScoreResource::collection($this->whenLoaded('scores')),
+            'externalReviewers' => ExternalReviewerResource::collection($this->whenLoaded('externalReviewers')),
             // 'scores' => CommitteeScoreResource::collection($this->whenLoaded('scores')),no cuz member is connected score
             
         ];

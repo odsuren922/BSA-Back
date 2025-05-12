@@ -34,16 +34,16 @@ class TaskController extends Controller
         try {
             foreach ($validated['tasks'] as &$taskData) {
                 // Save or update task
-                if (str_starts_with($taskData['id'], 'temp-')) {
-                    $task = Task::create([
-                        'name' => $taskData['name'],
-                        'thesis_id' => $validated['thesis_id'],
-                    ]);
-                    $taskData['id'] = $task->id;
-                } else {
+                // if (str_starts_with($taskData['id'], 'temp-')) {
+                //     $task = Task::create([
+                //         'name' => $taskData['name'],
+                //         'thesis_id' => $validated['thesis_id'],
+                //     ]);
+                //     $taskData['id'] = $task->id;
+                // } else {
                     $task = Task::findOrFail($taskData['id']);
                     $task->update(['name' => $taskData['name']]);
-                }
+                // }
 
                 foreach ($taskData['subtasks'] as $subtaskData) {
                     if (str_starts_with($subtaskData['id'], 'temp-')) {

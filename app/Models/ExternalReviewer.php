@@ -5,23 +5,28 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Schedule extends Model
+
+class ExternalReviewer extends Model
 {
-    use HasFactory;
     protected $fillable = [
+        'firstname',
+        'lastname',
         'committee_id',
-        'event_type',
-        'start_datetime',
-        'end_datetime',
-        'location',
-        'room',
-        'notes'
+        'email',
+        'phone',
+        'organization',
+        'position',
     ];
- 
-    
+
     public function committee()
     {
         return $this->belongsTo(Committee::class);
     }
 
+    public function scores()
+    {
+        return $this->hasMany(ExternalReviewerScore::class);
+    }
+
 }
+

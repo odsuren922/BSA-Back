@@ -21,10 +21,10 @@ class CreateThesisCycleDeadlinesTable extends Migration
              $table->unsignedBigInteger('related_id')->nullable(); // e.g. grading_component_id
              $table->string('title')->nullable();
              $table->text('description')->nullable();
-             $table->date('start_date')->nullable();
-             $table->date('end_date')->nullable();
-             $table->time('start_time')->nullable();
-             $table->time('end_time')->nullable();
+             $table->string('start_date')->nullable();
+             $table->string('end_date')->nullable();
+            //  $table->time('start_time')->nullable();
+            //  $table->time('end_time')->nullable();
              $table->timestamps();
          });
      }

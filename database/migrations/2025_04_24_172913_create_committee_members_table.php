@@ -20,7 +20,7 @@ class CreateCommitteeMembersTable extends Migration
             $table->foreignId('teacher_id')->constrained('teachers')->cascadeOnDelete();
             $table->string('role');
             $table->enum('status', ['active', 'inactive','replaced'])->default('active');
-            $table->boolean('is_chairperson')->default(false);
+            // $table->boolean('is_chairperson')->default(false);
             $table->date('assigned_at')->default(now());
             $table->timestamps();
         });

@@ -17,14 +17,8 @@ class CommitteeController extends Controller
 {
     public function index(Request $request)
     {
-        $committees = Committee::with([
-            'department',
-            'gradingComponent',
-            'members.teacher',
-            'students',
-            'schedules',
-            'thesis_cycle', // Load thesis cycle
-        ]);
+        
+        $committees = Committee::with(['department', 'gradingComponent', 'members.teacher', 'members.committeeScores.student', 'students', 'schedules', 'thesis_cycle','scores','externalReviewers.scores']);
             // ->where('dep_id', $request->user()->dep_id)
             // ->paginate(10);
 
@@ -59,7 +53,7 @@ class CommitteeController extends Controller
     public function getByCycleAndComponent(ThesisCycle $thesisCycle, GradingComponent $gradingComponent, Request $request)
     {
         //student.the component scoer maybe need to send 
-        $committees = Committee::with(['department', 'gradingComponent', 'members.teacher', 'members.committeeScores.student', 'students', 'schedules', 'thesis_cycle','scores'])
+        $committees = Committee::with(['department', 'gradingComponent', 'members.teacher', 'members.committeeScores.student', 'students', 'schedules', 'thesis_cycle','scores','externalReviewers.scores'])
             ->where('thesis_cycle_id', $thesisCycle->id)
             ->where('grading_component_id', $gradingComponent->id)
             // ->where('dep_id', $request->user()->dep_id)
@@ -172,15 +166,9 @@ public function isTeacherAndStudentInSameCommittee(Request $request)
         //Загварын нэвтрэлтээр Committee-г эхлээд ачаалчихаад,
         // дараа нь load() ашиглан холбогдох мэдээллийг авна
 
+
         return new CommitteeResource(
-            $committee->load([
-                'department',
-                'gradingComponent',
-                'members.teacher',
-                'students.student',
-                'schedules',
-                'thesis_cycle', // Load thesis cycle
-            ]),
+            $committee->load(['department', 'gradingComponent', 'members.teacher', 'members.committeeScores.student', 'students.student', 'schedules', 'thesis_cycle','scores','externalReviewers.scores']),
         );
     }
 
