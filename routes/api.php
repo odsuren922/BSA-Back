@@ -300,6 +300,7 @@ Route::middleware('auth.api.token')->group(function () {
     Route::post('/committee/external-reviewer-scores/batch', [App\Http\Controllers\ExternalReviewerScoreController::class, 'storeBatch2']);
     Route::post('/committee-scores/save-editable-scores', [App\Http\Controllers\CommitteeScoreController::class, 'saveEditableScores']);
 
+    Route::get('/cycle-deadlines/by-schema', [App\Http\Controllers\ThesisCycleDeadlineController::class, 'getBySchema']);
 
 
 });

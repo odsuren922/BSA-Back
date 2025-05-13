@@ -56,6 +56,12 @@ class Committee extends Model
     {
         return $this->hasMany(Schedule::class, 'committee_id');
     }
+    public function thesis_cycle_deadlines()
+    {
+        return $this->morphMany(ThesisCycleDeadline::class, 'related');
+    }
+    
+
 
     public function scores()
     {

@@ -15,6 +15,7 @@ class GradingSchema extends Model {
     public function gradingComponents() {
         return $this->hasMany(GradingComponent::class)->orderBy('scheduled_week');
     }
+  
     
     
 }

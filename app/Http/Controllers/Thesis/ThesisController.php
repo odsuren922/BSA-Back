@@ -164,18 +164,29 @@ class ThesisController extends Controller
             return [
                 'id' => $thesis->id,
                 'name_mongolian' => $thesis->name_mongolian,
-                'student_info' => [
-                    'firstname' => $thesis->student->firstname,
-                    'lastname' => $thesis->student->lastname,
-                    'program' => $thesis->student->program,
-                    'id' => $thesis->student_id,
-                    'email' => $thesis->student->mail,
-                ],
+                'name_english'=> $thesis->name_english,
+                'student_info' => $thesis->student,
+                'assigned_gradings' => $thesis->assignedGradings->map(function ($grading) {
+                    return [
+                        'id' => $grading->id,
+                        'component_id' => $grading->grading_component_id,
+                        'assigned_by' => $grading->assignedBy instanceof \App\Models\Teacher
+                            ? [
+                                'firstname' => $grading->assignedBy->firstname,
+                                'lastname' => $grading->assignedBy->lastname,
+                                'id' => $grading->assignedBy->id,
+                            ]
+                            : null,
+                        'score' => $grading->filtered_score?->score,
+                    ];
+                }),
                 'supervisor_info' => [
                     'firstname' => $thesis->supervisor->firstname,
                     'lastname' => $thesis->supervisor->lastname,
                     'id'=>$thesis->supervisor->id,
+
                 ],
+                'scores' => $thesis->scores,
                 'status' => $thesis->status,
                 'department' => $thesis->student->department->name,
                 'plan_status' => $thesis->thesisPlanStatus,

@@ -26,7 +26,11 @@ class GradingComponent extends Model {
     public function gradingCriteria() {
         return $this->hasMany(GradingCriteria::class);
     }
-
+    public function thesisCycleDeadlines()
+    {
+        return $this->morphMany(ThesisCycleDeadline::class, 'related');
+    }
+    
    
 
     public function scores()

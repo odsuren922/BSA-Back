@@ -42,6 +42,12 @@ class Student extends Model
         return $this->hasMany(Thesis::class, 'student_id');
     }
 
+    
+public function assignedGradings()
+{
+    return $this->hasMany(AssignedGrading::class, 'student_id');
+}
+
     public function scores()
     {
         return $this->hasMany(Score::class);

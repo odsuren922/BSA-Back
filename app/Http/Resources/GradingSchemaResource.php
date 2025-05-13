@@ -23,6 +23,7 @@ class GradingSchemaResource extends JsonResource
             'step_num' => $this->step_num,
             
             'grading_components' => GradingComponentResource::collection($this->whenLoaded('gradingComponents')),
+            
         ];
     }
 }

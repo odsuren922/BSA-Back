@@ -73,6 +73,7 @@ class CommitteeController extends Controller
         'members.teacher',
         // 'students',
         'schedules',
+       'thesis_cycle_deadlines',
        
     ])
         ->whereHas('thesis_cycle', function ($query) {

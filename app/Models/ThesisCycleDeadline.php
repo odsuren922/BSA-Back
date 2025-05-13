@@ -13,6 +13,7 @@ class ThesisCycleDeadline extends Model
         'thesis_cycle_id',
         'type',
         'related_id',
+        'related_type',
         'title',
         'description',
         'start_date',
@@ -20,6 +21,12 @@ class ThesisCycleDeadline extends Model
         'start_time',
         'end_time',
     ];
+
+    public function related()
+{
+    return $this->morphTo();
+}
+
 
     public function cycle()
     {
@@ -30,4 +37,5 @@ class ThesisCycleDeadline extends Model
     {
         return $this->belongsTo(GradingComponent::class, 'related_id');
     }
+
 }

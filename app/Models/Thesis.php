@@ -38,6 +38,11 @@ class Thesis extends Model
         return $this->belongsTo(ThesisCycle::class);
     }
 
+public function assignedGradings()
+{
+    return $this->hasMany(AssignedGrading::class, 'thesis_id');
+}
+
 
     public function scores()
     {

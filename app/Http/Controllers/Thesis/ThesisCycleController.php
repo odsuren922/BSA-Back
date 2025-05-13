@@ -10,7 +10,9 @@ use App\Models\ThesisCycle;
 use App\Models\Teacher;
 use App\Models\GradingSchema;
 use App\Models\Committee;
+use App\Models\GradingComponent;
 use App\Models\ThesisCycleDeadline;
+
 
 
 
@@ -149,6 +151,7 @@ class ThesisCycleController extends Controller
                     'thesis_cycle_id' => $thesisCycle->id,
                     'type' => 'grading_component', // or other type logic
                     'related_id' => $deadline['grading_component_id'],
+                    'related_type' => GradingComponent::class,
                     'title' => null, // optional
                     'description' => null, // optional
                     'start_date' => $deadline['start_date'],
