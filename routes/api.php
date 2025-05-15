@@ -255,7 +255,7 @@ Route::middleware('auth.api.token')->group(function () {
     Route::apiResource('scores', App\Http\Controllers\ScoreController::class);
     Route::get('/scores/getScoreByThesis/{id}', [App\Http\Controllers\ScoreController::class, 'getScoreByThesis']);
     Route::get('/scores/getDetailedScoreByThesis/{id}', [App\Http\Controllers\ScoreController::class, 'getScoreByThesisWithDetail']);
-    // Route::apiResource('committee-scores', App\Http\Controllers\CommitteeScoreController::class);
+    Route::apiResource('committee-scores', App\Http\Controllers\CommitteeScoreController::class);
 
     //SAVES SCORES
     Route::post('/committee-scores/batch', [App\Http\Controllers\CommitteeScoreController::class, 'storeBatch']);
@@ -301,6 +301,8 @@ Route::middleware('auth.api.token')->group(function () {
     Route::post('/committee-scores/save-editable-scores', [App\Http\Controllers\CommitteeScoreController::class, 'saveEditableScores']);
 
     Route::get('/cycle-deadlines/by-schema', [App\Http\Controllers\ThesisCycleDeadlineController::class, 'getBySchema']);
+    Route::get('/cycle-deadlines/active-schema', [App\Http\Controllers\ThesisCycleDeadlineController::class, 'getActiveCycleBySchema']);
+
 
 
 });

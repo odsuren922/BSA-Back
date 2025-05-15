@@ -30,21 +30,33 @@ class CommitteeScoreController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'score_id' => 'nullable|exists:scores,id',
-            'thesis_id' => 'required|exists:theses,id',
+            'thesis_id' => 'required|exists:thesis,id',
             'student_id' => 'required|exists:students,id',
             'committee_member_id' => 'required|exists:committee_members,id',
             'component_id' => 'required|exists:grading_components,id',
             'score' => 'required|numeric|min:0|max:100',
         ]);
-
+    
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
+    
 
-        $score = CommitteeScore::create($request->all());
+        $score = CommitteeScore::updateOrCreate(
+            [
+                'student_id' => $request->student_id,
+                'committee_member_id' => $request->committee_member_id,
+                'component_id' => $request->component_id,
+            ],
+            [
+                'thesis_id' => $request->thesis_id,
+                'score' => $request->score,
+            ]
+        );
+    
         return new CommitteeScoreResource($score->load(['thesis', 'student', 'committeeMember', 'component']));
     }
+    
 
     // GET /api/committee-scores/{id}
     public function show($id)

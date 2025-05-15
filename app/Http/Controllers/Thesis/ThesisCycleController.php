@@ -57,8 +57,7 @@ class ThesisCycleController extends Controller
             ->withCount(['theses as totalTheses' => function ($query) {
                 $query->whereColumn('thesis_cycle_id', 'thesis_cycles.id',);
             }])
-            ->where('start_date', '<=', now())
-            ->where('end_date', '>=', now())
+         
             ->where('status', 'Идэвхитэй')
             ->when($depId, function ($query, $depId) {
                 return $query->where('dep_id', $depId);
@@ -151,7 +150,7 @@ class ThesisCycleController extends Controller
                     'thesis_cycle_id' => $thesisCycle->id,
                     'type' => 'grading_component', // or other type logic
                     'related_id' => $deadline['grading_component_id'],
-                    'related_type' => GradingComponent::class,
+                    'related_type' => 'App\Models\GradingComponent',
                     'title' => null, // optional
                     'description' => null, // optional
                     'start_date' => $deadline['start_date'],

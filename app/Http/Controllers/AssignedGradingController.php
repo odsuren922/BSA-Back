@@ -9,7 +9,7 @@ use App\Models\Score;
 use App\Http\Resources\ScoreResource;
 use App\Models\GradingComponent;
 use App\Http\Resources\AssignedGradingResource;
-
+use App\Models\ThesisCycle;
 class AssignedGradingController extends Controller
 {
     //
@@ -85,16 +85,78 @@ class AssignedGradingController extends Controller
 
 public function getByAssignedById($teacherId)
 {
-    $assigned = AssignedGrading::with(['gradingComponent', 'thesis', 'student','thesisCycle','score'])
-        ->where('assigned_by_id', $teacherId)
-        ->get();
+    $assigned = AssignedGrading::with([
+        'gradingComponent.thesisCycleDeadlines',
+        'thesis',
+        'student',
+        'thesisCycle',
+        'score'
+    ])->where('assigned_by_id', $teacherId)->get();
 
     if ($assigned->isEmpty()) {
         return response()->json(['message' => 'No assignments found'], 404);
     }
+    $activeThesis = ThesisCycle::with('gradingSchema')
+    ->withCount(['theses as totalTheses' => function ($query) {
+        $query->whereColumn('thesis_cycle_id', 'thesis_cycles.id',);
+    }])
+    ->where('status', 'Идэвхитэй')
+    
+    ->first();
 
-    return AssignedGradingResource::collection($assigned);
+    // Assume all assigned grading entries share the same thesis cycle
+    $thesisCycleId = $activeThesis->id;
+
+    $grouped = $assigned->groupBy(function ($item) {
+        return $item->grading_component_id;
+    });
+
+    $components = $grouped->map(function ($group) {
+        $first = $group->first();
+        return [
+            'id' => $first->gradingComponent->id,
+            'name' => $first->gradingComponent->name,
+            'score' => $first->gradingComponent->score,
+            'by_who' => $first->gradingComponent->by_who,
+            'scheduled_week' => $first->gradingComponent->scheduled_week,
+            'thesis_cycle_deadlines' => $first->gradingComponent->thesisCycleDeadlines->map(function ($d) {
+                return [
+                    'start_date' => $d->start_date,
+                    'end_date' => $d->end_date,
+                    'type' => $d->type,
+                    'title' => $d->title,
+                    'description' => $d->description,
+                ];
+            }),
+            'students' => $group->map(function ($item) {
+                return [
+                    'student' => [
+                        'id' => $item->student->id,
+                        'firstname' => $item->student->firstname,
+                        'lastname' => $item->student->lastname,
+                        'program' => $item->student->program,
+                    ],
+                    'thesis' => [
+                        'id' => $item->thesis->id,
+                        'name_mongolian' => $item->thesis->name_mongolian,
+                        'name_english' => $item->thesis->name_english,
+                    ],
+                    'score' => $item->score ? [
+                        'id' => $item->score->id,
+                        'score' => $item->score->score,
+                        'comment' => $item->score->comment,
+                    ] : null,
+                ];
+            })->values(),
+        ];
+    })->values(); // Remove outer keys
+
+    return response()->json([
+        'thesis_cycle_id' => $thesisCycleId,
+        'grading_components' => $components,
+    ]);
 }
+
 
 public function getScoreByAssignedById($teacherId)
 {

@@ -84,35 +84,7 @@ class ScheduleController extends Controller
     }
 }
 
-//     public function store(Request $request, Committee $committee)
-// {
-//     try {
-//         $validated = $request->validate([
-//             'event_type' => 'required|string|max:255',
-//             'start_datetime' => 'required|date',
-//             'end_datetime' => 'nullable|date|after:start_datetime',
-//             'location' => 'required|string|max:255',
-//             'room' => 'nullable|string|max:50',
-//             'notes' => 'nullable|string',
-//         ]);
 
-//         // No need to manually set timezone — Laravel handles it
-//         $schedule = $committee->schedules()->create($validated);
-
-//         return new ScheduleResource($schedule->load('committee'));
-//     } catch (ValidationException $e) {
-//         return response()->json([
-//             'message' => 'Баталгаажуулалт амжилтгүй боллоо',
-//             'errors' => $e->errors(),
-//         ], 422);
-//     } catch (\Exception $e) {
-//         Log::error('Хуваарь үүсгэхэд алдаа гарлаа: ' . $e->getMessage());
-//         return response()->json([
-//             'message' => 'Хуваарийг үүсгэж чадсангүй',
-//             'error' => config('app.env') === 'local' ? $e->getMessage() : null,
-//         ], 500);
-//     }
-// }
 
     // Хуваарийг шинэчлэх
     public function update(Request $request, Schedule $schedule)
@@ -125,8 +97,8 @@ class ScheduleController extends Controller
                 'location' => 'sometimes|string|max:255',
                 'room' => 'nullable|string|max:50',
                 'notes' => 'nullable|string',
-                'deadline_start' => 'nullable|string',
-                'deadline_end' => 'nullable|string',
+                'deadline_start' => 'required_with:deadline_end|string',
+                'deadline_end' => 'required_with:deadline_start|string',
             ]);
     
             // Schedule update
@@ -143,12 +115,13 @@ class ScheduleController extends Controller
                             'thesis_cycle_id' => $thesisCycle->id,
                             'type' => 'committee',
                             'related_id' => $committee->id,
+                            'related_type' => Committee::class,
                         ],
                         [
                             'title' => null,
                             'description' => null,
-                            'start_date' => $validated['deadline_start'],
-                            'end_date' => $validated['deadline_end'],
+                            'start_date' => Carbon::parse($validated['deadline_start'])->toDateTimeString(),
+                            'end_date' => Carbon::parse($validated['deadline_end'])->toDateTimeString(),
                         ]
                     );
                 }
@@ -156,22 +129,16 @@ class ScheduleController extends Controller
     
             return new ScheduleResource($schedule->fresh()->load('committee'));
         } catch (ValidationException $e) {
-            return response()->json(
-                [
-                    'message' => 'Баталгаажуулалт амжилтгүй боллоо',
-                    'errors' => $e->errors(),
-                ],
-                422,
-            );
+            return response()->json([
+                'message' => 'Баталгаажуулалт амжилтгүй боллоо',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             Log::error('Хуваарь шинэчлэхэд алдаа гарлаа: ' . $e->getMessage());
-            return response()->json(
-                [
-                    'message' => 'Хуваарийг шинэчилж чадсангүй',
-                    'error' => config('app.env') === 'local' ? $e->getMessage() : null,
-                ],
-                500,
-            );
+            return response()->json([
+                'message' => 'Хуваарийг шинэчилж чадсангүй',
+                'error' => config('app.env') === 'local' ? $e->getMessage() : null,
+            ], 500);
         }
     }
     

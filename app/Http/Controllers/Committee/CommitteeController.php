@@ -5,38 +5,37 @@ namespace App\Http\Controllers\Committee;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-
 use App\Http\Resources\CommitteeResource;
 use App\Models\ThesisCycle;
 use App\Models\GradingComponent;
 use App\Models\CommitteeStudent;
 use App\Models\CommitteeMember;
 use App\Models\Committee;
+use App\Models\CommitteeScore;
 
 class CommitteeController extends Controller
 {
     public function index(Request $request)
     {
-        
-        $committees = Committee::with(['department', 'gradingComponent', 'members.teacher', 'members.committeeScores.student', 'students', 'schedules', 'thesis_cycle','scores','externalReviewers.scores']);
-            // ->where('dep_id', $request->user()->dep_id)
-            // ->paginate(10);
+        $committees = Committee::with(['department', 'gradingComponent', 'members.teacher', 'members.committeeScores.student', 'students', 'schedules', 'thesis_cycle', 'scores', 'externalReviewers.scores']);
+        // ->where('dep_id', $request->user()->dep_id)
+        // ->paginate(10);
 
         return CommitteeResource::collection($committees);
     }
     public function getCommitteeMembersWithStudentsAndScores($committeeId)
-{
-    $committee = Committee::with([
-        'gradingComponent',
-        'members.teacher',                      // load teacher info
-        'members.committeeScores.student',      // student info through scores
-        'members.committeeScores.component',
-        'students',    // grading component info
-    ])->findOrFail($committeeId);
+    {
+        $committee = Committee::with([
+            'gradingComponent',
+            'members.teacher', // load teacher info
+            'members.committeeScores.student', // student info through scores
+            'members.committeeScores.component',
+            'students', // grading component info
+            'thesis_cycle_deadlines',
+        ])->findOrFail($committeeId);
 
-    return new CommitteeResource($committee);
-}
-
+        return new CommitteeResource($committee);
+    }
 
     // thesis_cycle id tai
     public function getByThesisCycle(ThesisCycle $thesisCycle, Request $request)
@@ -44,7 +43,7 @@ class CommitteeController extends Controller
         $committees = Committee::with(['department', 'gradingComponent', 'members.teacher', 'students', 'schedules', 'thesis_cycle'])
             // ->where('dep_id', $request->user()->dep_id)
             ->where('thesis_cycle_id', $thesisCycle->id);
-            // ->paginate(10);
+        // ->paginate(10);
 
         return CommitteeResource::collection($committees);
     }
@@ -52,41 +51,36 @@ class CommitteeController extends Controller
 
     public function getByCycleAndComponent(ThesisCycle $thesisCycle, GradingComponent $gradingComponent, Request $request)
     {
-        //student.the component scoer maybe need to send 
-        $committees = Committee::with(['department', 'gradingComponent', 'members.teacher', 'members.committeeScores.student', 'students', 'schedules', 'thesis_cycle','scores','externalReviewers.scores'])
+        //student.the component scoer maybe need to send
+        $committees = Committee::with(['department', 'gradingComponent', 'members.teacher', 'members.committeeScores.student', 'students', 'schedules', 'thesis_cycle', 'scores', 'externalReviewers.scores'])
             ->where('thesis_cycle_id', $thesisCycle->id)
             ->where('grading_component_id', $gradingComponent->id)
             // ->where('dep_id', $request->user()->dep_id)
-             ->paginate(10);
+            ->paginate(10);
 
         return CommitteeResource::collection($committees);
- 
     }
 
-   
-
     public function getActiveCycleValidCommittees(Request $request)
-{
-    $committees = Committee::with([
-        //'department',
-        'gradingComponent',
-        'members.teacher',
-        // 'students',
-        'schedules',
-       'thesis_cycle_deadlines',
-       
-    ])
-        ->whereHas('thesis_cycle', function ($query) {
-            $query->where('status', 'Идэвхитэй');
-        })
-        // ->where('dep_id', $request->user()->dep_id)
-        ->whereNotIn('status', ['cancelled', 'done'])
-        ->get();
+    {
+        $committees = Committee::with([
+            //'department',
+            'gradingComponent',
+            'members.teacher',
+            // 'students',
+            'schedules',
+            'thesis_cycle_deadlines',
+        ])
+            ->whereHas('thesis_cycle', function ($query) {
+                $query->where('status', 'Идэвхитэй');
+            })
+            // ->where('dep_id', $request->user()->dep_id)
+            ->whereNotIn('status', ['cancelled', 'done'])
+            ->get();
         // ->paginate(10);
 
-    return CommitteeResource::collection($committees);
-}
-
+        return CommitteeResource::collection($committees);
+    }
 
     public function storeWithCycleAndComponent(Request $request, ThesisCycle $thesisCycle, GradingComponent $gradingComponent)
     {
@@ -106,71 +100,85 @@ class CommitteeController extends Controller
         return new CommitteeResource($committee);
     }
     public function getCommitteesByTeacher($teacherId, Request $request)
-{
-    $committees = Committee::with([
-        'gradingComponent',
-        'schedules',
-        'thesis_cycle',
-    ])
-    ->whereHas('members', function ($query) use ($teacherId) {
-        $query->where('teacher_id', $teacherId);
-    })
-    // ->where('dep_id', $request->user()->dep_id)
-    ->get();
+    {
+        $committees = Committee::with(['gradingComponent', 'schedules', 'thesis_cycle'])
+            ->whereHas('members', function ($query) use ($teacherId) {
+                $query->where('teacher_id', $teacherId);
+            })
+            // ->where('dep_id', $request->user()->dep_id)
+            ->get();
 
-    return CommitteeResource::collection($committees);
-}
-
-public function isTeacherAndStudentInSameCommittee(Request $request)
-{
-    $validated = $request->validate([
-        'thesis_cycle_id' => 'required|exists:thesis_cycles,id',
-        'grading_component_id' => 'required|exists:grading_components,id',
-        'student_id' => 'required|exists:students,id',
-        'teacher_id' => 'required|exists:teachers,id',
-    ]);
-
-    $cycleId = $validated['thesis_cycle_id'];
-    $componentId = $validated['grading_component_id'];
-    $studentId = $validated['student_id'];
-    $teacherId = $validated['teacher_id'];
-
-    // Step 1: Get committee IDs that match cycle and component
-    $committeeIds = Committee::where('thesis_cycle_id', $cycleId)
-        ->where('grading_component_id', $componentId)
-        ->pluck('id');
-
-    if ($committeeIds->isEmpty()) {
-        return response()->json(['match' => false]);
+        return CommitteeResource::collection($committees);
     }
 
-    // Step 2: Find if any of those committees have this student
-    $studentCommitteeIds = CommitteeStudent::whereIn('committee_id', $committeeIds)
-        ->where('student_id', $studentId)
-        ->pluck('committee_id');
-
-    if ($studentCommitteeIds->isEmpty()) {
-        return response()->json(['match' => false]);
+    public function isTeacherAndStudentInSameCommittee(Request $request)
+    {
+        $validated = $request->validate([
+            'thesis_cycle_id' => 'required|exists:thesis_cycles,id',
+            'grading_component_id' => 'required|exists:grading_components,id',
+            'student_id' => 'required|exists:students,id',
+            'teacher_id' => 'required|exists:teachers,id',
+        ]);
+    
+        $cycleId = $validated['thesis_cycle_id'];
+        $componentId = $validated['grading_component_id'];
+        $studentId = $validated['student_id'];
+        $teacherId = $validated['teacher_id'];
+    
+        // 1. Комиссуудыг шүүж авах
+        $committeeIds = Committee::where('thesis_cycle_id', $cycleId)
+            ->where('grading_component_id', $componentId)
+            ->pluck('id');
+    
+        if ($committeeIds->isEmpty()) {
+            return response()->json(['match' => false]);
+        }
+    
+        // 2. Оюутан аль коммиссд байгааг шүүх
+        $studentCommitteeIds = CommitteeStudent::whereIn('committee_id', $committeeIds)
+            ->where('student_id', $studentId)
+            ->pluck('committee_id');
+    
+        if ($studentCommitteeIds->isEmpty()) {
+            return response()->json(['match' => false]);
+        }
+    
+        // 3. Багш тэдгээр коммиссийн аль нэгэнд орсон эсэх
+        $member = CommitteeMember::whereIn('committee_id', $studentCommitteeIds)
+            ->where('teacher_id', $teacherId)
+            ->first();
+    
+        if (!$member) {
+            return response()->json(['match' => false]);
+        }
+    
+        // 4. Хэрвээ таарч байвал score-г хайж олно
+        $score = CommitteeScore::where('committee_member_id', $member->id)
+            ->where('student_id', $studentId)
+            ->where('component_id', $componentId)
+            ->first();
+    
+        return response()->json([
+            'match' => true,
+            'committee_id' => $member->committee_id,
+            'committee_member_id' => $member->id,
+            'score' => $score ? [
+                'id' => $score->id,
+                'score' => $score->score,
+                'comment' => $score->comment,
+                'created_at' => $score->created_at,
+            ] : null,
+        ]);
     }
-
-    // Step 3: Check if teacher is in one of the same committees
-    $match = CommitteeMember::whereIn('committee_id', $studentCommitteeIds)
-        ->where('teacher_id', $teacherId)
-        ->exists();
-
-    return response()->json(['match' => $match]);
-}
-
+    
+    
 
     public function show(Committee $committee)
     {
         //Загварын нэвтрэлтээр Committee-г эхлээд ачаалчихаад,
         // дараа нь load() ашиглан холбогдох мэдээллийг авна
 
-
-        return new CommitteeResource(
-            $committee->load(['department', 'gradingComponent', 'members.teacher', 'members.committeeScores.student', 'students.student', 'schedules', 'thesis_cycle','scores','externalReviewers.scores']),
-        );
+        return new CommitteeResource($committee->load(['department', 'gradingComponent', 'members.teacher', 'members.committeeScores.student', 'students.student', 'schedules', 'thesis_cycle', 'scores', 'externalReviewers.scores', 'thesis_cycle_deadlines']));
     }
 
     public function store(Request $request)
@@ -195,13 +203,12 @@ public function isTeacherAndStudentInSameCommittee(Request $request)
             'name' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
             'grading_component_id' => 'nullable|exists:grading_components,id',
-            'status' => 'sometimes|in:planned,active,done,cancelled', 
+            'status' => 'sometimes|in:planned,active,done,cancelled',
         ]);
 
         $committee->update($validated);
         return new CommitteeResource($committee);
     }
-    
 
     public function destroy(Committee $committee)
     {
