@@ -71,6 +71,7 @@ public function storeBatch2(Request $request)
             [
                 'student_id' => $scoreData['student_id'],
                 'external_reviewer_id' => $scoreData['external_reviewer_id'],
+
             ],
             [
                 'score' => $scoreData['score'],

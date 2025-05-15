@@ -77,9 +77,12 @@ Route::middleware('require.token')->group(function () {
     Route::get('/teacher/{id}', [\App\Http\Controllers\TeacherController::class, 'show']);
     
     // Topic routes
+    Route::post('/topic/storeteacher', [\App\Http\Controllers\TopicController::class, 'storeteacher']);
+    Route::post('/topic/storeteacher', [\App\Http\Controllers\TopicController::class, 'storeteacher']);
+
     Route::prefix('topics')->group(function () {
-        Route::post('/storestudent', [\App\Http\Controllers\TopicController::class, 'storestudent']);
-        Route::post('/storeteacher', [\App\Http\Controllers\TopicController::class, 'storeteacher']);
+        // Route::post('/storestudent', [\App\Http\Controllers\TopicController::class, 'storestudent']);
+        // Route::post('/storeteacher', [\App\Http\Controllers\TopicController::class, 'storeteacher']);
         Route::get('/submittedby/{type}', [\App\Http\Controllers\TopicController::class, 'getSubmittedTopicsByType']);
         Route::get('/draftstudent', [\App\Http\Controllers\TopicController::class, 'getDraftTopicsByStudent']);
         Route::get('/draftteacher', [\App\Http\Controllers\TopicController::class, 'getDraftTopicsByTeacher']);

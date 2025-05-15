@@ -19,7 +19,7 @@ class CreateTopicResponsesTable extends Migration
             // $table->bigInteger('topic_id');
             //$table->bigInteger('supervisor_id', 10);
             $table->foreignId('supervisor_id')->constrained('supervisors')->onDelete('cascade');
-
+//TODO::
             $table->bigInteger('res'); 
 
             $table->date('res_date');

@@ -118,7 +118,7 @@ class TopicController extends Controller
     public function storestudent(Request $request)
     {
         $validatedData = $request->validate([
-            'form_id' => 'required|string|max:10',
+          'form_id' => 'required|integer|min:1',
             'fields' => 'array|required',
             'fields.*.field' => 'required',
             'fields.*.field2' => 'required',
@@ -142,8 +142,9 @@ class TopicController extends Controller
     //Багшийн дэвшүүлсэн сэдэв хадгалах функц
     public function storeteacher(Request $request)
     {
+        Log::info('Received data for storeteacher:', $request->all());
         $validatedData = $request->validate([
-            'form_id' => 'required|string|max:10',
+           'form_id' => 'required|integer|min:1',
             'fields' => 'array|required',
             'fields.*.field' => 'required',
             'fields.*.field2' => 'required',
