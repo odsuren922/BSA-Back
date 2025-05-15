@@ -2,122 +2,108 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ProposalFormController;
-use App\Http\Controllers\TopicController;
-use App\Http\Controllers\DepartmentController;
-use App\Http\Controllers\TeacherController;
-use App\Http\Controllers\TopicRequestController;
-use App\Http\Controllers\TopicResponseController;
-use App\Http\Controllers\Auth\OAuthController;
-use App\Http\Controllers\Api\DataSyncController;
+use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\RoleController;
-use App\Http\Controllers\StudentController;
-use App\Http\Controllers\GraphQLTestController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\NotificationTemplateController;
-use App\Http\Controllers\NotificationSettingController;
+use App\Http\Controllers\Auth\OAuthController;
 
-// OAuth token exchange endpoint
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register API routes for your application. These
+| routes are loaded by the RouteServiceProvider within a group which
+| is assigned the "api" middleware group.
+|
+*/
+
+// OAuth token exchange and refresh endpoints
 Route::post('/oauth/exchange-token', [OAuthController::class, 'exchangeToken']);
-
-// OAuth refresh token endpoint
 Route::post('/oauth/refresh-token', [OAuthController::class, 'refreshToken']);
+Route::post('/oauth/token', [\App\Http\Controllers\Auth\OAuthController::class, 'exchangeCodeForToken']);
+Route::get('/user', [\App\Http\Controllers\Auth\OAuthController::class, 'getUserData'])->middleware('auth:sanctum');
+Route::get('/user/role', [\App\Http\Controllers\Api\RoleController::class, 'getUserRole'])->middleware('auth:sanctum');
 
-// User data endpoint (protected by bearer token)
-Route::get('/user', [OAuthController::class, 'getUserData']);
-
-// Public API routes
-Route::prefix('public')->group(function () {
-    // Add any routes here that should be accessible without authentication
+Route::middleware('require.token')->prefix('hub-sync')->group(function () {
+    Route::get('/test-connection', [App\Http\Controllers\HubDataSyncController::class, 'testConnection']);
+    Route::post('/departments', [App\Http\Controllers\HubDataSyncController::class, 'syncDepartments']);
+    Route::post('/teachers', [App\Http\Controllers\HubDataSyncController::class, 'syncTeachers']);
+    Route::post('/students', [App\Http\Controllers\HubDataSyncController::class, 'syncStudents']);
+    Route::post('/all', [App\Http\Controllers\HubDataSyncController::class, 'syncAll']);
 });
 
-Route::post('/oauth/token', [OAuthController::class, 'exchangeCodeForToken']);
 
-// Notification routes accessible with token auth (not middleware group)
-Route::middleware('auth.api.token')->group(function () {
-    Route::get('/notifications/unread', [NotificationController::class, 'getUnread']);
-    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
-    Route::post('/notifications/subscribe', [NotificationController::class, 'subscribe']);
-    Route::post('/notifications/unsubscribe', [NotificationController::class, 'unsubscribe']);
+Route::middleware('require.token')->group(function () {
+    
 });
 
-// Protected API routes
-Route::middleware('auth.api.token')->group(function () {
-    Route::get('/user/role', [RoleController::class, 'getUserRole']);
 
-    // Data Sync Routes
-    Route::prefix('sync')->group(function () {
-        Route::post('/departments', [DataSyncController::class, 'syncDepartments']);
-        Route::post('/teachers', [DataSyncController::class, 'syncTeachers']);
-        Route::post('/students', [DataSyncController::class, 'syncStudents']);
-        Route::post('/all', [DataSyncController::class, 'syncAll']);
+
+// Thesis management API routes - Protected by auth:sanctum
+Route::middleware('require.token')->group(function () {
+    // User information for current authenticated user
+    Route::middleware('auth:sanctum')->get('/user', [OAuthController::class, 'getUserData']);
+    Route::middleware('auth:sanctum')->get('/user/role', [RoleController::class, 'getUserRole']);
+
+    // Email Notification routes
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [App\Http\Controllers\NotificationController::class, 'index']);
+        Route::post('/', [App\Http\Controllers\NotificationController::class, 'store']);
+        Route::get('/{id}', [App\Http\Controllers\NotificationController::class, 'show']);
+        Route::post('/{id}/send', [App\Http\Controllers\NotificationController::class, 'send']);
+        Route::post('/{id}/cancel', [App\Http\Controllers\NotificationController::class, 'cancel']);
     });
+    
+    // Tracking pixel route (no authentication required)
+    Route::get('/notification-track/{recipient}', [App\Http\Controllers\NotificationController::class, 'track'])->name('notification.track');
 
-    // GraphQL Testing Routes
-    Route::prefix('graphql-test')->group(function () {
-        Route::get('/connection', [GraphQLTestController::class, 'testConnection']);
-        Route::get('/departments', [GraphQLTestController::class, 'testDepartments']);
-        Route::get('/teachers', [GraphQLTestController::class, 'testTeachers']);
-        Route::get('/students', [GraphQLTestController::class, 'testStudents']);
+    // ProposalForm routes
+    Route::prefix('proposalform')->group(function () {
+        Route::get('/', [\App\Http\Controllers\ProposalFormController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\ProposalFormController::class, 'store']);
+        Route::get('/{id}', [\App\Http\Controllers\ProposalFormController::class, 'show']);
+        Route::put('/{id}', [\App\Http\Controllers\ProposalFormController::class, 'update']);
+        Route::delete('/{id}', [\App\Http\Controllers\ProposalFormController::class, 'destroy']);
     });
-
-    Route::get('/proposalform', [ProposalFormController::class, 'index']);
-    Route::post('/proposalform', [ProposalFormController::class, 'update']);
-
-    // Topic related routes
-    Route::post('/topic/store', [TopicController::class, 'store']);
-
-    // Other protected routes
-    Route::get('/teacher/{id}', [TeacherController::class, 'show']);
-    Route::get('/department/{id}', [DepartmentController::class, 'show']);
-    Route::get('/topic_requests_teacher', [TopicRequestController::class, 'getRequestedTopicByTeacher']);
-
-    // Student routes
-    Route::post('/topic/storestudent', [TopicController::class, 'storestudent']);
-    Route::post('/topic-requests', [TopicRequestController::class, 'store']);
-    Route::get('/topics/draftstudent', [TopicController::class, 'getDraftTopicsByStudent']);
-    Route::get('/topics/draftteacher', [TopicController::class, 'getDraftTopicsByTeacher']);
-    Route::get('/topic_confirmed', [TopicRequestController::class, 'getConfirmedTopicOnStudent']);
-
-    // Supervisor routes
-    Route::get('/topics/submittedby/{type}', [TopicController::class, 'getSubmittedTopicsByType']);
-    Route::post('/topic-response', [TopicResponseController::class, 'store']);
-    Route::get('/topics/reviewedtopicList', [TopicController::class, 'getRefusedOrApprovedTopics']);
-
+    
+    // Department routes
+    Route::apiResource('departments', App\Http\Controllers\DepartmentController::class);
+    
     // Teacher routes
-    Route::post('/topic/storeteacher', [TopicController::class, 'storeteacher']);
-    Route::post('/topic-requestsbyteacher', [TopicRequestController::class, 'storebyteacher']);
-    Route::get('/api/department', [DepartmentController::class, 'index']);
-    Route::get('/topic_requests', [TopicRequestController::class, 'index']);
-    Route::post('/topic_confirm', [TopicController::class, 'confirmTopic']);
-    Route::post('/topic_decline', [TopicController::class, 'declineTopic']);
-    Route::get('/topics_confirmed', [TopicRequestController::class, 'getConfirmedTopics']);
-    Route::get('/topics/checkedtopicsbystud', [TopicController::class, 'getCheckedTopicsByStud']);
-    Route::get('/topics/checkedtopics', [TopicController::class, 'getCheckedTopics']);
+    Route::prefix('teachers')->group(function () {
+        Route::get('/{id}', [\App\Http\Controllers\TeacherController::class, 'dep_id']);
+        Route::get('/count/department/{dep_id}', [\App\Http\Controllers\TeacherController::class, 'countByDepartment']);
+    });
+    Route::get('/teacher/{id}', [\App\Http\Controllers\TeacherController::class, 'show']);
+    
+    // Topic routes
+    Route::prefix('topics')->group(function () {
+        Route::post('/storestudent', [\App\Http\Controllers\TopicController::class, 'storestudent']);
+        Route::post('/storeteacher', [\App\Http\Controllers\TopicController::class, 'storeteacher']);
+        Route::get('/submittedby/{type}', [\App\Http\Controllers\TopicController::class, 'getSubmittedTopicsByType']);
+        Route::get('/draftstudent', [\App\Http\Controllers\TopicController::class, 'getDraftTopicsByStudent']);
+        Route::get('/draftteacher', [\App\Http\Controllers\TopicController::class, 'getDraftTopicsByTeacher']);
+        Route::get('/checkedtopics', [\App\Http\Controllers\TopicController::class, 'getCheckedTopics']);
+        Route::get('/checkedtopicsbystud', [\App\Http\Controllers\TopicController::class, 'getCheckedTopicsByStud']);
+        Route::get('/reviewedtopicList', [\App\Http\Controllers\TopicController::class, 'getRefusedOrApprovedTopics']);
+        Route::get('/topiclistproposedbyuser', [\App\Http\Controllers\TopicController::class, 'getTopicListProposedByUser']);
+    });
+    
+    // Topic Request routes
+    Route::post('/topic-requests', [App\Http\Controllers\TopicRequestController::class, 'store']);
+    Route::post('/topic-requestsbyteacher', [App\Http\Controllers\TopicRequestController::class, 'storebyteacher']);
+    Route::get('/topic_requests', [App\Http\Controllers\TopicRequestController::class, 'index']);
+    Route::get('/topic_confirmed', [App\Http\Controllers\TopicRequestController::class, 'getConfirmedTopicOnStudent']);
+    Route::get('/topics_confirmed', [App\Http\Controllers\TopicRequestController::class, 'getConfirmedTopics']);
+    Route::get('/topic_requests_teacher', [App\Http\Controllers\TopicRequestController::class, 'getRequestedTopicByTeacher']);
+    
+    // Topic Response routes
+    Route::post('/topic-response', [App\Http\Controllers\TopicResponseController::class, 'store']);
+    
+    // Student routes
+    Route::get('/students/all', [App\Http\Controllers\StudentController::class, 'index']);
+    
 
-    // Default routes
-    Route::get('/topics/topiclistproposedbyuser', [TopicController::class, 'getTopicListProposedByUser']);
-    Route::apiResource('topics', TopicController::class);
-
-    // Students API
-    Route::get('/students/all', [StudentController::class, 'index']);
-
-    // Other notification routes
-    Route::post('/notifications', [NotificationController::class, 'store']);
-    Route::post('/notifications/template', [NotificationController::class, 'sendTemplateNotification']);
-
-    // Template management routes
-    Route::get('/notification-templates', [NotificationTemplateController::class, 'index']);
-    Route::post('/notification-templates', [NotificationTemplateController::class, 'store']);
-    Route::get('/notification-templates/{id}', [NotificationTemplateController::class, 'show']);
-    Route::put('/notification-templates/{id}', [NotificationTemplateController::class, 'update']);
-    Route::delete('/notification-templates/{id}', [NotificationTemplateController::class, 'destroy']);
-    Route::get('/notification-settings', [NotificationSettingController::class, 'index']);
-    Route::post('/notification-settings', [NotificationSettingController::class, 'update']);
-
-    Route::get('/teachers/{id}', [TeacherController::class, 'dep_id']);
-    Route::get('/teacher/{id}', [TeacherController::class, 'show']);
-    Route::get('/teachers/count/department/{dep_id}', [TeacherController::class, 'countByDepartment']);
     // ------------------------------
     //Thesis Plan Tasks & Subtasks Үечилсэн төлөвлөгөө ажил & дэл ажил
     // ------------------------------
@@ -302,7 +288,6 @@ Route::middleware('auth.api.token')->group(function () {
 
     Route::get('/cycle-deadlines/by-schema', [App\Http\Controllers\ThesisCycleDeadlineController::class, 'getBySchema']);
     Route::get('/cycle-deadlines/active-schema', [App\Http\Controllers\ThesisCycleDeadlineController::class, 'getActiveCycleBySchema']);
-
 
 
 });

@@ -6,6 +6,10 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use App\Models\Department;
+use App\Models\Student;
+use App\Models\Teacher;
 
 class HubApiService
 {
@@ -15,21 +19,30 @@ class HubApiService
     protected $clientSecret;
     protected $accessToken;
     protected $tokenExpiry;
+    protected $oauthService;
+    
+    // Constants for filtering
+    const TARGET_DEPARTMENT_ID = 1001298; // МКУТ
+    const TARGET_ACADEMIC_LEVEL = 'Бакалавр';
 
-    public function __construct()
+    public function __construct(OAuthService $oauthService = null)
     {
         $this->client = new Client([
-            'verify' => config('services.hub_api.verify_ssl', false),
+            'verify' => config('hubapi.verify_ssl', false),
             'timeout' => 30,
         ]);
 
-        $this->endpoint = config('services.hub_api.endpoint', 'http://localhost:8000/graphql');
-        $this->clientId = config('services.hub_api.client_id', 'thesis_management_system');
-        $this->clientSecret = config('services.hub_api.client_secret', 'your_secret_here');
+        $this->endpoint = config('hubapi.endpoint', 'https://tree.num.edu.mn/gateway');
+        
+        // Get credentials from config or hardcode for testing
+        $this->clientId = config('hubapi.client_id', '4d797efc8f91416c95e641fb6f88e3c1');
+        $this->clientSecret = config('hubapi.client_secret', '7c9365aff5b44ddd8f595d3ccd5969a6.5b51852d1ed248c9aab85478c8c91fc5');
+        
+        $this->oauthService = $oauthService ?? new OAuthService();
     }
 
     /**
-     * Get access token for API requests
+     * Get access token for API requests using login mutation
      *
      * @return string|null
      */
@@ -45,7 +58,7 @@ class HubApiService
         // If not, get a new token
         try {
             $query = <<<'GRAPHQL'
-mutation Login($input: LoginInput!) {
+mutation Login($input: LoginInput) {
     login(input: $input) {
         access_token
         expires_in
@@ -86,7 +99,7 @@ GRAPHQL;
      * @param bool $authenticate Whether to authenticate the request
      * @return array|null The response data or null on failure
      */
-    protected function executeQuery($query, $variables = [], $authenticate = true)
+    public function executeQuery($query, $variables = [], $authenticate = true)
     {
         $headers = [
             'Content-Type' => 'application/json',
@@ -98,7 +111,8 @@ GRAPHQL;
                 Log::error('No access token available for HUB API request');
                 return null;
             }
-            $headers['Authorization'] = 'Bearer ' . $token;
+            // IMPORTANT: Use the raw token without "Bearer " prefix
+            $headers['Authorization'] = $token;
         }
         
         try {
@@ -161,34 +175,59 @@ GRAPHQL;
     public function getDepartments()
     {
         $query = <<<'GRAPHQL'
-query GetDepartments($clientId: String!) {
-    hr_GetDepartments(clientId: $clientId) {
-        id
-        name
-        programs {
-            id
-            index
-            name
-        }
+query Sisi_GetDepartmentsInfo {
+    sisi_GetDepartmentsInfo {
+        departmentID
+        departmentName
+        departmentNamem
     }
 }
 GRAPHQL;
 
-        $variables = [
-            'clientId' => $this->clientId
-        ];
-
-        $response = $this->executeQuery($query, $variables);
+        $response = $this->executeQuery($query);
         
-        if ($response && isset($response['data']['hr_GetDepartments'])) {
-            return $response['data']['hr_GetDepartments'];
+        if ($response && isset($response['data']['sisi_GetDepartmentsInfo'])) {
+            return $response['data']['sisi_GetDepartmentsInfo'];
         }
         
         return null;
     }
 
     /**
-     * Get teachers data with optional department filter
+     * Get department details including programs
+     * 
+     * @param string $departmentId
+     * @return array|null
+     */
+    public function getDepartmentPrograms($departmentId)
+    {
+        $query = <<<'GRAPHQL'
+query Sisi_GetPrograms($departmentId: Int) {
+    sisi_GetPrograms(departmentID: $departmentId) {
+        academicLevel
+        programID
+        programIndex
+        programName
+        programNamem
+    }
+}
+GRAPHQL;
+
+        $variables = [
+            'departmentId' => (int)$departmentId
+        ];
+
+        $response = $this->executeQuery($query, $variables);
+        
+        if ($response && isset($response['data']['sisi_GetPrograms'])) {
+            return $response['data']['sisi_GetPrograms'];
+        }
+        
+        return null;
+    }
+
+    /**
+     * Get teachers/staff data with optional department filter
      *
      * @param string|null $departmentId
      * @return array|null
@@ -196,160 +235,271 @@ GRAPHQL;
     public function getTeachers($departmentId = null)
     {
         $query = <<<'GRAPHQL'
-query GetTeachers($clientId: String!, $departmentId: String) {
-    hr_GetTeachers(clientId: $clientId, departmentId: $departmentId) {
-        id
-        department_id
-        department_name
-        first_name
-        last_name
-        email
-        phone
-        position
-        academic_degree
+query Sisi_GetEmployees($unitId: Int) {
+    sisi_GetEmployees(unitID: $unitId) {
+        degrees {
+            degree
+        }
+        departmentID
+        departmentNamem
+        firstNamem
+        lastNamem
+        phones {
+            phone
+        }
+        emails {
+            email
+        }
+        positions {
+            position
+        }
     }
 }
 GRAPHQL;
 
         $variables = [
-            'clientId' => $this->clientId,
-            'departmentId' => $departmentId
+            'unitId' => $departmentId ? (int)$departmentId : null
         ];
 
         $response = $this->executeQuery($query, $variables);
         
-        if ($response && isset($response['data']['hr_GetTeachers'])) {
-            return $response['data']['hr_GetTeachers'];
+        if ($response && isset($response['data']['sisi_GetEmployees'])) {
+            return $response['data']['sisi_GetEmployees'];
         }
         
         return null;
     }
 
     /**
-     * Get a student by public hash
+     * Sync only the specific department and its bachelor programs with the database
      *
-     * @param string $publicHash
-     * @return array|null
+     * @return array Statistics about the sync process
      */
-    public function getStudentInfo($publicHash)
+    public function syncDepartments()
     {
-        $query = <<<'GRAPHQL'
-query GetStudentInfo($publicHash: String!, $clientId: String!) {
-    sisi_GetStudentInfo(publicHash: $publicHash, clientId: $clientId) {
-        sisi_id
-        first_name
-        last_name
-        student_email
-        personal_email
-        program_name
-        program_id
-        phone
-        department_id
-        has_selected_research
-    }
-}
-GRAPHQL;
-
-        $variables = [
-            'publicHash' => $publicHash,
-            'clientId' => $this->clientId
+        $stats = [
+            'total' => 0,
+            'created' => 0,
+            'updated' => 0,
+            'failed' => 0,
+            'filtered_out' => 0
         ];
 
-        $response = $this->executeQuery($query, $variables);
-        
-        if ($response && isset($response['data']['sisi_GetStudentInfo'])) {
-            return $response['data']['sisi_GetStudentInfo'];
+        try {
+            // Get departments from HUB API
+            $departments = $this->getDepartments();
+            
+            if (!$departments) {
+                Log::error('Failed to fetch departments from HUB API');
+                return $stats;
+            }
+            
+            $stats['total'] = count($departments);
+            
+            // Filter to only include the target department
+            $filteredDepartments = array_filter($departments, function($dept) {
+                return $dept['departmentID'] == self::TARGET_DEPARTMENT_ID;
+            });
+            
+            $stats['filtered_out'] = $stats['total'] - count($filteredDepartments);
+            
+            foreach ($filteredDepartments as $deptData) {
+                try {
+                    // Get programs for this department
+                    $programs = $this->getDepartmentPrograms($deptData['departmentID']);
+                    $programData = [];
+                    
+                    if ($programs) {
+                        // Filter programs to include only bachelor level
+                        $filteredPrograms = array_filter($programs, function($program) {
+                            return $program['academicLevel'] == self::TARGET_ACADEMIC_LEVEL;
+                        });
+                        
+                        foreach ($filteredPrograms as $program) {
+                            $programData[] = [
+                                'id' => $program['programID'],
+                                'index' => $program['programIndex'],
+                                'name' => $program['programNamem'],
+                                'name_en' => $program['programName'],
+                                'level' => $program['academicLevel'],
+                            ];
+                        }
+                    }
+                    
+                    // Find or create department
+                    $department = Department::where('id', $deptData['departmentID'])->first();
+                    
+                    $departmentRecord = [
+                        'id' => $deptData['departmentID'],
+                        'name' => $deptData['departmentNamem'],
+                        'programs' => $programData
+                    ];
+                    
+                    if (!$department) {
+                        // Create new department
+                        Department::create($departmentRecord);
+                        $stats['created']++;
+                        
+                        Log::info('Created department', [
+                            'id' => $deptData['departmentID'],
+                            'name' => $deptData['departmentNamem'],
+                            'program_count' => count($programData)
+                        ]);
+                    } else {
+                        // Update existing department
+                        $department->update($departmentRecord);
+                        $stats['updated']++;
+                        
+                        Log::info('Updated department', [
+                            'id' => $deptData['departmentID'],
+                            'name' => $deptData['departmentNamem'],
+                            'program_count' => count($programData)
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Failed to process department: ' . $e->getMessage(), [
+                        'department_id' => $deptData['departmentID'] ?? 'unknown',
+                        'department_name' => $deptData['departmentNamem'] ?? 'unknown'
+                    ]);
+                    
+                    $stats['failed']++;
+                }
+            }
+            
+            Log::info('Departments sync complete', $stats);
+        } catch (\Exception $e) {
+            Log::error('Department sync error: ' . $e->getMessage());
         }
         
-        return null;
+        return $stats;
     }
 
     /**
-     * Get students with pagination
+     * Sync teachers data with the database, but only for specific department
      *
-     * @param int $skip Number of records to skip
-     * @param int $take Number of records to take
-     * @return array|null
+     * @return array Statistics about the sync process
      */
-    public function getStudentsInfo($skip = 0, $take = 50)
+    public function syncTeachers()
     {
-        $query = <<<'GRAPHQL'
-query GetStudentsInfo($clientId: String!, $skip: Int, $take: Int) {
-    sisi_GetStudentsInfo(clientId: $clientId, skip: $skip, take: $take) {
-        sisi_id
-        first_name
-        last_name
-        student_email
-        personal_email
-        program_name
-        program_id
-        phone
-        department_id
-        has_selected_research
-    }
-}
-GRAPHQL;
-
-        $variables = [
-            'clientId' => $this->clientId,
-            'skip' => $skip,
-            'take' => $take
+        $stats = [
+            'total' => 0,
+            'created' => 0,
+            'updated' => 0,
+            'failed' => 0,
+            'filtered_out' => 0
         ];
 
-        $response = $this->executeQuery($query, $variables);
-        
-        if ($response && isset($response['data']['sisi_GetStudentsInfo'])) {
-            return $response['data']['sisi_GetStudentsInfo'];
+        try {
+            // Only get teachers for the target department
+            $departmentId = self::TARGET_DEPARTMENT_ID; // МКУТ
+            $teachers = $this->getTeachers(null); // Fetch all and then filter by departmentID
+            
+            if (!$teachers) {
+                Log::error('Failed to fetch teachers from HUB API');
+                return $stats;
+            }
+            
+            $stats['total'] = count($teachers);
+            
+            // Filter teachers by the target department
+            $filteredTeachers = array_filter($teachers, function($teacher) use ($departmentId) {
+                return $teacher['departmentID'] == $departmentId;
+            });
+            
+            $stats['filtered_out'] = $stats['total'] - count($filteredTeachers);
+            
+            foreach ($filteredTeachers as $teacherData) {
+                try {
+                    // Extract data from the nested response - taking only the first item from each array
+                    $email = !empty($teacherData['emails'][0]['email']) ? $teacherData['emails'][0]['email'] : null;
+                    $phone = !empty($teacherData['phones'][0]['phone']) ? $teacherData['phones'][0]['phone'] : null;
+                    $degree = !empty($teacherData['degrees'][0]['degree']) ? $teacherData['degrees'][0]['degree'] : null;
+                    $position = !empty($teacherData['positions'][0]['position']) ? $teacherData['positions'][0]['position'] : null;
+                    
+                    // Skip if no email is available
+                    if (empty($email)) {
+                        Log::warning('Teacher has no email, skipping', [
+                            'teacher_name' => $teacherData['firstNamem'] . ' ' . $teacherData['lastNamem'],
+                            'department_id' => $teacherData['departmentID']
+                        ]);
+                        $stats['failed']++;
+                        continue;
+                    }
+                    
+                    // Generate a unique ID based on email
+                    $teacherId = md5($email);
+                    
+                    // Find teacher by email
+                    $teacher = Teacher::where('mail', $email)->first();
+                    
+                    // Create teacher record with only the required fields
+                    // Specifically excluding num_of_choosed_stud, oauth_id, gid, role as requested
+                    $teacherRecord = [
+                        'id' => $teacherId,
+                        'dep_id' => $teacherData['departmentID'],
+                        'firstname' => $teacherData['firstNamem'],
+                        'lastname' => $teacherData['lastNamem'],
+                        'mail' => $email,
+                        'degree' => $degree,
+                        'superior' => $position // Use position for superior field
+                    ];
+                    
+                    if (!$teacher) {
+                        // Create new teacher with only the fields we want
+                        Teacher::create($teacherRecord);
+                        $stats['created']++;
+                        
+                        Log::info('Created teacher', [
+                            'id' => $teacherId,
+                            'name' => $teacherData['firstNamem'] . ' ' . $teacherData['lastNamem'],
+                            'email' => $email
+                        ]);
+                    } else {
+                        // Update only the fields we want to update
+                        $teacher->update($teacherRecord);
+                        $stats['updated']++;
+                        
+                        Log::info('Updated teacher', [
+                            'id' => $teacherId,
+                            'name' => $teacherData['firstNamem'] . ' ' . $teacherData['lastNamem'],
+                            'email' => $email
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Failed to process teacher: ' . $e->getMessage(), [
+                        'teacher_name' => ($teacherData['firstNamem'] ?? '') . ' ' . ($teacherData['lastNamem'] ?? ''),
+                        'stack_trace' => $e->getTraceAsString()
+                    ]);
+                    
+                    $stats['failed']++;
+                }
+            }
+            
+            Log::info('Teachers sync complete', $stats);
+        } catch (\Exception $e) {
+            Log::error('Teacher sync error: ' . $e->getMessage(), [
+                'stack_trace' => $e->getTraceAsString()
+            ]);
         }
         
-        return null;
+        return $stats;
     }
 
     /**
-     * Get students enrolled in thesis course
+     * Sync all data types (departments and teachers only, with filtering)
      *
-     * @param string $departmentId
-     * @param string $semesterId
-     * @param string $courseCode Default is "THES400" (Thesis course)
-     * @return array|null
+     * @return array Results for each sync operation
      */
-    public function getStudentsEnrolledInThesis($departmentId, $semesterId, $courseCode = 'THES400')
+    public function syncAll()
     {
-        $query = <<<'GRAPHQL'
-query GetStudentsEnrolledInThesis($clientId: String!, $departmentId: String!, $semesterId: String!, $courseCode: String!) {
-    sisi_GetStudentsEnrolledInThesis(
-        clientId: $clientId,
-        departmentId: $departmentId,
-        semesterId: $semesterId,
-        courseCode: $courseCode
-    ) {
-        sisi_id
-        first_name
-        last_name
-        student_email
-        personal_email
-        program_name
-        program_id
-        phone
-        department_id
-        has_selected_research
-    }
-}
-GRAPHQL;
-
-        $variables = [
-            'clientId' => $this->clientId,
-            'departmentId' => $departmentId,
-            'semesterId' => $semesterId,
-            'courseCode' => $courseCode
-        ];
-
-        $response = $this->executeQuery($query, $variables);
+        $results = [];
         
-        if ($response && isset($response['data']['sisi_GetStudentsEnrolledInThesis'])) {
-            return $response['data']['sisi_GetStudentsEnrolledInThesis'];
-        }
+        // Sync only the specific department and its bachelor programs
+        $results['departments'] = $this->syncDepartments();
         
-        return null;
+        // Sync only teachers for the specific department
+        $results['teachers'] = $this->syncTeachers();
+        
+        return $results;
     }
 }

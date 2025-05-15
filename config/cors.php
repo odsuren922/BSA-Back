@@ -1,56 +1,46 @@
 <?php
 
 return [
-    'paths' => ['api/*', 'oauth/*', 'sanctum/csrf-cookie', '*'],
-    'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:4000')],
+    'paths' => [
+        'api/*', 
+        'oauth/*', 
+        'sanctum/csrf-cookie', 
+        'login', 
+        'logout', 
+        'auth',
+        'api/user',
+        'api/oauth/*',
+        'notifications/*',
+    ],
+    
+    'allowed_origins' => [
+        'http://localhost:4000', 
+        'http://127.0.0.1:4000', 
+        env('FRONTEND_URL', 'http://localhost:4000')
+    ],
+
+    'allowed_origins_patterns' => [],
+    
     'allowed_methods' => ['*'],
+    
     'allowed_headers' => [
         'X-CSRF-TOKEN',
         'X-XSRF-TOKEN',
-        'Content-Type',
+        'X-REQUEST-ID',
         'X-Requested-With',
+        'Content-Type',
+        'Accept',
         'Authorization',
         'Origin',
-        'Accept',
+        'Access-Control-Allow-Origin',
     ],
-    'exposed_headers' => [],
-    'max_age' => 0,
-    'supports_credentials' => true,
+    
+    'exposed_headers' => [
+        'Authorization',
+        'Set-Cookie',
+    ],
+    
+    'max_age' => 86400,
+    
+    'supports_credentials' => true, // Critical for CSRF and session cookies
 ];
-
-// return [
-//     /*
-//     |--------------------------------------------------------------------------
-//     | Cross-Origin Resource Sharing (CORS) Configuration
-//     |--------------------------------------------------------------------------
-//     |
-//     | Here you may configure your settings for cross-origin resource sharing
-//     | or "CORS". This determines what cross-origin operations may execute
-//     | in web browsers. You are free to adjust these settings as needed.
-//     |
-//     */
-
-//     'paths' => ['api/*', 'oauth/*', 'sanctum/csrf-cookie', '*'],
-    
-//     'allowed_origins' => [env('CORS_ALLOWED_ORIGINS', 'http://localhost:4000')],
-    
-//     'allowed_origins_patterns' => [],
-    
-//     'allowed_methods' => ['*'],
-    
-//     'allowed_headers' => [
-//         'X-CSRF-TOKEN',
-//         'Content-Type',
-//         'X-Requested-With',
-//         'Authorization',
-//         'Origin',
-//         'Accept',
-//     ],
-    
-//     'exposed_headers' => [],
-    
-//     'max_age' => 0,
-    
-//     // Set to false for token-based authentication
-//     'supports_credentials' => false,
-// ];

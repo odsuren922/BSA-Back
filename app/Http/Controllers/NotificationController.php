@@ -2,437 +2,345 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Services\NotificationService;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use App\Models\Notification;
+use App\Models\EmailNotification;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class NotificationController extends Controller
 {
     protected $notificationService;
-
-    /**
-     * Create a new controller instance.
-     *
-     * @param \App\Services\NotificationService $notificationService
-     * @return void
-     */
+    
     public function __construct(NotificationService $notificationService)
     {
         $this->notificationService = $notificationService;
     }
+    
+
 
     /**
-     * Store a new notification to be sent.
+     * Store a new notification
      *
-     * @param \Illuminate\Http\Request $request
+     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function store(Request $request)
     {
-        // Validate the request
-        $validator = Validator::make($request->all(), [
-            'recipients' => 'required|array',
-            'recipients.*.id' => 'required|string',
-            'recipients.*.email' => 'required|email',
-            'title' => 'required|string|max:255',
-            'content' => 'required|string',
-            'schedule' => 'nullable|date',
-            'url' => 'nullable|string|url',
-            'send_email' => 'boolean',
-            'send_push' => 'boolean',
-        ]);
 
+        if ($request->has('scheduled_at')) {
+            // Parse the ISO string from frontend (always in UTC)
+            $utcScheduledTime = Carbon::parse($request->input('scheduled_at'));
+            
+            // Store the time in the database with timezone awareness
+            // Laravel will handle conversion based on app timezone
+            $data['scheduled_at'] = $utcScheduledTime;
+            
+            Log::debug('Timezone conversion for scheduled notification', [
+                'received_utc_iso' => $request->input('scheduled_at'),
+                'app_timezone' => config('app.timezone'),
+                'stored_time' => $utcScheduledTime->toDateTimeString()
+            ]);
+        }
+
+        Log::debug('Notification store request received', [
+            'ip' => $request->ip(),
+            'method' => $request->method(),
+            'has_authorization' => $request->hasHeader('Authorization') ? 'yes' : 'no',
+            'auth_header' => $request->hasHeader('Authorization') ? substr($request->header('Authorization'), 0, 15) . '...' : null,
+            'content_type' => $request->header('Content-Type'),
+            'post_data_keys' => array_keys($request->all()),
+        ]);
+        
+        $validator = Validator::make($request->all(), [
+            'subject' => 'required|string|max:255',
+            'content' => 'required|string',
+            'target_type' => 'required|string|in:student,teacher,department,specific,thesis_cycle',
+            'target_criteria' => 'nullable|array',
+            'scheduled_at' => 'nullable|date|after_or_equal:now',
+            'metadata' => 'nullable|array',
+        ]);
+        
         if ($validator->fails()) {
+            Log::warning('Notification validation failed', [
+                'errors' => $validator->errors()->toArray()
+            ]);
+            
             return response()->json([
                 'success' => false,
+                'message' => 'Validation failed',
                 'errors' => $validator->errors()
             ], 422);
         }
-
-        $title = $request->input('title');
-        $content = $request->input('content');
-        $schedule = $request->input('schedule');
-        $url = $request->input('url');
-        $sendEmail = $request->input('send_email', true);
-        $sendPush = $request->input('send_push', true);
-
-        $results = [];
-
-        foreach ($request->input('recipients') as $recipient) {
-            $userId = $recipient['id'];
-            $email = $recipient['email'];
+        
+        // Get authenticated user
+        $userInfo = session('oauth_user') ?? null;
+        
+        if (!$userInfo) {
+            Log::warning('No authenticated user info available in session', [
+                'session_id' => session()->getId(),
+                'all_session_keys' => array_keys(session()->all()),
+            ]);
             
+            // Try to get user from token
             try {
-                if ($sendEmail && $sendPush) {
-                    // Send both email and push notification
-                    $result = $this->notificationService->sendCombinedNotification(
-                        $userId,
-                        $email,
-                        $title,
-                        $content,
-                        $schedule,
-                        $url
-                    );
-
-                    $results[$userId] = $result;
-                } elseif ($sendEmail) {
-                    // Send only email notification
-                    $emailSent = $this->notificationService->sendEmailNotification(
-                        $email,
-                        $title,
-                        $content,
-                        ['url' => $url]
-                    );
-
-                    $results[$userId] = ['email_sent' => $emailSent];
-                } elseif ($sendPush) {
-                    // Send only push notification
-                    $notificationId = $this->notificationService->storePushNotification(
-                        $userId,
-                        $title,
-                        $content,
-                        $schedule,
-                        $url
-                    );
-
-                    $results[$userId] = ['push_notification_id' => $notificationId];
+                $token = $this->extractTokenFromRequest($request);
+                
+                if ($token) {
+                    $oauthService = app(\App\Services\OAuthService::class);
+                    $userData = $oauthService->getUserData($token);
+                    
+                    if ($userData) {
+                        Log::info('User data retrieved from token', [
+                            'user_id' => $userData['user_id'] ?? 'unknown',
+                            'data_fields' => array_keys($userData),
+                        ]);
+                        
+                        // Use token-retrieved user data
+                        $userInfo = [
+                            'id' => $userData['user_id'] ?? 'system',
+                            'role' => $userData['role'] ?? 'system',
+                        ];
+                    }
                 }
             } catch (\Exception $e) {
-                Log::error('Error sending notification', [
-                    'user_id' => $userId,
-                    'error' => $e->getMessage()
-                ]);
-                
-                $results[$userId] = [
-                    'error' => 'Failed to send notification',
-                    'message' => $e->getMessage()
+                Log::error('Error retrieving user data from token: ' . $e->getMessage());
+            }
+            
+            // If still no user info, use system defaults
+            if (!$userInfo) {
+                Log::info('Using system user as fallback');
+                $userInfo = [
+                    'id' => 'system',
+                    'role' => 'system',
                 ];
             }
         }
+        
+        // Prepare data for notification creation
+        $data = $request->all();
+        $data['created_by_id'] = $userInfo['id'] ?? 'system';
+        $data['created_by_type'] = $userInfo['role'] ?? 'system';
+        
+        try {
+            $notification = $this->notificationService->createNotification($data);
+            
+            Log::info('Notification created successfully', [
+                'notification_id' => $notification->id,
+                'subject' => $notification->subject,
+                'recipients_count' => $notification->recipients()->count(),
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Notification created successfully',
+                'data' => [
+                    'id' => $notification->id,
+                    'subject' => $notification->subject,
+                    'status' => $notification->status,
+                    'recipients_count' => $notification->recipients()->count()
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to create notification: ' . $e->getMessage(), [
+                'exception' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create notification',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
+
+    /**
+     * Extract token from request
+     *
+     * @param Request $request
+     * @return string|null
+     */
+    protected function extractTokenFromRequest(Request $request)
+    {
+        // Try bearer token
+        $token = $request->bearerToken();
+        if ($token) {
+            return $token;
+        }
+        
+        // Try Authorization header format "Token <token>"
+        $header = $request->header('Authorization');
+        if ($header && preg_match('/^Token\s+(.*)$/i', $header, $matches)) {
+            return $matches[1];
+        }
+        
+        // Try from request parameters
+        if ($request->has('access_token')) {
+            return $request->input('access_token');
+        }
+        
+        return null;
+    }
+
+
+    
+    /**
+     * Get a list of all notifications
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function index(Request $request)
+    {
+        $perPage = $request->input('per_page', 15);
+        $query = EmailNotification::query();
+        
+        // Apply filters if provided
+        if ($request->has('status')) {
+            $query->where('status', $request->input('status'));
+        }
+        
+        if ($request->has('created_by_type')) {
+            $query->where('created_by_type', $request->input('created_by_type'));
+        }
+        
+        if ($request->has('created_by_id')) {
+            $query->where('created_by_id', $request->input('created_by_id'));
+        }
+        
+        // Order by latest created
+        $query->orderBy('created_at', 'desc');
+        
+        $notifications = $query->paginate($perPage);
+        
         return response()->json([
             'success' => true,
-            'message' => 'Notifications processed',
-            'results' => $results
+            'data' => $notifications
         ]);
     }
-
+    
     /**
-     * Subscribe a user to push notifications.
+     * Get a specific notification with recipients
      *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function subscribe(Request $request)
-    {
-        // Log the entire request for debugging
-        Log::info('Push subscription request received', [
-            'request_data' => $request->all(),
-            'auth_user' => $request->user()
-        ]);
-
-        $validator = Validator::make($request->all(), [
-            'endpoint' => 'required|string',
-            'keys.p256dh' => 'required|string',
-            'keys.auth' => 'required|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            // Get user ID from request or fallback to authenticated user
-            $userId = $request->input('user_id');
-            
-            if (!$userId) {
-                // Get the authenticated user
-                $user = $request->user();
-                
-                if (!$user) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'User not authenticated and no user_id provided'
-                    ], 401);
-                }
-                
-                $userId = $user->sisi_id ?? $user->id;
-            }
-
-            // Log which user ID we're using
-            Log::info('Saving push subscription for user', [
-                'user_id' => $userId
-            ]);
-
-            // Store subscription information
-            $subscription = \App\Models\PushSubscription::create([
-                'user_id' => $userId,
-                'endpoint' => $request->input('endpoint'),
-                'p256dh' => $request->input('keys.p256dh'),
-                'auth' => $request->input('keys.auth'),
-                'expires_at' => null,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Successfully subscribed to push notifications',
-                'subscription_id' => $subscription->id
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error subscribing to push notifications', [
-                'error' => $e->getMessage()
-            ]);
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to subscribe to push notifications',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Unsubscribe a user from push notifications.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function unsubscribe(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'endpoint' => 'required|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            // Get the authenticated user
-            $user = $request->user();
-            
-            if (!$user) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User not authenticated'
-                ], 401);
-            }
-
-            // Find and delete the subscription
-            $deleted = \App\Models\PushSubscription::where('user_id', $user->id)
-                ->where('endpoint', $request->input('endpoint'))
-                ->delete();
-
-            if ($deleted) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Successfully unsubscribed from push notifications'
-                ]);
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Subscription not found'
-                ], 404);
-            }
-        } catch (\Exception $e) {
-            Log::error('Error unsubscribing from push notifications', [
-                'error' => $e->getMessage()
-            ]);
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to unsubscribe from push notifications',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Get unread notifications for the authenticated user.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function getUnread(Request $request)
-    {
-        try {
-            // Check for token in request attributes (set by middleware)
-            $authUser = $request->attributes->get('auth_user');
-            
-            if (!$authUser) {
-                Log::warning('getUnread called without auth user', [
-                    'has_token' => (bool)$request->attributes->get('access_token'),
-                    'headers' => $request->headers->all()
-                ]);
-                
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User not authenticated'
-                ], 401);
-            }
-            
-            // Get the user ID - different formats possible from OAuth
-            $userId = $authUser['uid'] ?? $authUser['username'] ?? null;
-            
-            if (!$userId) {
-                Log::error('Unable to determine user ID from auth data', [
-                    'auth_data_keys' => array_keys($authUser),
-                    'has_uid' => isset($authUser['uid']),
-                    'has_username' => isset($authUser['username'])
-                ]);
-                
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unable to determine user ID'
-                ], 400);
-            }
-            
-            // Log what user ID we're using
-            Log::info('Getting unread notifications for user', ['user_id' => $userId]);
-
-            // Get unread notifications - use the fully qualified namespace here
-            $notifications = \App\Models\Notification::where('user_id', $userId)
-                ->where('is_read', false)
-                ->where('sent', true)
-                ->orderBy('created_at', 'desc')
-                ->get();
-
-            return response()->json([
-                'success' => true,
-                'count' => $notifications->count(),
-                'notifications' => $notifications
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error getting unread notifications', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get unread notifications',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Mark a notification as read.
-     *
-     * @param \Illuminate\Http\Request $request
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function markAsRead(Request $request, $id)
+    public function show($id)
     {
-        try {
-            // Get the authenticated user
-            $user = $request->user();
+        $notification = EmailNotification::with('recipients')
+            ->findOrFail($id);
             
-            if (!$user) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User not authenticated'
-                ], 401);
-            }
-
-            // Find the notification
-            $notification = \App\Models\Notification::where('id', $id)
-                ->where('user_id', $user->id)
-                ->first();
-
-            if (!$notification) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Notification not found'
-                ], 404);
-            }
-
-            // Mark as read
-            $notification->update([
-                'is_read' => true,
-                'read_at' => now()
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Notification marked as read'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error marking notification as read', [
-                'notification_id' => $id,
-                'error' => $e->getMessage()
-            ]);
-            
+        return response()->json([
+            'success' => true,
+            'data' => $notification
+        ]);
+    }
+    
+    /**
+     * Manually send a pending notification
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function send($id)
+    {
+        $notification = EmailNotification::findOrFail($id);
+        
+        if (!in_array($notification->status, ['pending', 'scheduled'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to mark notification as read',
+                'message' => 'Notification cannot be sent. Current status: ' . $notification->status
+            ], 400);
+        }
+        
+        try {
+            $this->notificationService->sendNotification($notification);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Notification sent successfully',
+                'data' => [
+                    'id' => $notification->id,
+                    'status' => $notification->status,
+                    'sent_at' => $notification->sent_at
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send notification',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
+    
+    /**
+     * Cancel a scheduled notification
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function cancel($id)
+    {
+        $notification = EmailNotification::findOrFail($id);
+        
+        if ($notification->status !== 'scheduled') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only scheduled notifications can be cancelled. Current status: ' . $notification->status
+            ], 400);
+        }
+        
+        $notification->status = 'cancelled';
+        $notification->save();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Notification cancelled successfully',
+            'data' => [
+                'id' => $notification->id,
+                'status' => $notification->status
+            ]
+        ]);
+    }
 
     /**
-     * Send a notification using a template to multiple recipients
+     * Track email opens via tracking pixel
+     *
+     * @param int $recipientId
+     * @return \Illuminate\Http\Response
      */
-    public function sendTemplateNotification(Request $request)
+    public function track($recipientId)
     {
-        // Validate the request
-        $validator = Validator::make($request->all(), [
-            'template_id' => 'required|exists:thesis_notification_templates,id',
-            'recipients' => 'required|array',
-            'recipients.*.id' => 'required|string',
-            'recipients.*.email' => 'required|email',
-            'data' => 'nullable|array',
-            'schedule' => 'nullable|date',
-            'url' => 'nullable|string|url',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
         try {
-            $templateId = $request->input('template_id');
-            $recipients = $request->input('recipients');
-            $data = $request->input('data', []);
-            $schedule = $request->input('schedule');
-            $url = $request->input('url');
+            $recipient = EmailNotificationRecipient::find($recipientId);
             
-            $results = $this->notificationService->sendBatchFromTemplate(
-                $templateId,
-                $recipients,
-                $data,
-                $schedule,
-                $url
-            );
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Notifications processed',
-                'results' => $results
-            ]);
+            if ($recipient) {
+                $recipient->opened_at = now();
+                
+                // Only update if not already marked as opened
+                if ($recipient->status === 'sent') {
+                    $recipient->status = 'opened';
+                }
+                
+                $recipient->save();
+            }
         } catch (\Exception $e) {
-            Log::error('Error sending template notification', [
-                'error' => $e->getMessage()
-            ]);
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to send notifications',
-                'error' => $e->getMessage()
-            ], 500);
+            // Log but don't affect response
+            Log::error('Failed to track notification open: ' . $e->getMessage());
         }
+        
+        // Return a 1x1 transparent pixel GIF
+        $pixel = base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
+        
+        return response($pixel, 200)
+            ->header('Content-Type', 'image/gif')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
     }
 }
