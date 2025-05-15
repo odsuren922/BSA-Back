@@ -163,10 +163,12 @@ class OAuthController extends Controller
                 'name' => $firstName . ' ' . $lastName,
                 'username' => $username,
                 'gid' => $gid,
+                'dep_id' => $user['dep_id'] ?? null,
             ]]);
             
             // Create Sanctum token for the user
-            $tokenPlaintext = $this->createSanctumToken($user['model'], $role);
+
+            $tokenPlaintext = $this->createSanctumToken($user['model'], $role, $user['dep_id'] ?? null);
             
             // Store the Sanctum token for later use in the frontend
             session(['sanctum_token' => $tokenPlaintext]);
@@ -176,6 +178,7 @@ class OAuthController extends Controller
             
             Log::info('User authenticated successfully', [
                 'user_id' => $user['id'],
+                'model' => get_class($user['model']),
                 'role' => $role,
                 'email' => $email
             ]);
@@ -218,6 +221,7 @@ class OAuthController extends Controller
             if ($student) {
                 return [
                     'id' => $student->id,
+                    'dep_id' => $student->dep_id,
                     'type' => 'student',
                     'model' => $student
                 ];
@@ -242,6 +246,7 @@ class OAuthController extends Controller
                     'model' => $supervisor
                 ];
             }
+            //TODO:: FIND FROM THE TEACHER BUT SUPERIOR IS DIFFERENT
         } elseif ($role === 'department') {
             // Departments might have a different mapping logic
             // This is a placeholder implementation
@@ -404,7 +409,8 @@ class OAuthController extends Controller
                 'gid' => $gid,
                 'fnamem' => $firstName,
                 'lnamem' => $lastName,
-            ];
+                'dep_id' => $user['dep_id'] ?? null,
+           ];
             
             // Store user data in session
             session(['oauth_user' => $formattedUser]);
@@ -562,7 +568,7 @@ class OAuthController extends Controller
                 ]);
                 return response()->json(['error' => 'User not found in system'], 404);
             }
-            
+            //TODO:: DEP ID NEEDED 
             // Format user data for response
             $formattedUser = [
                 'id' => $user['id'],
@@ -573,6 +579,7 @@ class OAuthController extends Controller
                 'gid' => $gid,
                 'firstName' => $firstName,
                 'lastName' => $lastName,
+                'dep_id' => $user['dep_id'] ?? null 
             ];
             
             // Store in session for future requests
