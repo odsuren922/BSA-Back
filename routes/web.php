@@ -104,3 +104,24 @@ Route::middleware(['require.token'])->group(function () {
         return 'Check the dumped data above';
     });
 });
+
+// In routes/web.php
+Route::get('/test-mongolian', function() {
+    $departments = \App\Models\Department::all();
+    echo "<html><head><meta charset='UTF-8'></head><body>";
+    echo "<h1>Department Names</h1>";
+    
+    foreach ($departments as $department) {
+        echo "<p><strong>ID:</strong> {$department->id}, <strong>Name:</strong> {$department->name}</p>";
+        
+        if (!empty($department->programs) && is_array($department->programs)) {
+            echo "<ul>";
+            foreach ($department->programs as $program) {
+                echo "<li>{$program['name']} ({$program['name_en']})</li>";
+            }
+            echo "</ul>";
+        }
+    }
+    
+    echo "</body></html>";
+});
