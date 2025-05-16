@@ -1,98 +1,64 @@
 <?php
 
-/**
- * HUB API Connection Test Script
- * 
- * This script tests the connection to the NUM University HUB API
- * loading credentials from .env file.
- * 
- * Run this script from the command line:
- * php hub-api-test.php
- */
-
-require_once __DIR__ . '/vendor/autoload.php';
+namespace App\Services;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+use App\Models\Department;
+use App\Models\Student;
+use App\Models\Teacher;
 
-class HubApiTester
+class HubApiService
 {
     protected $client;
     protected $endpoint;
     protected $clientId;
     protected $clientSecret;
     protected $accessToken;
+    protected $verify;
+    protected $cacheEnabled;
+    protected $cacheTtl;
 
     /**
      * Constructor
-     * 
-     * @param string $endpoint HUB API endpoint URL
-     * @param string $clientId OAuth client ID
-     * @param string $clientSecret OAuth client secret
      */
-    public function __construct($endpoint, $clientId, $clientSecret)
+    public function __construct(OAuthService $oauthService = null)
     {
-        $this->endpoint = $endpoint;
-        $this->clientId = $clientId;
-        $this->clientSecret = $clientSecret;
+        $this->endpoint = config('hubapi.endpoint', 'https://tree.num.edu.mn/gateway');
+        $this->clientId = config('hubapi.client_id');
+        $this->clientSecret = config('hubapi.client_secret');
+        $this->verify = config('hubapi.verify_ssl', false);
+        $this->cacheEnabled = config('hubapi.cache_enabled', true);
+        $this->cacheTtl = config('hubapi.cache_ttl', 3600);
         
         $this->client = new Client([
-            'verify' => false, // Set to true in production
+            'verify' => $this->verify,
             'timeout' => 30,
         ]);
+        
+        $this->oauthService = $oauthService;
     }
 
     /**
-     * Run all tests
-     * 
-     * @return void
+     * Authenticate with the HUB API
+     *
+     * @return string|null Access token or null on failure
      */
-    public function runAllTests()
+    protected function authenticate()
     {
-        echo "Starting HUB API Connection Tests\n";
-        echo "=================================\n\n";
+        $cacheKey = 'hubapi_access_token';
         
-        try {
-            // Test 1: Authentication
-            $this->testAuthentication();
-            
-            // Test 2: Get Departments
-            $this->testGetDepartments();
-            
-            // Test 3: Get Units/Schools
-            $this->testGetUnits();
-            
-            // Test 4: Get Teachers for a specific unit
-            $this->testGetTeachers(1002076); // МУИС, МТЭС unit ID
-            
-            // Test 5: Get Programs for a specific department
-            $this->testGetPrograms(1001298); // МКУТ department ID
-            
-            // Test 6: Get Courses
-            $this->testGetCourses('NUM-P955', 1002076, 1, 'Бакалаврын судалгааны ажил');
-            
-            // Test 7: Get Students for THES400 course
-            $this->testGetStudents('NUM-L26404', 2024, 4); // Spring 2025
-            
-            echo "\nAll tests completed successfully!\n";
-        } catch (\Exception $e) {
-            echo "\nTest failed: " . $e->getMessage() . "\n";
-            echo "File: " . $e->getFile() . " Line: " . $e->getLine() . "\n";
+        // Check if we have a cached token
+        if ($this->cacheEnabled && Cache::has($cacheKey)) {
+            Log::debug('Using cached HUB API access token');
+            return Cache::get($cacheKey);
         }
-    }
-
-    /**
-     * Test authentication with the HUB API
-     * 
-     * @return void
-     * @throws \Exception
-     */
-    public function testAuthentication()
-    {
-        echo "Test 1: Authentication\n";
-        echo "----------------------\n";
         
         try {
+            Log::info('Authenticating with HUB API');
+            
             $query = <<<'GRAPHQL'
 mutation Login($input: LoginInput) {
     login(input: $input) {
@@ -112,33 +78,116 @@ GRAPHQL;
             $response = $this->executeQuery($query, $variables, false);
             
             if (isset($response['data']['login']['access_token'])) {
-                $this->accessToken = $response['data']['login']['access_token'];
+                $accessToken = $response['data']['login']['access_token'];
                 $expiresIn = $response['data']['login']['expires_in'] ?? 3600;
                 
-                echo "✓ Successfully obtained access token\n";
-                echo "  Token expires in: {$expiresIn} seconds\n";
-                echo "  Token: " . substr($this->accessToken, 0, 15) . "...\n\n";
+                Log::info('Successfully obtained HUB API access token', [
+                    'expires_in' => $expiresIn
+                ]);
                 
-                return;
+                // Cache the token
+                if ($this->cacheEnabled) {
+                    $cacheDuration = min($expiresIn - 60, $this->cacheTtl);
+                    Cache::put($cacheKey, $accessToken, $cacheDuration);
+                }
+                
+                $this->accessToken = $accessToken;
+                return $accessToken;
             }
             
-            throw new \Exception("Failed to get access token. Response: " . json_encode($response));
+            Log::error('Failed to get HUB API access token', [
+                'response' => $response
+            ]);
+            
+            return null;
         } catch (\Exception $e) {
-            echo "✗ Authentication failed: " . $e->getMessage() . "\n\n";
-            throw $e;
+            Log::error('HUB API authentication error: ' . $e->getMessage(), [
+                'exception' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            
+            return null;
         }
     }
 
     /**
-     * Test fetching departments
-     * 
-     * @return void
-     * @throws \Exception
+     * Execute a GraphQL query
+     *
+     * @param string $query The GraphQL query/mutation
+     * @param array $variables Variables for the query
+     * @param bool $authenticate Whether to authenticate the request
+     * @return array|null The response data or null on failure
      */
-    public function testGetDepartments()
+    protected function executeQuery($query, $variables = [], $authenticate = true)
     {
-        echo "Test 2: Get Departments\n";
-        echo "----------------------\n";
+        $headers = [
+            'Content-Type' => 'application/json',
+        ];
+        
+        if ($authenticate) {
+            if (!$this->accessToken) {
+                $this->accessToken = $this->authenticate();
+                
+                if (!$this->accessToken) {
+                    throw new \Exception("Failed to authenticate with HUB API");
+                }
+            }
+            
+            // Use raw token without "Bearer " prefix as required by the API
+            $headers['Authorization'] = $this->accessToken;
+        }
+        
+        try {
+            $response = $this->client->post($this->endpoint, [
+                'headers' => $headers,
+                'json' => [
+                    'query' => $query,
+                    'variables' => $variables
+                ]
+            ]);
+            
+            $data = json_decode($response->getBody(), true);
+            
+            // Check for GraphQL errors
+            if (isset($data['errors'])) {
+                $errorMessages = array_map(function ($error) {
+                    return $error['message'];
+                }, $data['errors']);
+                
+                Log::error('GraphQL errors', [
+                    'messages' => $errorMessages,
+                    'query' => $query,
+                    'variables' => $variables
+                ]);
+                
+                throw new \Exception("GraphQL errors: " . implode(', ', $errorMessages));
+            }
+            
+            return $data;
+        } catch (GuzzleException $e) {
+            Log::error('HUB API request failed: ' . $e->getMessage(), [
+                'query' => $query,
+                'variables' => $variables
+            ]);
+            
+            throw new \Exception("HUB API request failed: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Get all departments from HUB API
+     *
+     * @return array|null Array of departments or null on failure
+     */
+    public function getDepartments()
+    {
+        $cacheKey = 'hubapi_departments';
+        
+        // Check if we have cached data
+        if ($this->cacheEnabled && Cache::has($cacheKey)) {
+            return Cache::get($cacheKey);
+        }
         
         try {
             $query = <<<'GRAPHQL'
@@ -155,95 +204,37 @@ GRAPHQL;
             
             if (isset($response['data']['sisi_GetDepartmentsInfo'])) {
                 $departments = $response['data']['sisi_GetDepartmentsInfo'];
-                $count = count($departments);
                 
-                echo "✓ Successfully retrieved {$count} departments\n";
-                
-                // Display first 3 departments
-                for ($i = 0; $i < min(3, $count); $i++) {
-                    $dept = $departments[$i];
-                    echo "  - {$dept['departmentID']}: {$dept['departmentNamem']}\n";
+                // Cache the data
+                if ($this->cacheEnabled) {
+                    Cache::put($cacheKey, $departments, $this->cacheTtl);
                 }
                 
-                if ($count > 3) {
-                    echo "  - ... and " . ($count - 3) . " more\n";
-                }
-                echo "\n";
-                
-                return;
+                return $departments;
             }
             
-            throw new \Exception("Failed to get departments. Response: " . json_encode($response));
+            return null;
         } catch (\Exception $e) {
-            echo "✗ Get Departments failed: " . $e->getMessage() . "\n\n";
-            throw $e;
+            Log::error('Failed to get departments: ' . $e->getMessage());
+            return null;
         }
     }
-
+    
     /**
-     * Test fetching units/schools
-     * 
-     * @return void
-     * @throws \Exception
+     * Get all teachers from HUB API
+     *
+     * @param int|null $unitId Filter by unit ID
+     * @return array|null Array of teachers or null on failure
      */
-    public function testGetUnits()
+    public function getTeachers($unitId = null)
     {
-        echo "Test 3: Get Units/Schools\n";
-        echo "------------------------\n";
+        $unitId = $unitId ?: 1002076; // Default to MUIS, MTES unit ID if not specified
+        $cacheKey = "hubapi_teachers_{$unitId}";
         
-        try {
-            $query = <<<'GRAPHQL'
-query Sisi_GetUnitsInfo {
-    sisi_GetUnitsInfo {
-        abbrevm
-        orgtypeID
-        orgtypeNamem
-        unitID
-        unitNamem
-    }
-}
-GRAPHQL;
-
-            $response = $this->executeQuery($query);
-            
-            if (isset($response['data']['sisi_GetUnitsInfo'])) {
-                $units = $response['data']['sisi_GetUnitsInfo'];
-                $count = count($units);
-                
-                echo "✓ Successfully retrieved {$count} units/schools\n";
-                
-                // Display first 3 units
-                for ($i = 0; $i < min(3, $count); $i++) {
-                    $unit = $units[$i];
-                    echo "  - {$unit['unitID']}: {$unit['unitNamem']} ({$unit['abbrevm']})\n";
-                }
-                
-                if ($count > 3) {
-                    echo "  - ... and " . ($count - 3) . " more\n";
-                }
-                echo "\n";
-                
-                return;
-            }
-            
-            throw new \Exception("Failed to get units. Response: " . json_encode($response));
-        } catch (\Exception $e) {
-            echo "✗ Get Units failed: " . $e->getMessage() . "\n\n";
-            throw $e;
+        // Check if we have cached data
+        if ($this->cacheEnabled && Cache::has($cacheKey)) {
+            return Cache::get($cacheKey);
         }
-    }
-
-    /**
-     * Test fetching teachers for a specific unit
-     * 
-     * @param int $unitId
-     * @return void
-     * @throws \Exception
-     */
-    public function testGetTeachers($unitId)
-    {
-        echo "Test 4: Get Teachers for unit {$unitId}\n";
-        echo "-----------------------------------------\n";
         
         try {
             $query = <<<'GRAPHQL'
@@ -277,43 +268,100 @@ GRAPHQL;
             
             if (isset($response['data']['sisi_GetEmployees'])) {
                 $teachers = $response['data']['sisi_GetEmployees'];
-                $count = count($teachers);
                 
-                echo "✓ Successfully retrieved {$count} teachers\n";
-                
-                // Display first 3 teachers
-                for ($i = 0; $i < min(3, $count); $i++) {
-                    $teacher = $teachers[$i];
-                    $email = isset($teacher['emails'][0]) ? $teacher['emails'][0]['email'] : 'no email';
-                    echo "  - {$teacher['firstNamem']} {$teacher['lastNamem']} ({$email})\n";
+                // Cache the data
+                if ($this->cacheEnabled) {
+                    Cache::put($cacheKey, $teachers, $this->cacheTtl);
                 }
                 
-                if ($count > 3) {
-                    echo "  - ... and " . ($count - 3) . " more\n";
-                }
-                echo "\n";
-                
-                return;
+                return $teachers;
             }
             
-            throw new \Exception("Failed to get teachers. Response: " . json_encode($response));
+            return null;
         } catch (\Exception $e) {
-            echo "✗ Get Teachers failed: " . $e->getMessage() . "\n\n";
-            throw $e;
+            Log::error('Failed to get teachers: ' . $e->getMessage());
+            return null;
         }
     }
 
     /**
-     * Test fetching programs for a specific department
-     * 
-     * @param int $departmentId
-     * @return void
-     * @throws \Exception
+     * Get students information for a specific course
+     *
+     * @param string $courseId The course ID (e.g., 'THES400')
+     * @param int $year The academic year
+     * @param int $semester The semester (1=Fall, 4=Spring)
+     * @return array|null Array of students or null on failure
      */
-    public function testGetPrograms($departmentId)
+    public function getStudentsInfo($courseId = null, $year = null, $semester = null)
     {
-        echo "Test 5: Get Programs for department {$departmentId}\n";
-        echo "-------------------------------------------------\n";
+        $courseId = "NUM-L26404";
+        $year = 2024;
+        $semester = 4;
+        
+        $cacheKey = "hubapi_students_{$courseId}_{$year}_{$semester}";
+        
+        // Check if we have cached data
+        if ($this->cacheEnabled && Cache::has($cacheKey)) {
+            return Cache::get($cacheKey);
+        }
+        
+        try {
+            $query = <<<'GRAPHQL'
+query Sisi_GetStudentsOfLesson($courseId: String!, $year: Int!, $semester: Int!) {
+    sisi_GetStudentsOfLesson(courseID: $courseId, year: $year, semester: $semester) {
+        cardNr
+        departmentID
+        email
+        fnamem
+        lnamem
+        phone
+        programID
+        programNamem
+        public_hash
+    }
+}
+GRAPHQL;
+
+            $variables = [
+                'courseId' => $courseId,
+                'year' => (int)$year,
+                'semester' => (int)$semester
+            ];
+
+            $response = $this->executeQuery($query, $variables);
+            
+            if (isset($response['data']['sisi_GetStudentsOfLesson'])) {
+                $students = $response['data']['sisi_GetStudentsOfLesson'];
+                
+                // Cache the data
+                if ($this->cacheEnabled) {
+                    Cache::put($cacheKey, $students, $this->cacheTtl);
+                }
+                
+                return $students;
+            }
+            
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Failed to get students: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get programs for a specific department
+     *
+     * @param int $departmentId The department ID
+     * @return array|null Array of programs or null on failure
+     */
+    public function getPrograms($departmentId)
+    {
+        $cacheKey = "hubapi_programs_{$departmentId}";
+        
+        // Check if we have cached data
+        if ($this->cacheEnabled && Cache::has($cacheKey)) {
+            return Cache::get($cacheKey);
+        }
         
         try {
             $query = <<<'GRAPHQL'
@@ -336,378 +384,355 @@ GRAPHQL;
             
             if (isset($response['data']['sisi_GetPrograms'])) {
                 $programs = $response['data']['sisi_GetPrograms'];
-                $count = count($programs);
                 
-                echo "✓ Successfully retrieved {$count} programs\n";
-                
-                // Display first 3 programs
-                for ($i = 0; $i < min(3, $count); $i++) {
-                    $program = $programs[$i];
-                    echo "  - {$program['programID']}: {$program['programNamem']} ({$program['programIndex']})\n";
+                // Cache the data
+                if ($this->cacheEnabled) {
+                    Cache::put($cacheKey, $programs, $this->cacheTtl);
                 }
                 
-                if ($count > 3) {
-                    echo "  - ... and " . ($count - 3) . " more\n";
-                }
-                echo "\n";
-                
-                return;
+                return $programs;
             }
             
-            throw new \Exception("Failed to get programs. Response: " . json_encode($response));
+            return null;
         } catch (\Exception $e) {
-            echo "✗ Get Programs failed: " . $e->getMessage() . "\n\n";
-            throw $e;
+            Log::error('Failed to get programs: ' . $e->getMessage());
+            return null;
         }
     }
-
+    
     /**
-     * Test fetching courses
-     * 
-     * @param string|null $programId
-     * @param int|null $unitId
-     * @param int $lang
-     * @param string|null $searchWord
-     * @return void
-     * @throws \Exception
+     * Synchronize departments from HUB API to local database
+     *
+     * @return array Sync statistics (total, created, updated, failed)
      */
-    public function testGetCourses($programId, $unitId, $lang, $searchWord)
+    public function syncDepartments()
     {
-        echo "Test 6: Get Courses";
-        if ($searchWord) {
-            echo " matching '{$searchWord}'";
-        }
-        echo "\n";
-        echo "------------------------------\n";
-        
-        try {
-            $query = <<<'GRAPHQL'
-query Sisi_GetCourses($lang: Int!, $unitId: Int, $programId: String, $searchWord: String) {
-    sisi_GetCourses(lang: $lang, unitID: $unitId, programID: $programId, searchWord: $searchWord) {
-        courseID
-        courseLevel
-        subjectID
-        courseProgram {
-            courseID
-            programID
-            programName
-        }
-        courseUnit {
-            courseDepartmentID
-            courseDepartmentName
-            courseID
-            courseSemester
-        }
-        credit
-        subjectName
-    }
-}
-GRAPHQL;
-
-            $variables = [
-                'lang' => $lang,
-                'unitId' => $unitId ? (int)$unitId : null,
-                'programId' => $programId,
-                'searchWord' => $searchWord
-            ];
-
-            $response = $this->executeQuery($query, $variables);
-            
-            if (isset($response['data']['sisi_GetCourses'])) {
-                $courses = $response['data']['sisi_GetCourses'];
-                $count = count($courses);
-                
-                echo "✓ Successfully retrieved {$count} courses\n";
-                
-                // Display first 3 courses
-                for ($i = 0; $i < min(3, $count); $i++) {
-                    $course = $courses[$i];
-                    echo "  - {$course['subjectID']}: {$course['subjectName']} ({$course['credit']} credits)\n";
-                }
-                
-                if ($count > 3) {
-                    echo "  - ... and " . ($count - 3) . " more\n";
-                }
-                echo "\n";
-                
-                return;
-            }
-            
-            throw new \Exception("Failed to get courses. Response: " . json_encode($response));
-        } catch (\Exception $e) {
-            echo "✗ Get Courses failed: " . $e->getMessage() . "\n\n";
-            throw $e;
-        }
-    }
-
-    /**
-     * Test fetching students for a specific course
-     * 
-     * @param string $courseId
-     * @param int $year
-     * @param int $semester
-     * @return void
-     * @throws \Exception
-     */
-    public function testGetStudents($courseId, $year, $semester)
-    {
-        echo "Test 7: Get Students for course {$courseId} ({$year}-" . ($semester == 1 ? "Fall" : "Spring") . ")\n";
-        echo "----------------------------------------------------------------\n";
-        
-        try {
-            $query = <<<'GRAPHQL'
-query Sisi_GetStudentsOfLesson($courseId: String!, $year: Int!, $semester: Int!) {
-    sisi_GetStudentsOfLesson(courseID: $courseId, year: $year, semester: $semester) {
-        cardNr
-        departmentID
-        email
-        fnamem
-        lnamem
-        phone
-        programID
-        programNamem
-        public_hash
-    }
-}
-GRAPHQL;
-
-            $variables = [
-                'courseId' => $courseId,
-                'year' => $year,
-                'semester' => $semester
-            ];
-
-            $response = $this->executeQuery($query, $variables);
-            
-            if (isset($response['data']['sisi_GetStudentsOfLesson'])) {
-                $students = $response['data']['sisi_GetStudentsOfLesson'];
-                $count = count($students);
-                
-                if ($count > 0) {
-                    echo "✓ Successfully retrieved {$count} students\n";
-                    
-                    // Display first 3 students
-                    for ($i = 0; $i < min(3, $count); $i++) {
-                        $student = $students[$i];
-                        echo "  - {$student['fnamem']} {$student['lnamem']} ({$student['cardNr']}) - {$student['programNamem']}\n";
-                    }
-                    
-                    if ($count > 3) {
-                        echo "  - ... and " . ($count - 3) . " more\n";
-                    }
-                } else {
-                    echo "✓ Query successful but no students found for this course\n";
-                    echo "  This could be normal if no students are enrolled yet\n";
-                }
-                echo "\n";
-                
-                return;
-            }
-            
-            throw new \Exception("Failed to get students. Response: " . json_encode($response));
-        } catch (\Exception $e) {
-            echo "✗ Get Students failed: " . $e->getMessage() . "\n\n";
-            throw $e;
-        }
-    }
-
-    /**
-     * Execute a GraphQL query
-     * 
-     * @param string $query The GraphQL query/mutation
-     * @param array $variables Variables for the query
-     * @param bool $authenticate Whether to authenticate the request
-     * @return array The response data
-     * @throws \Exception
-     */
-    public function executeQuery($query, $variables = [], $authenticate = true)
-    {
-        $headers = [
-            'Content-Type' => 'application/json',
+        $stats = [
+            'total' => 0,
+            'created' => 0,
+            'updated' => 0,
+            'failed' => 0
         ];
         
-        if ($authenticate) {
-            if (!$this->accessToken) {
-                throw new \Exception("No access token available. Run authentication test first.");
-            }
-            // IMPORTANT FIX: Use raw token without "Bearer " prefix
-            $headers['Authorization'] = $this->accessToken;
-        }
-        
         try {
-            $response = $this->client->post($this->endpoint, [
-                'headers' => $headers,
-                'json' => [
-                    'query' => $query,
-                    'variables' => $variables
-                ]
+            // Get departments from HUB API
+            $departments = $this->getDepartments();
+            
+            if (!$departments) {
+                throw new \Exception("Failed to get departments from HUB API");
+            }
+            
+            $stats['total'] = count($departments);
+            
+            foreach ($departments as $deptData) {
+                try {
+                    // Get programs for this department
+                    $programs = $this->getPrograms($deptData['departmentID']);
+                    
+                    // Format programs for storage
+                    $formattedPrograms = [];
+                    if ($programs) {
+                        foreach ($programs as $program) {
+                            $formattedPrograms[] = [
+                                'id' => $program['programID'],
+                                'index' => $program['programIndex'],
+                                'name' => $program['programNamem'],
+                                'name_en' => $program['programName'],
+                                'level' => $program['academicLevel']
+                            ];
+                        }
+                    }
+                    
+                    // Create or update department
+                    $department = Department::updateOrCreate(
+                        ['id' => $deptData['departmentID']],
+                        [
+                            'name' => $deptData['departmentNamem'],
+                            'programs' => $formattedPrograms
+                        ]
+                    );
+                    
+                    if ($department->wasRecentlyCreated) {
+                        $stats['created']++;
+                    } else {
+                        $stats['updated']++;
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Failed to sync department: ' . $e->getMessage(), [
+                        'department' => $deptData['departmentID'],
+                        'exception' => get_class($e),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                    ]);
+                    
+                    $stats['failed']++;
+                }
+            }
+            
+            return $stats;
+        } catch (\Exception $e) {
+            Log::error('Department sync error: ' . $e->getMessage(), [
+                'exception' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
             ]);
             
-            $data = json_decode($response->getBody(), true);
-            
-            // Check for GraphQL errors
-            if (isset($data['errors'])) {
-                $errorMessages = array_map(function ($error) {
-                    return $error['message'];
-                }, $data['errors']);
-                
-                throw new \Exception("GraphQL errors: " . implode(', ', $errorMessages));
-            }
-            
-            return $data;
-        } catch (GuzzleException $e) {
-            // Print the entire exception message for debugging
-            throw new \Exception("API request failed: " . $e->getMessage());
+            throw $e;
         }
     }
     
     /**
-     * Print the GraphQL schema
-     * 
-     * @return void
+     * Synchronize teachers from HUB API to local database
+     *
+     * @param int|null $departmentId Filter by department ID
+     * @return array Sync statistics (total, created, updated, failed)
      */
-    public function printSchema()
+    public function syncTeachers($departmentId = null)
     {
-        echo "Printing GraphQL Schema\n";
-        echo "----------------------\n";
+        $stats = [
+            'total' => 0,
+            'created' => 0,
+            'updated' => 0,
+            'failed' => 0
+        ];
         
         try {
-            // First try to get the query type name
-            $query = <<<'GRAPHQL'
-{
-  __schema {
-    queryType {
-      name
-    }
-  }
-}
-GRAPHQL;
-
-            $response = $this->executeQuery($query);
+            // Get teachers from HUB API
+            $teachers = $this->getTeachers();
             
-            if (isset($response['data']['__schema']['queryType']['name'])) {
-                $queryTypeName = $response['data']['__schema']['queryType']['name'];
-                echo "Query type name: {$queryTypeName}\n\n";
-                
-                // Now get the query type fields
-                $query = <<<GRAPHQL
-{
-  __type(name: "{$queryTypeName}") {
-    name
-    fields {
-      name
-      args {
-        name
-        type {
-          name
-          kind
-          ofType {
-            name
-            kind
-          }
-        }
-      }
-      type {
-        name
-        kind
-        ofType {
-          name
-          kind
-        }
-      }
-    }
-  }
-}
-GRAPHQL;
-
-                $response = $this->executeQuery($query);
-                
-                if (isset($response['data']['__type']['fields'])) {
-                    $fields = $response['data']['__type']['fields'];
+            if (!$teachers) {
+                throw new \Exception("Failed to get teachers from HUB API");
+            }
+            
+            // Filter by department if specified
+            if ($departmentId) {
+                $teachers = array_filter($teachers, function($teacher) use ($departmentId) {
+                    return $teacher['departmentID'] == $departmentId;
+                });
+            }
+            
+            $stats['total'] = count($teachers);
+            
+            foreach ($teachers as $teacherData) {
+                try {
+                    // Skip if no department ID
+                    if (empty($teacherData['departmentID'])) {
+                        $stats['failed']++;
+                        continue;
+                    }
                     
-                    echo "Available Query Fields:\n";
-                    foreach ($fields as $field) {
-                        if (strpos($field['name'], 'sisi_') === 0) {
-                            $typeName = $field['type']['name'] ?? 
-                                       ($field['type']['ofType']['name'] ?? 'unknown');
-                            
-                            echo "  - {$field['name']}: {$typeName}\n";
-                            
-                            // Print arguments
-                            if (!empty($field['args'])) {
-                                echo "    Arguments:\n";
-                                foreach ($field['args'] as $arg) {
-                                    $argTypeName = $arg['type']['name'] ?? 
-                                                 ($arg['type']['ofType']['name'] ?? 'unknown');
-                                    echo "      {$arg['name']}: {$argTypeName}\n";
-                                }
+                    // Get email if available
+                    $email = '';
+                    if (!empty($teacherData['emails']) && is_array($teacherData['emails'])) {
+                        foreach ($teacherData['emails'] as $emailData) {
+                            if (!empty($emailData['email'])) {
+                                $email = $emailData['email'];
+                                break;
                             }
-                            echo "\n";
                         }
                     }
+                    
+                    // Get degree if available
+                    $degree = '';
+                    if (!empty($teacherData['degrees']) && is_array($teacherData['degrees'])) {
+                        foreach ($teacherData['degrees'] as $degreeData) {
+                            if (!empty($degreeData['degree'])) {
+                                $degree = $degreeData['degree'];
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Get position/superior if available
+                    $superior = '';
+                    if (!empty($teacherData['positions']) && is_array($teacherData['positions'])) {
+                        foreach ($teacherData['positions'] as $positionData) {
+                            if (!empty($positionData['position'])) {
+                                $superior = $positionData['position'];
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Generate a unique ID for the teacher (may need adjusting based on your needs)
+                    $teacherId = 'T' . $teacherData['departmentID'] . '_' . str_replace(' ', '', $teacherData['firstNamem'] . $teacherData['lastNamem']);
+                    
+                    // Create or update teacher
+                    $teacher = Teacher::updateOrCreate(
+                        ['id' => $teacherId],
+                        [
+                            'dep_id' => $teacherData['departmentID'],
+                            'firstname' => $teacherData['firstNamem'],
+                            'lastname' => $teacherData['lastNamem'],
+                            'mail' => $email,
+                            'degree' => $degree,
+                            'superior' => $superior,
+                            'numof_choosed_stud' => 0,
+                        ]
+                    );
+                    
+                    if ($teacher->wasRecentlyCreated) {
+                        $stats['created']++;
+                    } else {
+                        $stats['updated']++;
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Failed to sync teacher: ' . $e->getMessage(), [
+                        'teacher' => $teacherData['firstNamem'] . ' ' . $teacherData['lastNamem'],
+                        'exception' => get_class($e),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                    ]);
+                    
+                    $stats['failed']++;
                 }
-            }
-        } catch (\Exception $e) {
-            echo "✗ Print Schema failed: " . $e->getMessage() . "\n\n";
-        }
-    }
-}
-
-/**
- * Load environment variables from .env file
- */
-function loadDotEnv()
-{
-    $envFile = __DIR__ . '/.env';
-    
-    if (file_exists($envFile)) {
-        $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        foreach ($lines as $line) {
-            // Skip comments
-            if (strpos(trim($line), '#') === 0) {
-                continue;
             }
             
-            // Parse environment variable
-            if (strpos($line, '=') !== false) {
-                list($name, $value) = explode('=', $line, 2);
-                $name = trim($name);
-                $value = trim($value);
-                
-                // Remove quotes if they exist
-                if (strpos($value, '"') === 0 && strrpos($value, '"') === strlen($value) - 1) {
-                    $value = substr($value, 1, -1);
-                }
-                
-                // Set environment variable
-                putenv("{$name}={$value}");
-                $_ENV[$name] = $value;
-                $_SERVER[$name] = $value;
+            return $stats;
+        } catch (\Exception $e) {
+            Log::error('Teacher sync error: ' . $e->getMessage(), [
+                'exception' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            
+            throw $e;
+        }
+    }
+    
+    /**
+     * Synchronize students from HUB API to local database
+     * Will only sync students with department ID 1001298
+     *
+     * @param string|null $courseId Course ID (default: THES400)
+     * @param int|null $year Academic year (default: config value)
+     * @param int|null $semester Semester (1=Fall, 4=Spring) (default: config value)
+     * @return array Sync statistics (total, created, updated, failed)
+     */
+    public function syncStudents($courseId = null, $year = null, $semester = null)
+    {
+        $stats = [
+            'total' => 0,
+            'created' => 0,
+            'updated' => 0,
+            'failed' => 0,
+            'skipped' => 0  // Added to track skipped students
+        ];
+        
+        try {
+            // Set default values if not provided
+            $courseId = $courseId ?: config('hubapi.thesis_course', 'THES400');
+            $year = $year ?: config('hubapi.academic_year', 2025);
+            $semester = $semester ?: config('hubapi.semester', 4);
+            
+            // Set the specific department ID we want to filter for
+            $targetDepartmentId = "1001298";
+            
+            Log::info('Starting student sync', [
+                'course_id' => $courseId,
+                'year' => $year,
+                'semester' => $semester,
+                'filter_department_id' => $targetDepartmentId
+            ]);
+            
+            // Get students from HUB API
+            $students = $this->getStudentsInfo($courseId, $year, $semester);
+            
+            if (!$students) {
+                throw new \Exception("Failed to get students from HUB API");
             }
+            
+            $allStudentsCount = count($students);
+            
+            // Filter students by department ID
+            $students = array_filter($students, function($student) use ($targetDepartmentId) {
+                return isset($student['departmentID']) && $student['departmentID'] == $targetDepartmentId;
+            });
+            
+            $stats['total'] = count($students);
+            $stats['skipped'] = $allStudentsCount - $stats['total'];
+            
+            Log::info("Found {$allStudentsCount} total students, {$stats['total']} in target department, {$stats['skipped']} skipped", [
+                'department_id' => $targetDepartmentId
+            ]);
+            
+            foreach ($students as $studentData) {
+                try {
+                    // Validate required fields
+                    if (empty($studentData['cardNr'])) {
+                        Log::warning('Missing required fields for student', [
+                            'student' => ($studentData['fnamem'] ?? 'Unknown') . ' ' . ($studentData['lnamem'] ?? 'Unknown'),
+                            'card_nr' => $studentData['cardNr'] ?? 'missing'
+                        ]);
+                        $stats['failed']++;
+                        continue;
+                    }
+                    
+                    // Ensure proper data types and handle arrays
+                    $studentRecord = [
+                        'dep_id' => $targetDepartmentId,
+                        'firstname' => strval($studentData['fnamem'] ?? ''),
+                        'lastname' => strval($studentData['lnamem'] ?? ''),
+                        'program' => strval($studentData['programNamem'] ?? ''),
+                        'mail' => strval($studentData['email'][0] ?? ''),
+                        'phone' => strval($studentData['phone'][0] ?? ''),
+                        'is_choosed' => false, // Default value
+                        'proposed_number' => 0, // Default value
+                    ];
+                    
+                    // Handle optional fields that might be arrays
+                    if (!empty($studentData['public_hash'])) {
+                        $studentRecord['gid'] = is_array($studentData['public_hash']) 
+                            ? json_encode($studentData['public_hash']) 
+                            : strval($studentData['public_hash']);
+                    }
+                    
+                    // Always set role
+                    $studentRecord['role'] = 'student';
+                    
+                    // Create or update student
+                    $student = Student::updateOrCreate(
+                        ['sisi_id' => $studentData['cardNr']],
+                        $studentRecord
+                    );
+                    
+                    if ($student->wasRecentlyCreated) {
+                        $stats['created']++;
+                        Log::info("Created new student record", [
+                            'sisi_id' => $studentData['cardNr'],
+                            'name' => ($studentData['fnamem'] ?? '') . ' ' . ($studentData['lnamem'] ?? '')
+                        ]);
+                    } else {
+                        $stats['updated']++;
+                        Log::info("Updated existing student record", [
+                            'sisi_id' => $studentData['cardNr'],
+                            'name' => ($studentData['fnamem'] ?? '') . ' ' . ($studentData['lnamem'] ?? '')
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Failed to sync student: ' . $e->getMessage(), [
+                        'student' => ($studentData['fnamem'] ?? 'Unknown') . ' ' . ($studentData['lnamem'] ?? 'Unknown'),
+                        'exception' => get_class($e),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'data' => $studentData,  // Log the data for debugging
+                    ]);
+                    
+                    $stats['failed']++;
+                }
+            }
+            
+            Log::info('Student sync completed', $stats);
+            return $stats;
+        } catch (\Exception $e) {
+            Log::error('Student sync error: ' . $e->getMessage(), [
+                'exception' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            throw $e;
         }
     }
 }
-
-// Load environment variables
-loadDotEnv();
-
-// Get configuration from environment variables
-$endpoint = getenv('HUB_API_ENDPOINT') ?: 'https://tree.num.edu.mn/gateway';
-$clientId = getenv('HUB_API_CLIENT_ID') ?: '';
-$clientSecret = getenv('HUB_API_CLIENT_SECRET') ?: '';
-
-// Check if credentials are available
-if (empty($clientId) || empty($clientSecret)) {
-    echo "Error: HUB API credentials not found in .env file\n";
-    echo "Please make sure you have set HUB_API_CLIENT_ID and HUB_API_CLIENT_SECRET in your .env file\n";
-    exit(1);
-}
-
-// Create tester instance
-$tester = new HubApiTester($endpoint, $clientId, $clientSecret);
-
-// Run all tests
-$tester->runAllTests();
-
-// Uncomment to print schema if needed
-// $tester->printSchema();

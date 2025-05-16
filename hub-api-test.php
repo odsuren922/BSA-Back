@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Fixed HUB API Connection Test Script
+ * HUB API Connection Test Script
  * 
  * This script tests the connection to the NUM University HUB API
- * with correct authorization format.
+ * loading credentials from .env file.
  * 
  * Run this script from the command line:
  * php hub-api-test.php
@@ -69,7 +69,7 @@ class HubApiTester
             $this->testGetPrograms(1001298); // МКУТ department ID
             
             // Test 6: Get Courses
-            $this->testGetCourses('NUM-P955', 1002076, 1, "Бакалаврын судалгааны ажил");
+            $this->testGetCourses('NUM-P955', 1002076, 1, 'Бакалаврын судалгааны ажил');
             
             // Test 7: Get Students for THES400 course
             $this->testGetStudents('NUM-L26404', 2024, 4); // Spring 2025
@@ -285,9 +285,7 @@ GRAPHQL;
                 for ($i = 0; $i < min(3, $count); $i++) {
                     $teacher = $teachers[$i];
                     $email = isset($teacher['emails'][0]) ? $teacher['emails'][0]['email'] : 'no email';
-                    echo "  - {$teacher['lastNamem']}\n";
-                    // echo "  - {$teacher['firstNamem']} {$teacher['lastNamem']} ({$email})\n";
-
+                    echo "  - {$teacher['firstNamem']} {$teacher['lastNamem']} ({$email})\n";
                 }
                 
                 if ($count > 3) {
@@ -408,11 +406,9 @@ GRAPHQL;
 
             $variables = [
                 'lang' => $lang,
-                'unitId' => 1002076,
-                // 'unitId' => $unitId ? (int)$unitId : null,
-                'programId' => "NUM-P1922",
-                // 'programId' => $programId,
-                'searchWord' => "Бакалаврын"
+                'unitId' => $unitId ? (int)$unitId : null,
+                'programId' => $programId,
+                'searchWord' => $searchWord
             ];
 
             $response = $this->executeQuery($query, $variables);
@@ -657,45 +653,55 @@ GRAPHQL;
     }
 }
 
-// Configuration - Replace with your actual credentials
-$endpoint = "https://tree.num.edu.mn/gateway";
+/**
+ * Load environment variables from .env file
+ */
+function loadDotEnv()
+{
+    $envFile = __DIR__ . '/.env';
+    
+    if (file_exists($envFile)) {
+        $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            // Skip comments
+            if (strpos(trim($line), '#') === 0) {
+                continue;
+            }
+            
+            // Parse environment variable
+            if (strpos($line, '=') !== false) {
+                list($name, $value) = explode('=', $line, 2);
+                $name = trim($name);
+                $value = trim($value);
+                
+                // Remove quotes if they exist
+                if (strpos($value, '"') === 0 && strrpos($value, '"') === strlen($value) - 1) {
+                    $value = substr($value, 1, -1);
+                }
+                
+                // Set environment variable
+                putenv("{$name}={$value}");
+                $_ENV[$name] = $value;
+                $_SERVER[$name] = $value;
+            }
+        }
+    }
+}
 
+// Load environment variables
+loadDotEnv();
 
+// Get configuration from environment variables
+$endpoint = getenv('HUB_API_ENDPOINT') ?: 'https://tree.num.edu.mn/gateway';
+$clientId = getenv('HUB_API_CLIENT_ID') ?: '';
+$clientSecret = getenv('HUB_API_CLIENT_SECRET') ?: '';
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-$clientId = "4d797efc8f91416c95e641fb6f88e3c1";
-$clientSecret = "7c9365aff5b44ddd8f595d3ccd5969a6.5b51852d1ed248c9aab85478c8c91fc5";
+// Check if credentials are available
+if (empty($clientId) || empty($clientSecret)) {
+    echo "Error: HUB API credentials not found in .env file\n";
+    echo "Please make sure you have set HUB_API_CLIENT_ID and HUB_API_CLIENT_SECRET in your .env file\n";
+    exit(1);
+}
 
 // Create tester instance
 $tester = new HubApiTester($endpoint, $clientId, $clientSecret);
