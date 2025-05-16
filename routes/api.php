@@ -2,303 +2,194 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ProposalFormController;
-use App\Http\Controllers\TopicController;
-use App\Http\Controllers\DepartmentController;
-use App\Http\Controllers\TeacherController;
-use App\Http\Controllers\TopicRequestController;
-use App\Http\Controllers\TopicResponseController;
-use App\Http\Controllers\Auth\OAuthController;
-use App\Http\Controllers\Api\DataSyncController;
+use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\RoleController;
-use App\Http\Controllers\StudentController;
-use App\Http\Controllers\GraphQLTestController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\NotificationTemplateController;
-use App\Http\Controllers\NotificationSettingController;
+use App\Http\Controllers\Auth\OAuthController;
 
-use App\Http\Controllers\Thesis\ThesisController;
-use App\Http\Controllers\Thesis\ThesisCycleController;
-use App\Http\Controllers\ScoreController;
-use App\Http\Controllers\CommitteeScoreController;
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register API routes for your application. These
+| routes are loaded by the RouteServiceProvider within a group which
+| is assigned the "api" middleware group.
+|
+*/
 
-
-use App\Http\Controllers\Thesis\ThesisPlanStatusController;
-
-use App\Http\Controllers\TaskController;
-use App\Http\Controllers\SubtaskController;
-
-use App\Http\Controllers\Grading\GradingSchemaController;
-use App\Http\Controllers\Grading\GradingComponentController;
-use App\Http\Controllers\Grading\GradingCriteriaController;
-
-use App\Http\Controllers\Committee\CommitteeController;
-use App\Http\Controllers\Committee\CommitteeMemberController;
-use App\Http\Controllers\Committee\CommitteeStudentController;
-use App\Http\Controllers\AssignedGradingController;
-
-use App\Http\Controllers\ScheduleController;
-
-// OAuth token exchange endpoint
+// OAuth token exchange and refresh endpoints
 Route::post('/oauth/exchange-token', [OAuthController::class, 'exchangeToken']);
-
-// OAuth refresh token endpoint
 Route::post('/oauth/refresh-token', [OAuthController::class, 'refreshToken']);
+Route::post('/oauth/token', [\App\Http\Controllers\Auth\OAuthController::class, 'exchangeCodeForToken']);
+Route::get('/user', [\App\Http\Controllers\Auth\OAuthController::class, 'getUserData'])->middleware('auth:sanctum');
+Route::get('/user/role', [\App\Http\Controllers\Api\RoleController::class, 'getUserRole'])->middleware('auth:sanctum');
 
-// User data endpoint (protected by bearer token)
-Route::get('/user', [OAuthController::class, 'getUserData']);
-
-// Public API routes
-Route::prefix('public')->group(function () {
-    // Add any routes here that should be accessible without authentication
+Route::middleware('require.token')->prefix('hub-sync')->group(function () {
+    Route::get('/test-connection', [App\Http\Controllers\HubDataSyncController::class, 'testConnection']);
+    Route::post('/departments', [App\Http\Controllers\HubDataSyncController::class, 'syncDepartments']);
+    Route::post('/teachers', [App\Http\Controllers\HubDataSyncController::class, 'syncTeachers']);
+    Route::post('/students', [App\Http\Controllers\HubDataSyncController::class, 'syncStudents']);
+    Route::post('/all', [App\Http\Controllers\HubDataSyncController::class, 'syncAll']);
 });
 
-Route::post('/oauth/token', [OAuthController::class, 'exchangeCodeForToken']);
 
-// Notification routes accessible with token auth (not middleware group)
-Route::middleware('auth.api.token')->group(function () {
-    Route::get('/notifications/unread', [NotificationController::class, 'getUnread']);
-    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
-    Route::post('/notifications/subscribe', [NotificationController::class, 'subscribe']);
-    Route::post('/notifications/unsubscribe', [NotificationController::class, 'unsubscribe']);
+Route::middleware('require.token')->group(function () {
+    
 });
 
-// Protected API routes
-Route::middleware('auth.api.token')->group(function () {
-    Route::get('/user/role', [RoleController::class, 'getUserRole']);
 
-    // Data Sync Routes
-    Route::prefix('sync')->group(function () {
-        Route::post('/departments', [DataSyncController::class, 'syncDepartments']);
-        Route::post('/teachers', [DataSyncController::class, 'syncTeachers']);
-        Route::post('/students', [DataSyncController::class, 'syncStudents']);
-        Route::post('/all', [DataSyncController::class, 'syncAll']);
+
+// Thesis management API routes - Protected by auth:sanctum
+Route::middleware('require.token')->group(function () {
+    // User information for current authenticated user
+    Route::middleware('auth:sanctum')->get('/user', [OAuthController::class, 'getUserData']);
+    Route::middleware('auth:sanctum')->get('/user/role', [RoleController::class, 'getUserRole']);
+
+    // Email Notification routes
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [App\Http\Controllers\NotificationController::class, 'index']);
+        Route::post('/', [App\Http\Controllers\NotificationController::class, 'store']);
+        Route::get('/{id}', [App\Http\Controllers\NotificationController::class, 'show']);
+        Route::post('/{id}/send', [App\Http\Controllers\NotificationController::class, 'send']);
+        Route::post('/{id}/cancel', [App\Http\Controllers\NotificationController::class, 'cancel']);
     });
+    
+    // Tracking pixel route (no authentication required)
+    Route::get('/notification-track/{recipient}', [App\Http\Controllers\NotificationController::class, 'track'])->name('notification.track');
 
-    // GraphQL Testing Routes
-    Route::prefix('graphql-test')->group(function () {
-        Route::get('/connection', [GraphQLTestController::class, 'testConnection']);
-        Route::get('/departments', [GraphQLTestController::class, 'testDepartments']);
-        Route::get('/teachers', [GraphQLTestController::class, 'testTeachers']);
-        Route::get('/students', [GraphQLTestController::class, 'testStudents']);
+    // ProposalForm routes
+    Route::prefix('proposalform')->group(function () {
+        Route::get('/', [\App\Http\Controllers\ProposalFormController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\ProposalFormController::class, 'store']);
+        Route::get('/{id}', [\App\Http\Controllers\ProposalFormController::class, 'show']);
+        Route::put('/{id}', [\App\Http\Controllers\ProposalFormController::class, 'update']);
+        Route::delete('/{id}', [\App\Http\Controllers\ProposalFormController::class, 'destroy']);
     });
-
-    Route::get('/proposalform', [ProposalFormController::class, 'index']);
-    Route::post('/proposalform', [ProposalFormController::class, 'update']);
     
-    // Topic related routes
-    Route::post('/topic/store', [TopicController::class, 'store']);
-    
-    
-    // Other protected routes
-    Route::get('/teacher/{id}', [TeacherController::class, 'show']);
-    Route::get('/department/{id}', [DepartmentController::class, 'show']);
-    Route::get('/topic_requests_teacher', [TopicRequestController::class, 'getRequestedTopicByTeacher']);
-    
-    // Student routes
-    Route::post('/topic/storestudent', [TopicController::class, 'storestudent']);
-    Route::post('/topic-requests', [TopicRequestController::class, 'store']);
-    Route::get('/topics/draftstudent', [TopicController::class, 'getDraftTopicsByStudent']);
-    Route::get('/topics/draftteacher', [TopicController::class, 'getDraftTopicsByTeacher']);
-    Route::get('/topic_confirmed', [TopicRequestController::class, 'getConfirmedTopicOnStudent']);
-    
-    // Supervisor routes
-    Route::get('/topics/submittedby/{type}', [TopicController::class, 'getSubmittedTopicsByType']);
-    Route::post('/topic-response', [TopicResponseController::class, 'store']);
-    Route::get('/topics/reviewedtopicList', [TopicController::class, 'getRefusedOrApprovedTopics']);
+    // Department routes
+    Route::apiResource('departments', App\Http\Controllers\DepartmentController::class);
     
     // Teacher routes
-    Route::post('/topic/storeteacher', [TopicController::class, 'storeteacher']);
-    Route::post('/topic-requestsbyteacher', [TopicRequestController::class, 'storebyteacher']);
-    Route::get('/api/department', [DepartmentController::class, 'index']);
-    Route::get('/topic_requests', [TopicRequestController::class, 'index']);
-    Route::post('/topic_confirm', [TopicController::class, 'confirmTopic']);
-    Route::post('/topic_decline', [TopicController::class, 'declineTopic']);
-    Route::get('/topics_confirmed', [TopicRequestController::class, 'getConfirmedTopics']);
-    Route::get('/topics/checkedtopicsbystud', [TopicController::class, 'getCheckedTopicsByStud']);
-    Route::get('/topics/checkedtopics', [TopicController::class, 'getCheckedTopics']);
+    Route::prefix('teachers')->group(function () {
+        Route::get('/{id}', [\App\Http\Controllers\TeacherController::class, 'dep_id']);
+        Route::get('/count/department/{dep_id}', [\App\Http\Controllers\TeacherController::class, 'countByDepartment']);
+    });
+    Route::get('/teacher/{id}', [\App\Http\Controllers\TeacherController::class, 'show']);
     
-    // Default routes
-    Route::get('/topics/topiclistproposedbyuser', [TopicController::class, 'getTopicListProposedByUser']);
-    Route::apiResource('topics', TopicController::class);
+    // Topic routes
+    Route::prefix('topics')->group(function () {
+        Route::post('/storestudent', [\App\Http\Controllers\TopicController::class, 'storestudent']);
+        Route::post('/storeteacher', [\App\Http\Controllers\TopicController::class, 'storeteacher']);
+        Route::get('/submittedby/{type}', [\App\Http\Controllers\TopicController::class, 'getSubmittedTopicsByType']);
+        Route::get('/draftstudent', [\App\Http\Controllers\TopicController::class, 'getDraftTopicsByStudent']);
+        Route::get('/draftteacher', [\App\Http\Controllers\TopicController::class, 'getDraftTopicsByTeacher']);
+        Route::get('/checkedtopics', [\App\Http\Controllers\TopicController::class, 'getCheckedTopics']);
+        Route::get('/checkedtopicsbystud', [\App\Http\Controllers\TopicController::class, 'getCheckedTopicsByStud']);
+        Route::get('/reviewedtopicList', [\App\Http\Controllers\TopicController::class, 'getRefusedOrApprovedTopics']);
+        Route::get('/topiclistproposedbyuser', [\App\Http\Controllers\TopicController::class, 'getTopicListProposedByUser']);
+    });
     
-    // Students API
-    Route::get('/students/all', [StudentController::class, 'index']);
-
-    // Other notification routes
-    Route::post('/notifications', [NotificationController::class, 'store']);
-    Route::post('/notifications/template', [NotificationController::class, 'sendTemplateNotification']);
+    // Topic Request routes
+    Route::post('/topic-requests', [App\Http\Controllers\TopicRequestController::class, 'store']);
+    Route::post('/topic-requestsbyteacher', [App\Http\Controllers\TopicRequestController::class, 'storebyteacher']);
+    Route::get('/topic_requests', [App\Http\Controllers\TopicRequestController::class, 'index']);
+    Route::get('/topic_confirmed', [App\Http\Controllers\TopicRequestController::class, 'getConfirmedTopicOnStudent']);
+    Route::get('/topics_confirmed', [App\Http\Controllers\TopicRequestController::class, 'getConfirmedTopics']);
+    Route::get('/topic_requests_teacher', [App\Http\Controllers\TopicRequestController::class, 'getRequestedTopicByTeacher']);
     
-    // Template management routes
-    Route::get('/notification-templates', [NotificationTemplateController::class, 'index']);
-    Route::post('/notification-templates', [NotificationTemplateController::class, 'store']);
-    Route::get('/notification-templates/{id}', [NotificationTemplateController::class, 'show']);
-    Route::put('/notification-templates/{id}', [NotificationTemplateController::class, 'update']);
-    Route::delete('/notification-templates/{id}', [NotificationTemplateController::class, 'destroy']);
-    Route::get('/notification-settings', [NotificationSettingController::class, 'index']);
-    Route::post('/notification-settings', [NotificationSettingController::class, 'update']);
+    // Topic Response routes
+    Route::post('/topic-response', [App\Http\Controllers\TopicResponseController::class, 'store']);
+    
+    // Student routes
+    Route::get('/students/all', [App\Http\Controllers\StudentController::class, 'index']);
+    
+    
+    // Thesis Plan and Subtasks routes
+    Route::post('/thesis-plan/save-all', [App\Http\Controllers\TaskController::class, 'saveAll']);
+    Route::apiResource('tasks', App\Http\Controllers\TaskController::class);
+    Route::put('/tasks/{id}', [App\Http\Controllers\TaskController::class, 'updateTask']);
+    Route::post('/subtask', [App\Http\Controllers\SubtaskController::class, 'store']);
+    Route::put('/subtask/{id}', [App\Http\Controllers\SubtaskController::class, 'updateSubTask']);
+    Route::delete('/subtask/{id}', [App\Http\Controllers\SubtaskController::class, 'destroy']);
+    
+    // Thesis Plan Status Management
+    Route::get('/thesis-plan-status/{thesis_id}', [App\Http\Controllers\Thesis\ThesisPlanStatusController::class, 'show']);
+    Route::patch('/thesis-plan-status/{thesis_id}/student-send', [App\Http\Controllers\Thesis\ThesisPlanStatusController::class, 'studentSent']);
+    Route::patch('/thesis-plan-status/{thesis_id}/student-Unsend', [App\Http\Controllers\Thesis\ThesisPlanStatusController::class, 'studentUnSent']);
+    Route::patch('/thesis-plan-status/{thesis_id}/teacher-status', [App\Http\Controllers\Thesis\ThesisPlanStatusController::class, 'updateTeacherStatus']);
+    Route::patch('/thesis-plan-status/{thesis_id}/department-status', [App\Http\Controllers\Thesis\ThesisPlanStatusController::class, 'updateDepartmentStatus']);
+    
+    // Thesis routes
+    Route::get('/theses', [App\Http\Controllers\Thesis\ThesisController::class, 'supervisodThesis']); 
+    Route::get('/thesisInfo/{id}', [App\Http\Controllers\Thesis\ThesisController::class, 'index']); 
+    Route::get('/thesisInfoBySid/{id}', [App\Http\Controllers\Thesis\ThesisController::class, 'thesisbyStudentId']);
+    Route::get('/onethesis/{id}', [App\Http\Controllers\Thesis\ThesisController::class, 'getThesis']); 
+    Route::get('/thesis/{id}', [App\Http\Controllers\Thesis\ThesisController::class, 'pdf']); 
+    Route::get('/cycles/{id}/theses', [App\Http\Controllers\Thesis\ThesisController::class, 'getThesesByCycle']); 
+    Route::get('/cycles/{id}/active-theses', [App\Http\Controllers\Thesis\ThesisController::class, 'getActiveThesesByCycle']); 
+    Route::get('/cycles/{id}/student-counts', [App\Http\Controllers\Thesis\ThesisController::class, 'getStudentCountByProgram']);
+    
+    // Thesis Cycle routes
+    Route::get('/thesis-cycles/{id}/counts', [App\Http\Controllers\Thesis\ThesisCycleController::class, 'getTeachersAndThesisCountsByCycleId']);
+    Route::apiResource('thesis-cycles', App\Http\Controllers\Thesis\ThesisCycleController::class);
+    Route::get('/active-cycles', [App\Http\Controllers\Thesis\ThesisCycleController::class, 'active']);
+    
+    // Grading Schema and Component Management
+    Route::get('/thesis-cycles/{id}/grading-schema', [App\Http\Controllers\Grading\GradingSchemaController::class, 'showByThesisCycle']);
+    Route::get('/thesis-cycles/{id}/grading-schema-filter', [App\Http\Controllers\Grading\GradingSchemaController::class, 'filteredGradingSchema']);
+    Route::apiResource('grading-schemas', App\Http\Controllers\Grading\GradingSchemaController::class);
+    Route::patch('/grading-schemas/{id}', [App\Http\Controllers\Grading\GradingSchemaController::class, 'addComponents']);
+    Route::put('/grading-one-schema/{id}', [App\Http\Controllers\Grading\GradingSchemaController::class, 'updateone']);
+    
+    // Grading Component Management
+    Route::apiResource('grading-components', App\Http\Controllers\Grading\GradingComponentController::class);
+    
+    // Committee Management
+    Route::get('/committees/active-cycle', [App\Http\Controllers\Committee\CommitteeController::class, 'getActiveCycleValidCommittees']);
+    Route::get('/thesis-cycles/{thesisCycle}/committees', [App\Http\Controllers\Committee\CommitteeController::class, 'getByThesisCycle']);
+    Route::get('/thesis-cycles/{thesisCycle}/grading-components/{gradingComponent}/committees', 
+        [App\Http\Controllers\Committee\CommitteeController::class, 'getByCycleAndComponent']);
+    Route::post('/thesis-cycles/{thesisCycle}/grading-components/{gradingComponent}/committees', 
+        [App\Http\Controllers\Committee\CommitteeController::class, 'storeWithCycleAndComponent']);
+    Route::get('/committees/by-teacher/{teacherId}', [App\Http\Controllers\Committee\CommitteeController::class, 'getCommitteesByTeacher']);
+    Route::get('/committees/{id}/members-scores', [App\Http\Controllers\Committee\CommitteeController::class, 'getCommitteeMembersWithStudentsAndScores']);
+    Route::post('/committees/check-assignment', [App\Http\Controllers\Committee\CommitteeController::class, 'isTeacherAndStudentInSameCommittee']);
+    Route::apiResource('committees', App\Http\Controllers\Committee\CommitteeController::class);
+    
+    // Committee Members routes
+    Route::get('/committees/{committee}/members', [App\Http\Controllers\Committee\CommitteeMemberController::class, 'index']);
+    Route::post('/committees/{committee}/members', [App\Http\Controllers\Committee\CommitteeMemberController::class, 'store']);
+    Route::put('/committees/{committee}/members/{member}', [App\Http\Controllers\Committee\CommitteeMemberController::class, 'update']);
+    Route::delete('/committee-members/{id}', [App\Http\Controllers\Committee\CommitteeMemberController::class, 'destroy']);
+    Route::patch('/committee-members/{member}/role', [App\Http\Controllers\Committee\CommitteeMemberController::class, 'patchRole']);
+    
+    // Committee Students routes
+    Route::get('/committees/{committee}/students', [App\Http\Controllers\Committee\CommitteeStudentController::class, 'index']);
+    Route::post('/committees/{committee}/students', [App\Http\Controllers\Committee\CommitteeStudentController::class, 'store']);
+    Route::put('/committees/{committee}/students/{committeeStudent}', [App\Http\Controllers\Committee\CommitteeStudentController::class, 'update']);
+    Route::delete('/committees/{committee}/students/{committeeStudent}', [App\Http\Controllers\Committee\CommitteeStudentController::class, 'destroy']);
+    
+    // Schedule Management
+    Route::get('/committees/{committee}/schedules', [App\Http\Controllers\ScheduleController::class, 'index']);
+    Route::post('/committees/{committee}/schedules', [App\Http\Controllers\ScheduleController::class, 'store']);
+    Route::patch('/schedules/{schedule}', [App\Http\Controllers\ScheduleController::class, 'update']);
+    Route::delete('/committees/{committee}/schedules/{schedule}', [App\Http\Controllers\ScheduleController::class, 'destroy']);
+    
+    // Scoring routes
+    Route::apiResource('scores', App\Http\Controllers\ScoreController::class);
+    Route::get('/scores/getScoreByThesis/{id}', [App\Http\Controllers\ScoreController::class, 'getScoreByThesis']);
+    Route::get('/scores/getDetailedScoreByThesis/{id}', [App\Http\Controllers\ScoreController::class, 'getScoreByThesisWithDetail']);
+    
+    // Committee Scores
+    Route::apiResource('committee-scores', App\Http\Controllers\CommitteeScoreController::class);
+    Route::post('/committee-scores/batch', [App\Http\Controllers\CommitteeScoreController::class, 'storeBatch']);
+    Route::post('/committee-scores/finalize/{studentId}/{componentId}', [App\Http\Controllers\CommitteeScoreController::class, 'finalizeCommitteeScores']);
+    Route::post('/committee-scores/batch-finalize-by-committee', [App\Http\Controllers\CommitteeScoreController::class, 'batchFinalizeByCommittee']);
+    
+    // Assigned Grading
+    Route::get('/assigned-grading', [App\Http\Controllers\AssignedGradingController::class, 'index']);
+    Route::post('/assigned-grading', [App\Http\Controllers\AssignedGradingController::class, 'store']);
+    Route::post('/assigned-grading/check-assignment', [App\Http\Controllers\AssignedGradingController::class, 'checkAssignment']);
+    Route::delete('/assigned-grading/{assignedGrading}', [App\Http\Controllers\AssignedGradingController::class, 'destroy']);
+    Route::get('/assigned-grading/component/{componentId}/cycle/{cycleId}', [App\Http\Controllers\AssignedGradingController::class, 'getByComponentAndCycle']);
 });
-
-
-
-Route::middleware('auth.api.token')->group(function () {
-
-    Route::get('/teachers/{id}', [TeacherController::class, 'dep_id']);
-Route::get('/teacher/{id}', [TeacherController::class, 'show']);
-Route::get('/teachers/count/department/{dep_id}', [TeacherController::class, 'countByDepartment']);
-// ------------------------------
-        //Thesis Plan Tasks & Subtasks Үечилсэн төлөвлөгөө ажил & дэл ажил
-        // ------------------------------
-        // Route::get('/tasks', [TaskController::class, 'index']);
-        Route::post('/thesis-plan/save-all', [TaskController::class, 'saveAll']);
-    
-        Route::post('/tasks', [TaskController::class, 'store']);
-        Route::put('/tasks/{id}', [TaskController::class, 'updateTask']);
-        Route::delete('/tasks/{id}', [TaskController::class, 'destroy']);
-        Route::post('/subtask', [SubtaskController::class, 'store']);
-        Route::put('/subtask/{id}', [SubtaskController::class, 'updateSubTask']);
-        Route::delete('/subtask/{id}', [SubtaskController::class, 'destroy']);
-    
-        // ------------------------------
-        // Thesis Plan Status Management
-        // Үечилсэн төлөвлөгөө батлах, илгээх, буцаах
-        // ------------------------------
-        Route::get('/thesis-plan-status/{thesis_id}', [ThesisPlanStatusController::class, 'show']);
-        Route::patch('/thesis-plan-status/{thesis_id}/student-send', [ThesisPlanStatusController::class, 'studentSent']);
-        Route::patch('/thesis-plan-status/{thesis_id}/student-Unsend', [ThesisPlanStatusController::class, 'studentUnSent']);
-        Route::patch('/thesis-plan-status/{thesis_id}/teacher-status', [ThesisPlanStatusController::class, 'updateTeacherStatus']);
-        Route::patch('/thesis-plan-status/{thesis_id}/department-status', [ThesisPlanStatusController::class, 'updateDepartmentStatus']);
-    
-        // ------------------------------
-        // Thesis View
-        // ------------------------------
-    
-        Route::get('/theses', [ThesisController::class, 'supervisodThesis']); //нэвтэрсэн багштай харьяатай бүр БСА
-        Route::get('/thesisInfo/{id}', [ThesisController::class, 'index']); //БСА холбоотой мэдээлэл авах
-        Route::get('/thesisInfoBySid/{id}', [ThesisController::class, 'thesisbyStudentId']); //БСА холбоотой мэдээлэл  student id -гааравах
-    
-        Route::get('/onethesis/{id}', [ThesisController::class, 'getThesis']); //БСА-н мэдээлэл авах( төлөвлөгөө, статус)
-        Route::get('/thesis/{id}', [ThesisController::class, 'pdf']); //PDF ҮҮСГЭХЭД ХЭРЭГЛЭХ МЭДЭЭЛЭЛ
-    
-        Route::get('/cycles/{id}/theses', [ThesisController::class, 'getThesesByCycle']); //✅ ThesisCyclePage //ThesisCycle id гаар бүх БСА-н мэдээллийг багш сурагчидтай хамт авах
-        Route::get('/cycles/{id}/active-theses', [ThesisController::class, 'getActiveThesesByCycle']); //getActiveThesesByCycle багш сурагчидын мэдээлэлтэй
-        Route::get('/cycles/{id}/student-counts', [ThesisController::class, 'getStudentCountByProgram']);//✅ ThesisCyclePage  //Тухайн БСА ымар мэргэжлийн хэдэн хүүхэд байгааг олох
-        // ------------------------------
-        // Thesis Cycle
-        //Тэнхмийн туслах шинэ cycle үүсгэх
-        // ------------------------------
-    // getTeachersAndThesisCountsByCycleId
-    Route::get('/thesis-cycles/{id}/counts', [ThesisCycleController::class, 'getTeachersAndThesisCountsByCycleId']);
-        Route::post('/thesis-cycles', [ThesisCycleController::class, 'store']);
-        Route::get('/thesis-cycles', [ThesisCycleController::class, 'index']);//✅ ThesisCycles awah 
-        Route::get('/active-cycles', [ThesisCycleController::class, 'active']);//✅ AdminDashboard 
-        // Route::get('/active-cycles/dep_id={dep_id}', [ThesisCycleController::class, 'active']);
-        
-
-
-        Route::get('/thesis-cycles/{id}', [ThesisCycleController::class, 'show']);//✅ ThesisCyclePage 
-        Route::put('/thesis-cycles/{id}', [ThesisCycleController::class, 'update']);
-        Route::delete('/thesis-cycles/{id}', [ThesisCycleController::class, 'destroy']); //done
-    
-        // ------------------------------
-        // Grading Schema & Component үнэлэх аргын нэгдэл
-        // ------------------------------
-        Route::post('/grading-schemas', [GradingSchemaController::class, 'store']);
-        Route::get('/grading-schemas', [GradingSchemaController::class, 'index']);//✅ grading Schemas awah 
-        Route::get('/thesis-cycles/{id}/grading-schema', [GradingSchemaController::class, 'showByThesisCycle']);////✅ AdminDashboard
-        Route::get('/thesis-cycles/{id}/grading-schema-filter', [GradingSchemaController::class, 'filteredGradingSchema']);////✅ AdminDashboard
-
-        Route::get('/grading-schemas/{id}', [GradingSchemaController::class, 'show']);
-        Route::put('/grading-schemas/{id}', [GradingSchemaController::class, 'update']);
-        Route::patch('/grading-schemas/{id}', [GradingSchemaController::class, 'addComponents']);
-        Route::put('/grading-one-schema/{id}', [GradingSchemaController::class, 'updateone']);
-        Route::delete('/grading-schemas/{id}', [GradingSchemaController::class, 'destroy']);
-        // ------------------------------
-        // Grading Component Management
-        // ------------------------------
-        Route::post('grading-components', [GradingComponentController::class, 'store']);
-        Route::get('grading-components', [GradingComponentController::class, 'index']);
-        Route::get('grading-components/{id}', [GradingComponentController::class, 'show']);
-        Route::put('grading-components/{id}', [GradingComponentController::class, 'update']);
-        Route::delete('grading-components/{id}', [GradingComponentController::class, 'destroy']);
-    
-        // Grading Criteria Management
-        //үнэлэх аргын дэлгэрэнгүй
-        // Route::post('grading-criteria', [GradingCriteriaController::class, 'store']);
-        // Route::get('grading-criteria', [GradingCriteriaController::class, 'index']);
-        // Route::get('grading-criteria/{id}', [GradingCriteriaController::class, 'show']);
-        // Route::put('grading-criteria/{id}', [GradingCriteriaController::class, 'update']);
-        // Route::delete('grading-criteria/{id}', [GradingCriteriaController::class, 'destroy']);
-        // ------------------------------
-        // Committees & Scheduling
-        // ------------------------------
-    
-        Route::get('committees', [CommitteeController::class, 'index']); // Get all committees
-        Route::get('/committees/active-cycle', [CommitteeController::class, 'getActiveCycleValidCommittees']); // Get all committees with active cycle
-        Route::get('committees/{committee}', [CommitteeController::class, 'show']); // Get single committee
-        Route::post('committees', [CommitteeController::class, 'store']); // Create committee
-        Route::patch('committees/{committee}', [CommitteeController::class, 'update']);
-        Route::delete('committees/{committee}', [CommitteeController::class, 'destroy']); // Delete committee
-    
-        Route::get('/thesis-cycles/{thesisCycle}/committees', [CommitteeController::class, 'getByThesisCycle']);
-
-        Route::prefix('thesis-cycles/{thesisCycle}/grading-components/{gradingComponent}')->group(function () {
-            Route::get('/committees', [CommitteeController::class, 'getByCycleAndComponent']);
-
-            Route::post('/committees', [CommitteeController::class, 'storeWithCycleAndComponent']);
-        });
-        Route::get('/committees/by-teacher/{teacherId}', [CommitteeController::class, 'getCommitteesByTeacher']);
-        // Route::get('/committees/by-student/{studentId}', [CommitteeController::class, 'getCommitteesByStudent']);
-        Route::delete('/committee-members/{id}', [CommitteeMemberController::class, 'destroy']);
-        Route::patch('/committee-members/{member}/role', [CommitteeMemberController::class, 'patchRole']);
-    
-        Route::prefix('committees/{committee}')->group(function () {
-            Route::get('members', [CommitteeMemberController::class, 'index']);
-            Route::post('members', [CommitteeMemberController::class, 'store']);
-            Route::put('members/{member}', [CommitteeMemberController::class, 'update']);
-            // Route::delete('members/{member}', [CommitteeMemberController::class, 'destroy']);
-    
-            // Students routes
-            Route::get('students', [CommitteeStudentController::class, 'index']);
-            Route::post('students', [CommitteeStudentController::class, 'store']);
-            Route::put('students/{committeeStudent}', [CommitteeStudentController::class, 'update'])->scopeBindings();
-            Route::delete('students/{committeeStudent}', [CommitteeStudentController::class, 'destroy'])->scopeBindings();
-            
-            Route::get('schedules', [ScheduleController::class, 'index']);
-            Route::post('schedules', [ScheduleController::class, 'store']);
-            Route::delete('schedules/{schedule}', [ScheduleController::class, 'destroy']);
-            // Route::apiResource('schedules', ScheduleController::class)
-            //     ->except(['show'])
-            //     ->scoped(['schedule' => 'committee']);
-        });
-        Route::patch('schedules/{schedule}', [ScheduleController::class, 'update']);
-        // ------------------------------
-        // Thesis Scores
-        // ------------------------------
-
-        Route::apiResource('scores', ScoreController::class);
-        Route::get('/scores/getScoreByThesis/{id}', [ScoreController::class, 'getScoreByThesis']);
-        Route::get('/scores/getDetailedScoreByThesis/{id}', [ScoreController::class, 'getScoreByThesisWithDetail']);
-        // Route::apiResource('committee-scores', CommitteeScoreController::class);
-
-        //SAVES SCORES
-        Route::post('/committee-scores/batch', [CommitteeScoreController::class, 'storeBatch']);
-        //CHECK ALL MEMBER GIVES SCORES TO A STUDENT
-        Route::post('/committee-scores/finalize/{studentId}/{componentId}', [CommitteeScoreController::class, 'finalizeCommitteeScores']);
-        Route::post('/committee-scores/batch-finalize-by-committee', [CommitteeScoreController::class, 'batchFinalizeByCommittee']);
-
-
-        Route::post('/committees/check-assignment', [CommitteeController::class, 'isTeacherAndStudentInSameCommittee']);
-
-        Route::prefix('assigned-grading')->group(function () {
-            Route::get('/', [AssignedGradingController::class, 'index']); // list all
-            Route::post('/', [AssignedGradingController::class, 'store']); // store multiple
-            Route::post('/check-assignment', [AssignedGradingController::class, 'checkAssignment']); // permission check
-            Route::delete('/{assignedGrading}', [AssignedGradingController::class, 'destroy']); // delete
-        });
-        Route::get('/assigned-grading/component/{componentId}/cycle/{cycleId}', [AssignedGradingController::class, 'getByComponentAndCycle']);
-
-});
-Route::get('/committees/{id}/members-scores', [CommitteeController::class, 'getCommitteeMembersWithStudentsAndScores']);
-
-Route::apiResource('committee-scores', CommitteeScoreController::class);

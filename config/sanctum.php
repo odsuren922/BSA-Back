@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Stateful Domains
@@ -15,9 +14,23 @@ return [
 
     'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
         '%s%s',
-        'localhost,localhost:4000,127.0.0.1,127.0.0.1:8000,::1',
+        'localhost,localhost:4000,127.0.0.1,127.0.0.1:4000,::1',
         env('APP_URL') ? ','.parse_url(env('APP_URL'), PHP_URL_HOST) : ''
     ))),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sanctum Guards
+    |--------------------------------------------------------------------------
+    |
+    | This array contains the authentication guards that will be checked when
+    | Sanctum is trying to authenticate a request. If none of these guards
+    | are able to authenticate the request, Sanctum will use the bearer
+    | token that's present on an incoming request for authentication.
+    |
+    */
+
+    'guard' => ['web'],
 
     /*
     |--------------------------------------------------------------------------
@@ -30,7 +43,7 @@ return [
     |
     */
 
-    'expiration' => null,
+    'expiration' => 60 * 24, // 24 hours
 
     /*
     |--------------------------------------------------------------------------
@@ -48,4 +61,15 @@ return [
         'encrypt_cookies' => App\Http\Middleware\EncryptCookies::class,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Token Prefix
+    |--------------------------------------------------------------------------
+    |
+    | Sanctum can prefix personal access tokens. This is useful to prevent
+    | collisions if you're using the same database for personal access
+    | tokens across multiple applications.
+    |
+    */
+    'token_prefix' => env('SANCTUM_TOKEN_PREFIX', 'thesis_'),
 ];

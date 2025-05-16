@@ -22,9 +22,6 @@ class EventServiceProvider extends ServiceProvider
         \App\Events\TopicApproved::class => [
             \App\Listeners\SendTopicApprovalNotification::class,
         ],
-        \App\Events\DeadlineApproaching::class => [
-            \App\Listeners\SendDeadlineReminderNotification::class,
-        ],
         \App\Events\EvaluationSubmitted::class => [
             \App\Listeners\SendEvaluationNotification::class,
         ],

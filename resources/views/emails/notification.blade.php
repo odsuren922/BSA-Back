@@ -1,89 +1,52 @@
 <!DOCTYPE html>
-<html lang="mn">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title }}</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ $notification->subject }}</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             color: #333;
-            margin: 0;
-            padding: 0;
-            background-color: #f5f8fa;
-        }
-        .container {
+            padding: 20px;
             max-width: 600px;
             margin: 0 auto;
-            padding: 20px;
-            background-color: #ffffff;
-            border-radius: 3px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
         .header {
-            text-align: center;
-            padding: 20px 0;
-            border-bottom: 1px solid #e8eaed;
-        }
-        .header img {
-            max-height: 50px;
-        }
-        .content {
-            padding: 20px 0;
+            border-bottom: 2px solid #0066cc;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
         }
         .footer {
-            padding: 20px 0;
-            text-align: center;
+            margin-top: 30px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
             font-size: 12px;
-            color: #718096;
-            border-top: 1px solid #e8eaed;
+            color: #666;
         }
-        .button {
-            display: inline-block;
-            background-color: #4F46E5;
-            color: white;
-            text-decoration: none;
-            padding: 10px 20px;
-            border-radius: 3px;
-            margin-top: 20px;
-        }
-        .button:hover {
-            background-color: #3c35a8;
-        }
-        @media only screen and (max-width: 600px) {
-            .container {
-                width: 100%;
-                padding: 10px;
-            }
+        img.pixel-tracker {
+            width: 1px;
+            height: 1px;
+            position: absolute;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <!-- You can add your logo here -->
-            <h2>{{ $systemName }}</h2>
-        </div>
-        
-        <div class="content">
-            <h1>{{ $title }}</h1>
-            
-            <div>
-                {!! nl2br(e($content)) !!}
-            </div>
-            
-            @if(isset($url) && $url)
-                <div style="text-align: center; margin-top: 30px;">
-                    <a href="{{ $url }}" class="button">Дэлгэрэнгүй харах</a>
-                </div>
-            @endif
-        </div>
-        
-        <div class="footer">
-            <p>Энэхүү и-мэйл нь {{ $systemName }}-ээс автоматаар илгээгдсэн болно.</p>
-            <p>&copy; {{ date('Y') }} МУИС. Бүх эрх хуулиар хамгаалагдсан.</p>
-        </div>
+    <div class="header">
+        <h2>{{ $notification->subject }}</h2>
     </div>
+    
+    <div class="content">
+        {!! $content !!}
+    </div>
+    
+    <div class="footer">
+        <p>This is an automated notification from МУИС Thesis Management System.</p>
+        <p>Please do not reply to this email.</p>
+    </div>
+    
+    <!-- Tracking pixel to detect email opens -->
+    <img class="pixel-tracker" src="{{ route('notification.track', ['recipient' => $recipientId]) }}" alt="">
 </body>
 </html>

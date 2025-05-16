@@ -21,18 +21,24 @@ class VerifyCsrfToken extends Middleware
      *
      * @var array
      */
-    // protected $except = [
-    //     'proposalform',
-    //     '/proposalform/{id}',
-    //     'topic/store',
-    // ];
-
     protected $except = [
+        // OAuth routes
+        'oauth/*',
+        'api/oauth/*',
+        'sanctum/csrf-cookie',
+        'api/oauth/exchange-token',
+        'oauth/exchange-token',
+        'api/oauth/refresh-token',
+        'api/oauth/token',
+
+        // API routes - make sure notifications are included
+        'api/*',
+        'api/notifications',
+        'api/notifications/*',
+        
+        // Other excluded routes
         '2fa/*',
         'debugbar/*',
-        'oauth/*',
-        'api/*',
-        'sanctum/csrf-cookie',
         'admin/*',
         'department/*',
         'impersonate/*',

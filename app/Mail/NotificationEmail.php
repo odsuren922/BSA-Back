@@ -2,48 +2,31 @@
 
 namespace App\Mail;
 
+use App\Models\EmailNotification;
+use App\Models\EmailNotificationRecipient;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class NotificationEmail extends Mailable
+class NotificationEmail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    /**
-     * The notification title.
-     *
-     * @var string
-     */
-    public $title;
-
-    /**
-     * The notification content.
-     *
-     * @var string
-     */
-    public $content;
-
-    /**
-     * Additional data to include in the email.
-     *
-     * @var array
-     */
-    public $additionalData;
+    public $notification;
+    public $recipient;
 
     /**
      * Create a new message instance.
      *
-     * @param string $title
-     * @param string $content
-     * @param array $additionalData
+     * @param EmailNotification $notification
+     * @param EmailNotificationRecipient $recipient
      * @return void
      */
-    public function __construct($title, $content, $additionalData = [])
+    public function __construct(EmailNotification $notification, EmailNotificationRecipient $recipient)
     {
-        $this->title = $title;
-        $this->content = $content;
-        $this->additionalData = $additionalData;
+        $this->notification = $notification;
+        $this->recipient = $recipient;
     }
 
     /**
@@ -53,14 +36,12 @@ class NotificationEmail extends Mailable
      */
     public function build()
     {
-        return $this->subject($this->title)
+        return $this->subject($this->notification->subject)
             ->view('emails.notification')
             ->with([
-                'title' => $this->title,
-                'content' => $this->content,
-                'additionalData' => $this->additionalData,
-                'url' => $this->additionalData['url'] ?? null,
-                'systemName' => 'Дипломын ажлын удирдах систем',
+                'content' => $this->notification->content,
+                'metadata' => $this->notification->metadata,
+                'recipientId' => $this->recipient->id
             ]);
     }
 }

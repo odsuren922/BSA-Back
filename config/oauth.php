@@ -6,7 +6,8 @@ return [
     | OAuth Configuration
     |--------------------------------------------------------------------------
     |
-    | This file contains the configuration for OAuth 2.0 authentication.
+    | This file contains the configuration for OAuth 2.0 authentication with
+    | the NUM-AUTH-API service.
     |
     */
 
@@ -47,12 +48,22 @@ return [
     
     // Token expiration buffer time in seconds
     // Refresh tokens this many seconds before they actually expire
-    'token_refresh_buffer' => env('OAUTH_TOKEN_REFRESH_BUFFER', 60),
-
-
-
-
-
-
-    'hub_api_endpoint' => env('HUB_API_ENDPOINT', 'http://localhost:8080/graphql'),
+    'token_refresh_buffer' => env('OAUTH_TOKEN_REFRESH_BUFFER', 300),
+    
+    // Maximum number of active sessions per user
+    'max_sessions_per_user' => env('OAUTH_MAX_SESSIONS', 5),
+    
+    // Whether to automatically clean up expired sessions
+    'auto_cleanup_sessions' => env('OAUTH_AUTO_CLEANUP_SESSIONS', true),
+    
+    // HUB API Endpoint
+    'hub_api_endpoint' => env('HUB_API_ENDPOINT', 'https://tree.num.edu.mn/gateway'),
+    
+    // Role mappings from GID
+    'role_mappings' => [
+        '5' => 'student',
+        '8' => 'teacher',
+        '90' => 'supervisor',
+        '68' => 'department',
+    ],
 ];
