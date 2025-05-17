@@ -19,6 +19,10 @@ class AddStatusToStudentsTable extends Migration
                       ->default('active')
                       ->after('proposed_number');
             });
+            //ACTIVE-> идэвхтэй суралцагч
+            //DROPPED-> сургалтаас хасагдсан суралцагч
+            //GRADUATED-> төгссөн суралцагч
+            //SUSPENDED-> сургалтаас түр чөлөөлөгдсөн суралцагч
     
     }
 
