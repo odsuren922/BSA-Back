@@ -26,7 +26,7 @@ class TopicRequestController extends Controller
         try {
             $topicRequest = TopicRequest::create([
                 'topic_id' => $validated['topic_id'],
-                'requested_by_id' => 1,
+                'requested_by_id' => "student_id",
                 'requested_by_type' => "student",
                 'req_note' => $validated['note'],
                 'is_selected' => false,

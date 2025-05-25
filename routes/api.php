@@ -93,7 +93,7 @@ Route::middleware('require.token')->group(function () {
     });
     
     // Topic Request routes
-    Route::post('/topic-requests', [App\Http\Controllers\TopicRequestController::class, 'store']);
+    Route::post('/topic-requests', [App\Http\Controllers\TopicRequestController::class, 'store']);//Student sendt the request
     Route::post('/topic-requestsbyteacher', [App\Http\Controllers\TopicRequestController::class, 'storebyteacher']);
     Route::get('/topic_requests', [App\Http\Controllers\TopicRequestController::class, 'index']);
     Route::get('/topic_confirmed', [App\Http\Controllers\TopicRequestController::class, 'getConfirmedTopicOnStudent']);
