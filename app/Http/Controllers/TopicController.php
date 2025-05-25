@@ -9,6 +9,7 @@ use App\Models\Student;
 use App\Models\TopicDetail;
 use App\Models\TopicRequest;
 use App\Models\TopicResponse;
+use App\Services\TokenService;
 use Auth;
 use Log;
 
@@ -18,6 +19,12 @@ class TopicController extends Controller
     public function index()
     {
         return Topic::with(['proposalForm', 'topicDetails', 'topicRequests', 'topicResponses'])->get();
+    }
+    protected $tokenService;
+
+    public function __construct(TokenService $tokenService)
+    {
+        $this->tokenService = $tokenService;
     }
 
     //Хянагч багш нь оюутан болон багшийн дэвшүүлсэн сэдвийг авах функц
@@ -81,12 +88,14 @@ class TopicController extends Controller
 
     //Багш болон Оюутан өөрийн дэвшүүлсэн сэдэв авах функц
     public function getTopicListProposedByUser(Request $request)
-    {
+    {     $token = $this->tokenService->getTokenFromRequest($request);
+        $user = $this->tokenService->getUserFromToken($token);
         // Log::debug($request);
         $userType = $request->query('user_type'); // Get user type from query parameter
 
         $topics = Topic::whereIn('status', ['submitted', 'approved', 'refused'])
             ->where('created_by_type', $userType) // Filter by user type
+            ->where('created_by_id', $user->id) // Filter by user ID
             ->get();
 
         return response()->json($topics);
@@ -117,6 +126,9 @@ class TopicController extends Controller
     //Оюутны дэвшүүлсэн сэдэв хадгалах функц
     public function storestudent(Request $request)
     {
+        $token = $this->tokenService->getTokenFromRequest($request);
+        $user = $this->tokenService->getUserFromToken($token);
+
         $validatedData = $request->validate([
           'form_id' => 'required|integer|min:1',
             'fields' => 'array|required',
@@ -132,7 +144,8 @@ class TopicController extends Controller
             // 'program' => json_encode($validatedData['combinedFields']),
             'status' => $validatedData['status'],
             'created_at' => now(),
-            'created_by_id' => '1',
+            'created_by_id' => $user->id, // Assuming $user is the authenticated user
+            
             'created_by_type' => 'student',
         ]);
 
