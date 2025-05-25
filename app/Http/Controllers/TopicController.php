@@ -87,20 +87,37 @@ class TopicController extends Controller
     }
 
     //Багш болон Оюутан өөрийн дэвшүүлсэн сэдэв авах функц
+    // public function getTopicListProposedByUser(Request $request)
+    // {     $token = $this->tokenService->getTokenFromRequest($request);
+    //     $user = $this->tokenService->getUserFromToken($token);
+    //     // Log::debug($request);
+    //     $userType = $request->query('user_type'); // Get user type from query parameter
+
+    //     $topics = Topic::whereIn('status', ['submitted', 'approved', 'refused'])
+    //         ->where('created_by_type', $userType) // Filter by user type
+    //         ->where('created_by_id', $user->id) // Filter by user ID
+    //         ->get();
+
+    //     return response()->json($topics);
+    // }
     public function getTopicListProposedByUser(Request $request)
-    {     $token = $this->tokenService->getTokenFromRequest($request);
-        $user = $this->tokenService->getUserFromToken($token);
-        // Log::debug($request);
-        $userType = $request->query('user_type'); // Get user type from query parameter
-
+    {
+        $user = $request->user(); 
+    
+        if (!$user) {
+            return response()->json(['message' => 'User not authenticated'], 401);
+        }
+    
+        $userType = get_class($user) === Student::class ? 'student' : 'teacher';
+    
         $topics = Topic::whereIn('status', ['submitted', 'approved', 'refused'])
-            ->where('created_by_type', $userType) // Filter by user type
-            ->where('created_by_id', $user->id) // Filter by user ID
+            ->where('created_by_type', $userType)
+            ->where('created_by_id', $user->id)
             ->get();
-
+    
         return response()->json($topics);
     }
-
+    
 
     //Оюутан өөрийн ноорогт хадгалсан болон түтгэлзүүлсэн сэдвийн жагсаалт авах функц
     public function getDraftTopicsByStudent()

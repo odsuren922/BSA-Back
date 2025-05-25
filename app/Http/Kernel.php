@@ -88,7 +88,7 @@ class Kernel extends HttpKernel
         'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
         
         'oauth' => \App\Http\Middleware\AuthenticationMiddleware::class,
-        'require.token' => \App\Http\Middleware\AuthenticationMiddleware::class,
+        'require.token' => \App\Http\Middleware\AuthenticationMiddleware::class, //Үндсэн middleware for API token authentication
     ];
 
     /**

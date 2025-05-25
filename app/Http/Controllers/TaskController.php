@@ -10,9 +10,16 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\Student;
 use App\Models\Teacher;
+use App\Services\TokenService;
 
 class TaskController extends Controller
 {
+    protected $tokenService;
+
+    public function __construct(TokenService $tokenService)
+    {
+        $this->tokenService = $tokenService;
+    }
     public function saveAll(Request $request)
     {
         $validated = $request->validate([
@@ -41,8 +48,8 @@ class TaskController extends Controller
                 //     ]);
                 //     $taskData['id'] = $task->id;
                 // } else {
-                    $task = Task::findOrFail($taskData['id']);
-                    $task->update(['name' => $taskData['name']]);
+                $task = Task::findOrFail($taskData['id']);
+                $task->update(['name' => $taskData['name']]);
                 // }
 
                 foreach ($taskData['subtasks'] as $subtaskData) {
@@ -89,13 +96,14 @@ class TaskController extends Controller
      */
     public function store(Request $request)
     {
+        // $token = $this->tokenService->getTokenFromRequest($request);
+        // $user = $this->tokenService->getUserFromToken($token);
+        $user = $request->user(); 
         try {
             // Validate the incoming request data
             $validatedData = $request->validate([
-        
                 'thesis_id' => 'required|exists:thesis,id',
             ]);
-
 
             $thesis = Thesis::findOrFail($validatedData['thesis_id']);
 
@@ -117,6 +125,7 @@ class TaskController extends Controller
             return response()->json(
                 [
                     'status' => true,
+                    'user' => $user,
                     'message' => 'task created successfully.',
                     'task' => $task,
                 ],
@@ -237,7 +246,7 @@ class TaskController extends Controller
                     404,
                 );
             }
-//TODO::
+            //TODO::
             // // Authorization check
             // if (!$thesis || ($user->id !== $thesis->student_id && $user->id !== $thesis->supervisor_id)) {
             //     return response()->json(

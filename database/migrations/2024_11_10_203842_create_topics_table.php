@@ -22,6 +22,7 @@ class CreateTopicsTable extends Migration
             $table->timestamps();
 
             // Polymorphic columns for the creator (either teacher or student)
+            //TODO::FIX IT CAN SEVE ID NOT 10
             $table->string('created_by_id', 10);
             $table->string('created_by_type');
             

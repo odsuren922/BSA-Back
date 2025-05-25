@@ -17,8 +17,8 @@ class TopicRequestController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'topic_id' => 'required|integer|exists:topics,id',
-            'student_id' => 'required|string|exists:students,sisi_id',
+            'topic_id' => 'required|exists:topics,id',
+            'student_id' => 'required|exists:students,id',
             'note' => 'nullable|string',
             'selection_date' => 'required|date_format:Y-m-d H:i:s',
         ]);
@@ -26,7 +26,7 @@ class TopicRequestController extends Controller
         try {
             $topicRequest = TopicRequest::create([
                 'topic_id' => $validated['topic_id'],
-                'requested_by_id' => "student_id",
+                'requested_by_id' => $validated['student_id'],
                 'requested_by_type' => "student",
                 'req_note' => $validated['note'],
                 'is_selected' => false,

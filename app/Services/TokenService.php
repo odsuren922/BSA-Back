@@ -6,83 +6,69 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
+use App\Models\Student;
+use App\Models\Teacher;
 class TokenService
 {
     protected $oauthService;
 
+    // Constructor функц: OAuthService-ийг дамжуулж хадгална.
     public function __construct(OAuthService $oauthService)
     {
         $this->oauthService = $oauthService;
     }
 
     /**
-     * Get token from request
-     *
-     * @param Request $request
-     * @return string|null
+     * Request-оос токеныг авах функц.
+     * 1. Authorization header-оос авахыг оролдоно.
+     * 2. Олдохгүй бол session-оос авна.
      */
     public function getTokenFromRequest(Request $request)
     {
-        // Generate a unique request ID for logging
         $requestId = substr(md5(uniqid()), 0, 8);
-        
-        Log::debug("[Auth-{$requestId}] Retrieving token from request", [
+        Log::debug("[Auth-{$requestId}] Токен авах оролдлого", [
             'path' => $request->path(),
             'ip' => $request->ip()
         ]);
-        
-        // Try Authorization header first (best practice)
+
         $token = $request->bearerToken();
         if ($token) {
-            Log::debug("[Auth-{$requestId}] Token found in Authorization header");
+            Log::debug("[Auth-{$requestId}] Header дотор токен олдсон");
             return $token;
         }
-        
-        // Try session as fallback for web routes
+
         $tokenData = session(config('oauth.token_session_key'));
         if ($tokenData && isset($tokenData['access_token'])) {
-            Log::debug("[Auth-{$requestId}] Token found in session");
+            Log::debug("[Auth-{$requestId}] Session дотор токен олдсон");
             return $tokenData['access_token'];
         }
-        
-        Log::debug("[Auth-{$requestId}] No token found in request");
+
+        Log::debug("[Auth-{$requestId}] Токен олдсонгүй");
         return null;
     }
 
     /**
-     * Store token data in database
+     * Токеныг өгөгдлийн санд хадгалах функц.
      *
-     * @param array $tokenData
+     * @param array $data (user_id, access_token, refresh_token гэх мэт)
      * @return bool
      */
     public function storeTokenInDatabase($data)
     {
         try {
             if (!isset($data['user_id']) || !isset($data['access_token'])) {
-                Log::error('Cannot store token - missing required data', [
-                    'has_user_id' => isset($data['user_id']),
-                    'has_access_token' => isset($data['access_token'])
-                ]);
+                Log::error('Токен хадгалах боломжгүй: user_id эсвэл access_token дутуу байна.', $data);
                 return false;
             }
-            
+
             $expiresAt = date('Y-m-d H:i:s', ($data['created_at'] ?? time()) + ($data['expires_in'] ?? 3600));
-            
-            Log::info('Storing token in database', [
-                'user_id' => $data['user_id'],
-                'user_type' => $data['user_type'] ?? null,
-                'expires_at' => $expiresAt,
-                'time' => now()->toDateTimeString()
-            ]);
-            
-            // First check if the record exists
-            $existingRecord = DB::table('user_tokens')
+
+            $existing = DB::table('user_tokens')
                 ->where('user_id', $data['user_id'])
                 ->where('user_type', $data['user_type'] ?? null)
                 ->first();
-                
-            if ($existingRecord) {
-                // Update existing record
+
+            if ($existing) {
                 DB::table('user_tokens')
                     ->where('user_id', $data['user_id'])
                     ->where('user_type', $data['user_type'] ?? null)
@@ -93,7 +79,6 @@ class TokenService
                         'updated_at' => now()
                     ]);
             } else {
-                // Insert new record
                 DB::table('user_tokens')->insert([
                     'user_id' => $data['user_id'],
                     'user_type' => $data['user_type'] ?? null,
@@ -104,195 +89,124 @@ class TokenService
                     'updated_at' => now()
                 ]);
             }
-            
             return true;
         } catch (\Exception $e) {
-            Log::error('Failed to store token in database: ' . $e->getMessage(), [
-                'exception' => get_class($e),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-                'time' => now()->toDateTimeString()
+            Log::error('Token хадгалах үед алдаа гарлаа', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             return false;
         }
     }
-    
+
     /**
-     * Get token data from database
-     *
-     * @param string $userId
-     * @param string|null $userType
-     * @return array|null
+     * Токеныг өгөгдлийн сангаас унших функц
      */
     public function getTokenFromDatabase($userId, $userType = null)
     {
         try {
-            Log::debug('Getting token from database', [
-                'user_id' => $userId,
-                'user_type' => $userType,
-                'time' => now()->toDateTimeString()
-            ]);
-            
-            $query = DB::table('user_tokens')
-                ->where('user_id', $userId);
-                
+            $query = DB::table('user_tokens')->where('user_id', $userId);
             if ($userType) {
                 $query->where('user_type', $userType);
             }
-            
-            $tokenRecord = $query->first();
-            
-            if (!$tokenRecord) {
-                Log::debug('No token found in database');
-                return null;
-            }
-            
-            Log::debug('Token found in database', [
-                'expires_at' => $tokenRecord->expires_at,
-                'has_refresh_token' => !empty($tokenRecord->refresh_token),
-                'time' => now()->toDateTimeString()
-            ]);
-            
-            // Check if token is expired
-            if (strtotime($tokenRecord->expires_at) <= time()) {
-                Log::info('Token from database is expired');
-                
-                if ($tokenRecord->refresh_token) {
-                    // Try to refresh the token
-                    $newTokenData = $this->refreshTokenUsingRefreshToken($tokenRecord->refresh_token);
-                    if ($newTokenData) {
-                        return $newTokenData;
-                    }
+
+            $record = $query->first();
+
+            if (!$record) return null;
+
+            if (strtotime($record->expires_at) <= time()) {
+                Log::info('Токен хугацаа хэтэрсэн. Шинэчлэхийг оролдож байна.');
+                if ($record->refresh_token) {
+                    return $this->refreshTokenUsingRefreshToken($record->refresh_token);
                 }
-                
                 return null;
             }
-            
-            // Format token data for consistency
+
             return [
-                'access_token' => $tokenRecord->access_token,
-                'refresh_token' => $tokenRecord->refresh_token,
-                'expires_in' => max(0, strtotime($tokenRecord->expires_at) - time()),
-                'created_at' => time() - (strtotime($tokenRecord->expires_at) - time()),
+                'access_token' => $record->access_token,
+                'refresh_token' => $record->refresh_token,
+                'expires_in' => max(0, strtotime($record->expires_at) - time()),
+                'created_at' => time() - (strtotime($record->expires_at) - time()),
             ];
         } catch (\Exception $e) {
-            Log::error('Failed to get token from database: ' . $e->getMessage(), [
-                'exception' => get_class($e),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-                'time' => now()->toDateTimeString()
-            ]);
+            Log::error('Token авах үед алдаа гарлаа: ' . $e->getMessage());
             return null;
         }
     }
-    
+
     /**
-     * Refresh token using refresh token
-     *
-     * @param string $refreshToken
-     * @return array|null
+     * Refresh token ашиглан access token-ийг шинэчлэх
      */
     public function refreshTokenUsingRefreshToken($refreshToken)
     {
         try {
-            Log::info('Refreshing token using refresh token', [
-                'time' => now()->toDateTimeString()
-            ]);
-            
-            $newTokenData = $this->oauthService->refreshToken($refreshToken);
-            
-            if (!$newTokenData || !isset($newTokenData['access_token'])) {
-                Log::error('Failed to refresh token - invalid response', [
-                    'time' => now()->toDateTimeString()
-                ]);
-                return null;
-            }
-            
-            // Add creation timestamp for expiration tracking
-            $newTokenData['created_at'] = time();
-            
-            // Update token in session
-            session([config('oauth.token_session_key') => $newTokenData]);
-            
-            // Get user data from session
+            $newData = $this->oauthService->refreshToken($refreshToken);
+            if (!$newData || !isset($newData['access_token'])) return null;
+
+            $newData['created_at'] = time();
+            session([config('oauth.token_session_key') => $newData]);
+
             $userData = session('oauth_user');
             if ($userData && isset($userData['id'])) {
-                // Store token in database
                 $this->storeTokenInDatabase([
                     'user_id' => $userData['id'],
                     'user_type' => $userData['role'] ?? null,
-                    'access_token' => $newTokenData['access_token'],
-                    'refresh_token' => $newTokenData['refresh_token'] ?? null,
-                    'expires_in' => $newTokenData['expires_in'] ?? 3600,
-                    'created_at' => $newTokenData['created_at']
+                    'access_token' => $newData['access_token'],
+                    'refresh_token' => $newData['refresh_token'] ?? null,
+                    'expires_in' => $newData['expires_in'] ?? 3600,
+                    'created_at' => $newData['created_at']
                 ]);
             }
-            
-            Log::info('Token refreshed successfully', [
-                'time' => now()->toDateTimeString()
-            ]);
-            
-            return $newTokenData;
+
+            return $newData;
         } catch (\Exception $e) {
-            Log::error('Token refresh failed: ' . $e->getMessage(), [
-                'exception' => get_class($e),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-                'time' => now()->toDateTimeString()
-            ]);
+            Log::error('Token шинэчлэхэд алдаа гарлаа: ' . $e->getMessage());
             return null;
         }
     }
-    
+
     /**
-     * Refresh an access token if needed
-     *
-     * @param string $token Current token
-     * @param string|null $refreshToken Refresh token (if available)
-     * @param bool $forceRefresh Force refresh even if not expired
-     * @return array|null New token data or null on failure
+     * Токены хугацаа хэтэрсэн эсэхийг шалгаж, шаардлагатай бол шинэчилнэ
      */
     public function refreshTokenIfNeeded($token, $refreshToken = null, $forceRefresh = false)
     {
-        // Check if token data is in session
         $tokenData = session(config('oauth.token_session_key'));
-        
-        if (!$tokenData) {
-            Log::debug('No token data found in session for refresh check');
-            return null;
-        }
-        
-        // Use refresh token from session if not provided
+        if (!$tokenData) return null;
+
         if (!$refreshToken && isset($tokenData['refresh_token'])) {
             $refreshToken = $tokenData['refresh_token'];
         }
-        
-        // Check if token needs refresh
+
         $needsRefresh = $forceRefresh;
-        
         if (!$needsRefresh && isset($tokenData['expires_in']) && isset($tokenData['created_at'])) {
             $expiresAt = $tokenData['created_at'] + $tokenData['expires_in'];
             $buffer = config('oauth.token_refresh_buffer', 300);
-            
-            // Refresh if token will expire soon
             $needsRefresh = time() >= ($expiresAt - $buffer);
-            
-            Log::debug('Token refresh check', [
-                'expires_at' => date('Y-m-d H:i:s', $expiresAt),
-                'current_time' => date('Y-m-d H:i:s', time()),
-                'buffer' => $buffer,
-                'needs_refresh' => $needsRefresh,
-                'time' => now()->toDateTimeString()
-            ]);
         }
-        
+
         if ($needsRefresh && $refreshToken) {
             return $this->refreshTokenUsingRefreshToken($refreshToken);
         }
-        
+
         return null;
     }
-}   
+
+
+    public function getUserFromToken(string $token): mixed
+    {
+        $record = DB::table('user_tokens')->where('access_token', $token)->first();
+    
+        if (!$record) {
+            Log::warning("Token not found in DB: $token");
+            return null;
+        }
+    
+        return match ($record->user_type) {
+            'student' => Student::find($record->user_id),
+            'teacher' => Teacher::find($record->user_id),
+            default => null,
+        };
+    }
+    
+
+}
