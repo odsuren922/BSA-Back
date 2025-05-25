@@ -84,7 +84,10 @@ class ThesisCycleController extends Controller
                 ->findOrFail($id)
         );
     }
-
+    /**
+     * bsa гийн ID-р нь нэг мөчлөгийн мэдээллийг авах
+     * - gradingSchema болон тухайн мөчлөгт хэдэн БСА байгааг авчирна
+     */
     public function thesis_idShow($id)
     {
       $thesis = Thesis::findOrFail($id);
@@ -102,6 +105,9 @@ class ThesisCycleController extends Controller
     /**
      * Шинэ төгсөлтийн ажлын мөчлөг үүсгэх
      * - Нэр, он, улирал, эхлэх/дуусах огноо, үнэлгээний арга шаардлагатай
+     * үүнд deadline-ууд орохгүй
+     * - gradingSchema хамааралтайгаар хамт үүсгэнэ
+     * - gradingSchema үүсгэхдээ "Төгсөлтийн ажлыг үнэлэх арна зүй" гэсэн утгатай
      */
     public function storeCycle(Request $request)
     {
@@ -121,6 +127,13 @@ class ThesisCycleController extends Controller
 
         return response()->json($thesisCycle, 201); // 201 = Шинэ зүйл амжилттай үүссэн
     }
+    /**
+     * Шинэ төгсөлтийн ажлын мөчлөг үүсгэх
+     * - Нэр, он, улирал, эхлэх/дуусах огноо, үнэлгээний арга шаардлагатай
+     *  үнэлгээний арга зүйн  deadline-ууд хадгалаж байгаа (жишээ нь: явц нэг хэднээс хэндийн хооронд явагдах)
+     * - gradingSchema хамааралтайгаар хамт үүсгэнэ
+     * - gradingSchema үүсгэхдээ "Төгсөлтийн ажлыг үнэлэх арна зүй" гэсэн утгатай
+     */
 
     public function store(Request $request)
 {
@@ -199,6 +212,7 @@ class ThesisCycleController extends Controller
         'deadlines.*.start_date' => 'required|date',
         'deadlines.*.end_date' => 'required|date|after_or_equal:deadlines.*.start_date',
     ]);
+    //TODO::
 
     DB::beginTransaction();
 

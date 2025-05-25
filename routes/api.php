@@ -78,7 +78,7 @@ Route::middleware('require.token')->group(function () {
     
     // Topic routes
     Route::post('/topic/storeteacher', [\App\Http\Controllers\TopicController::class, 'storeteacher']);
-    Route::post('/topic/storeteacher', [\App\Http\Controllers\TopicController::class, 'storeteacher']);
+    Route::post('/topic/storestudent', [\App\Http\Controllers\TopicController::class, 'storestudent']);
 
     Route::prefix('topics')->group(function () {
         // Route::post('/storestudent', [\App\Http\Controllers\TopicController::class, 'storestudent']);
