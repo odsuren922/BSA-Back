@@ -24,20 +24,17 @@ Route::post('/oauth/token', [\App\Http\Controllers\Auth\OAuthController::class, 
 Route::get('/user', [\App\Http\Controllers\Auth\OAuthController::class, 'getUserData'])->middleware('auth:sanctum');
 Route::get('/user/role', [\App\Http\Controllers\Api\RoleController::class, 'getUserRole'])->middleware('auth:sanctum');
 
-Route::middleware('require.token')->prefix('hub-sync')->group(function () {
-    Route::get('/test-connection', [App\Http\Controllers\HubDataSyncController::class, 'testConnection']);
-    Route::post('/departments', [App\Http\Controllers\HubDataSyncController::class, 'syncDepartments']);
-    Route::post('/teachers', [App\Http\Controllers\HubDataSyncController::class, 'syncTeachers']);
-    Route::post('/students', [App\Http\Controllers\HubDataSyncController::class, 'syncStudents']);
-    Route::post('/all', [App\Http\Controllers\HubDataSyncController::class, 'syncAll']);
-});
+Route::middleware('require.token')
+    ->prefix('hub-sync')
+    ->group(function () {
+        Route::get('/test-connection', [App\Http\Controllers\HubDataSyncController::class, 'testConnection']);
+        Route::post('/departments', [App\Http\Controllers\HubDataSyncController::class, 'syncDepartments']);
+        Route::post('/teachers', [App\Http\Controllers\HubDataSyncController::class, 'syncTeachers']);
+        Route::post('/students', [App\Http\Controllers\HubDataSyncController::class, 'syncStudents']);
+        Route::post('/all', [App\Http\Controllers\HubDataSyncController::class, 'syncAll']);
+    });
 
-
-Route::middleware('require.token')->group(function () {
-    
-});
-
-
+Route::middleware('require.token')->group(function () {});
 
 // Thesis management API routes - Protected by auth:sanctum
 Route::middleware('require.token')->group(function () {
@@ -53,7 +50,7 @@ Route::middleware('require.token')->group(function () {
         Route::post('/{id}/send', [App\Http\Controllers\NotificationController::class, 'send']);
         Route::post('/{id}/cancel', [App\Http\Controllers\NotificationController::class, 'cancel']);
     });
-    
+
     // Tracking pixel route (no authentication required)
     Route::get('/notification-track/{recipient}', [App\Http\Controllers\NotificationController::class, 'track'])->name('notification.track');
 
@@ -65,17 +62,17 @@ Route::middleware('require.token')->group(function () {
         Route::put('/{id}', [\App\Http\Controllers\ProposalFormController::class, 'update']);
         Route::delete('/{id}', [\App\Http\Controllers\ProposalFormController::class, 'destroy']);
     });
-    
+
     // Department routes
     Route::apiResource('departments', App\Http\Controllers\DepartmentController::class);
-    
+
     // Teacher routes
     Route::prefix('teachers')->group(function () {
         Route::get('/{id}', [\App\Http\Controllers\TeacherController::class, 'dep_id']);
         Route::get('/count/department/{dep_id}', [\App\Http\Controllers\TeacherController::class, 'countByDepartment']);
     });
     Route::get('/teacher/{id}', [\App\Http\Controllers\TeacherController::class, 'show']);
-    
+
     // Topic routes
     Route::post('/topic/storeteacher', [\App\Http\Controllers\TopicController::class, 'storeteacher']);
     Route::post('/topic/storestudent', [\App\Http\Controllers\TopicController::class, 'storestudent']);
@@ -91,21 +88,20 @@ Route::middleware('require.token')->group(function () {
         Route::get('/reviewedtopicList', [\App\Http\Controllers\TopicController::class, 'getRefusedOrApprovedTopics']);
         Route::get('/topiclistproposedbyuser', [\App\Http\Controllers\TopicController::class, 'getTopicListProposedByUser']);
     });
-    
+
     // Topic Request routes
-    Route::post('/topic-requests', [App\Http\Controllers\TopicRequestController::class, 'store']);//Student sendt the request
+    Route::post('/topic-requests', [App\Http\Controllers\TopicRequestController::class, 'store']); //Student sendt the request
     Route::post('/topic-requestsbyteacher', [App\Http\Controllers\TopicRequestController::class, 'storebyteacher']);
     Route::get('/topic_requests', [App\Http\Controllers\TopicRequestController::class, 'index']);
     Route::get('/topic_confirmed', [App\Http\Controllers\TopicRequestController::class, 'getConfirmedTopicOnStudent']);
     Route::get('/topics_confirmed', [App\Http\Controllers\TopicRequestController::class, 'getConfirmedTopics']);
     Route::get('/topic_requests_teacher', [App\Http\Controllers\TopicRequestController::class, 'getRequestedTopicByTeacher']);
-    
+
     // Topic Response routes
     Route::post('/topic-response', [App\Http\Controllers\TopicResponseController::class, 'store']);
-    
+
     // Student routes
     Route::get('/students/all', [App\Http\Controllers\StudentController::class, 'index']);
-    
 
     // ------------------------------
     //Thesis Plan Tasks & Subtasks Үечилсэн төлөвлөгөө ажил & дэл ажил
@@ -217,7 +213,6 @@ Route::middleware('require.token')->group(function () {
     Route::patch('/committee-members/{member}/role', [App\Http\Controllers\Committee\CommitteeMemberController::class, 'patchRole']);
 
     Route::prefix('committees/{committee}')->group(function () {
-
         Route::get('members', [App\Http\Controllers\Committee\CommitteeMemberController::class, 'index']);
         Route::post('members', [App\Http\Controllers\Committee\CommitteeMemberController::class, 'store']);
         Route::put('members/{member}', [App\Http\Controllers\Committee\CommitteeMemberController::class, 'update']);
@@ -292,5 +287,27 @@ Route::middleware('require.token')->group(function () {
     Route::get('/cycle-deadlines/by-schema', [App\Http\Controllers\ThesisCycleDeadlineController::class, 'getBySchema']);
     Route::get('/cycle-deadlines/active-schema', [App\Http\Controllers\ThesisCycleDeadlineController::class, 'getActiveCycleBySchema']);
 
+    //ProposedTopicController
+    //
+    Route::get('proposed-topics/byUser', [App\Http\Controllers\Proposal\ProposedTopicController::class, 'getByUser']);
+    //supervisor
+    Route::get('proposed-topics/by-students/approved', [App\Http\Controllers\Proposal\ProposedTopicController::class, 'getAllApprovedTopicsByStudents']);
+    Route::get('proposed-topics/by-teachers/approved', [App\Http\Controllers\Proposal\ProposedTopicController::class, 'getAllApprovedTopicsByTeachers']);
 
+    Route::get('proposed-topics/by-students/submitted', [App\Http\Controllers\Proposal\ProposedTopicController::class, 'getAllSubmittedByStudents']);
+    Route::get('proposed-topics/by-teachers/submitted', [App\Http\Controllers\Proposal\ProposedTopicController::class, 'getAllSubmittedByTeachers']);
+
+    Route::put('/proposed-topics/{id}/status', [App\Http\Controllers\Proposal\ProposedTopicController::class, 'updateStatus']);
+
+    Route::post('proposed-topics/{id}/update', [App\Http\Controllers\Proposal\ProposedTopicController::class, 'update']);
+    Route::post('/proposed-topics/{id}/review', [App\Http\Controllers\Proposal\ProposedTopicController::class, 'reviewTopic']);//only for supervisor permisssion person
+
+    Route::apiResource('proposed-topics', App\Http\Controllers\Proposal\ProposedTopicController::class);
+
+    // Зөвхөн active статустай талбар авах тусгай route
+    Route::get('proposal-fields/active', [App\Http\Controllers\Proposal\ProposalFieldController::class, 'activeOnly']);
+
+    // Бүрэн CRUD route
+    Route::apiResource('proposal-fields', App\Http\Controllers\Proposal\ProposalFieldController::class);
+    Route::post('proposal-fields/bulk-upsert', [App\Http\Controllers\Proposal\ProposalFieldController::class, 'bulkUpsert']);
 });
