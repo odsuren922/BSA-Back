@@ -24,4 +24,19 @@ class ThesisCycle extends Model {
 {
     return $this->hasMany(Reminder::class);
 }
+
+    public function proposalFields()
+    {
+        return $this->hasMany(ProposalField::class, 'thesis_cycle_id');
+    }
+
+    public function topicRequests()
+    {
+        return $this->hasMany(ProposalTopicRequest::class, 'thesis_cycle_id');
+    }
+
+    public function proposedTopics()
+    {
+        return $this->hasMany(ProposedTopic::class, 'thesis_cycle_id');
+    }
 }

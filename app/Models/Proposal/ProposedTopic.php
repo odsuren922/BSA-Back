@@ -4,6 +4,7 @@ namespace App\Models\Proposal;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\ThesisCycle;
 
 class ProposedTopic extends Model
 {
@@ -15,6 +16,7 @@ class ProposedTopic extends Model
         'thesis_cycle_id',
        'topic_content_id',
         'status',
+        'is_archived',
     ];
 
     public function translatedStatus()
@@ -24,6 +26,8 @@ class ProposedTopic extends Model
             'submitted' => 'Илгээсэн',
             'rejected' => 'Татгалзсан',
             'approved' => 'Зөвшөөрөгдсөн',
+            'chosen' => 'Сонгогдсон',
+            'archived' => 'Архивлагдсан',
         ];
     
         return $statuses[$this->status] ?? $this->status;
@@ -50,7 +54,11 @@ class ProposedTopic extends Model
     {
         return $this->hasMany(TopicApprovalLog::class, 'topic_id');
     }
-    
+    public function topicRequests()
+{
+    return $this->hasMany(ProposalTopicRequest::class, 'topic_id');
+}
+
     
     public function createdBy(){
         return $this->morphTo();

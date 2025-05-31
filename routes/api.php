@@ -303,11 +303,26 @@ Route::middleware('require.token')->group(function () {
     Route::post('/proposed-topics/{id}/review', [App\Http\Controllers\Proposal\ProposedTopicController::class, 'reviewTopic']);//only for supervisor permisssion person
 
     Route::apiResource('proposed-topics', App\Http\Controllers\Proposal\ProposedTopicController::class);
-
+    Route::put('proposed-topics/{id}/archive', [ App\Http\Controllers\Proposal\ProposedTopicController::class, 'archive']);
+    Route::put('proposed-topics/{id}/unarchive', [ App\Http\Controllers\Proposal\ProposedTopicController::class, 'unarchive']);
+    
     // Зөвхөн active статустай талбар авах тусгай route
     Route::get('proposal-fields/active', [App\Http\Controllers\Proposal\ProposalFieldController::class, 'activeOnly']);
 
     // Бүрэн CRUD route
     Route::apiResource('proposal-fields', App\Http\Controllers\Proposal\ProposalFieldController::class);
     Route::post('proposal-fields/bulk-upsert', [App\Http\Controllers\Proposal\ProposalFieldController::class, 'bulkUpsert']);
+
+
+// Proposal Topic Requests -Сэдэв сонгох хүсэлтүүд
+Route::prefix('proposal-topic-requests')->group(function () {
+    Route::get('/', [App\Http\Controllers\Proposal\ProposalTopicRequestController::class, 'index']);
+    Route::get('{id}', [App\Http\Controllers\Proposal\ProposalTopicRequestController::class, 'show']);
+    Route::post('/', [App\Http\Controllers\Proposal\ProposalTopicRequestController::class, 'store']);
+    Route::put('{id}/approve', [App\Http\Controllers\Proposal\ProposalTopicRequestController::class, 'approve']);
+    Route::put('{id}/decline', [App\Http\Controllers\Proposal\ProposalTopicRequestController::class, 'decline']);
+
+    Route::delete('{id}', [App\Http\Controllers\Proposal\ProposalTopicRequestController::class, 'destroy']);
+});
+
 });

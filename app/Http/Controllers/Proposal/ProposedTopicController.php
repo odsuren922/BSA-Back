@@ -50,14 +50,17 @@ class ProposedTopicController extends Controller
             ]);
             return response()->json(['message' => 'Зөвшөөрөлгүй'], 403);
         }
-
+//TODO::SEND WITH THESSIS CYCLE INFO
         $topics = ProposedTopic::with([
             'fieldValues.field',
             'topicContent',
-            'approvalLogs' // ← энд нэмсэн
+            'approvalLogs' ,
+             'topicRequests.thesisCycle',
+             'thesisCycle'
         ])
         ->where('created_by_id', $user->id)
         ->where('created_by_type', get_class($user))
+        
         ->orderBy('created_at', 'desc')
         ->get();
         
@@ -68,46 +71,60 @@ class ProposedTopicController extends Controller
     /**
      * Оюутнуудын үүсгэсэн бүх сэдвийг авах (админ, туслах хэрэглэгчдэд зориулав).
      */
-    public function getAllApprovedTopicsByStudents()
+    public function getAllApprovedTopicsByStudents(Request $request)
     {
+        $user = $request->user(); 
+    
         $topics = ProposedTopic::with([
             'fieldValues.field',
             'topicContent',
             'createdBy',
-          
+            'topicRequests' => function ($query) use ($user) {
+                $query->where('requested_by_id', $user->id)
+                      ->where('requested_by_type', get_class($user));
+            }
         ])
         ->where('created_by_type', 'App\Models\Student')
-        ->where('status', 'approved')
+        ->where('is_archived', false)
+        ->whereIn('status', ['approved']) 
         ->get();
-
+    
         return ProposedTopicResource::collection($topics);
     }
+    
 
     /**
      * Багш нарын үүсгэсэн бүх сэдвийг авах (админ, туслах хэрэглэгчдэд зориулав).
      */
-    public function getAllApprovedTopicsByTeachers()
+    public function getAllApprovedTopicsByTeachers(Request $request)
     {
+        $user = $request->user(); 
         $topics = ProposedTopic::with([
             'fieldValues.field',
             'topicContent',
             'createdBy',
-       
+            'topicRequests' => function ($query) use ($user) {
+                $query->where('requested_by_id', $user->id)
+                      ->where('requested_by_type', get_class($user));
+            }
         ])
         ->where('created_by_type', 'App\Models\Teacher')
-        ->where('status', 'approved')
+        ->where('is_archived', false)
+        ->whereIn('status', ['approved']) 
         ->get();
 
         return ProposedTopicResource::collection($topics);
     }
+
     public function getAllSubmittedByStudents()
     {
         $topics = ProposedTopic::with([
             'fieldValues.field',
             'topicContent',
-            'createdBy',
-          
+            'approvalLogs',
+             'createdBy',
         ])
+        
         ->where('created_by_type', 'App\Models\Student')
         ->where('status', 'submitted')
         ->get();
@@ -154,7 +171,9 @@ class ProposedTopicController extends Controller
         $user = $request->user();
 
         // 1. Идэвхтэй дипломын цикл олж авах
-        $activeCycle = ThesisCycle::where('status', 'Идэвхитэй')->first();
+        $activeCycle = ThesisCycle::where('status', 'Идэвхитэй')
+        ->where('dep_id', $user->dep_id)
+        ->first();
         if (!$activeCycle) {
             return response()->json(['message' => 'Идэвхтэй дипломын цикл олдсонгүй.'], 422);
         }
@@ -323,6 +342,27 @@ class ProposedTopicController extends Controller
             ? 'Сэдэв зөвшөөрөгдлөө.'
             : 'Сэдэв татгалзсан.',
     ]);
+}
+public function archive(Request $request, $id)
+{
+    $topic = ProposedTopic::findOrFail($id);
+
+    // Хандалтын эрх шалгах бол энд хийнэ
+    $topic->is_archived = true;
+    $topic->save();
+
+    return response()->json(['message' => 'Сэдэв архивлагдлаа.']);
+}
+
+public function unarchive(Request $request, $id)
+{
+    $topic = ProposedTopic::findOrFail($id);
+
+    // Хандалтын эрх шалгах бол энд хийнэ
+    $topic->is_archived = false;
+    $topic->save();
+
+    return response()->json(['message' => 'Сэдэв архиваас гарлаа.']);
 }
 
     

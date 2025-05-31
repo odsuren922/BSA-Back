@@ -16,9 +16,12 @@ class CreateProposalTopicRequestsTable extends Migration
         Schema::create('proposal_topic_requests', function (Blueprint $table) {
             $table->id();
             $table->foreignId('topic_id')->constrained('proposed_topics')->onDelete('cascade');
+           //thesiscycle_id
+            $table->foreignId('thesis_cycle_id')->constrained('thesis_cycles')->onDelete('cascade');
             $table->foreignId('requested_by_id'); 
             $table->string('requested_by_type');
-            $table->text('req_note');
+            $table->text('req_note')->nullable();
+            $table->string('status')->default('pending'); // pending, approved, rejected
             $table->boolean('is_selected')->default(false);
             $table->timestamp('selected_at')->nullable();
             $table->timestamps();
