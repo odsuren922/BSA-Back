@@ -26,12 +26,13 @@ class ProposalTopicRequestResource extends JsonResource
             'id' => $this->id,
             'topic_id' => $this->topic_id,
             'req_note' => $this->req_note,
-            'is_selected' => $this->is_selected,
+           // 'is_selected' => $this->is_selected,
             'selected_at' => $this->selected_at,
             'requested_by_id' => $this->requested_by_id,
             'requested_by_type' => $this->requested_by_type,
             'already_selected_topic' => $alreadySelectedTopic,
             'thesis_cycle_id' => $this->thesis_cycle_id,
+            'status' => $this->status,
               // THESIS CYCKE NAME YEAR ND END_YEAR AND SEMESTER
               'thesis_cycle' => $this->whenLoaded('thesisCycle', function () {
                 return [

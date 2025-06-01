@@ -40,9 +40,6 @@ class StudentSeeder extends Seeder
                 ['dep_id' => 1, 'sisi_id' => '18B1NUM1221', 'firstname' => 'Дорж', 'lastname' => 'Хор.', 'program' => 'Компьютерийн ухаан', 'mail' => 'dorj@example.com', 'phone' => '88888022', 'is_choosed' => false, 'proposed_number' => 0],
                 ['dep_id' => 1, 'sisi_id' => '21B1NUM1302', 'firstname' => 'Дэчиннямбуу', 'lastname' => 'Түв.', 'program' => 'Компьютерийн ухаан', 'mail' => 'dechin@example.com', 'phone' => '88888023', 'is_choosed' => false, 'proposed_number' => 0],
                 ['dep_id' => 1, 'sisi_id' => '19B1NUMXXXX', 'firstname' => 'Золжаргал', 'lastname' => 'Бям.', 'program' => 'Компьютерийн ухаан', 'mail' => 'zoloo@example.com', 'phone' => '88888024', 'is_choosed' => false, 'proposed_number' => 0],
- 
-            
-              
         ]);
     }
 }

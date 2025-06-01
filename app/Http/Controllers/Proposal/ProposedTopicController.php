@@ -50,7 +50,7 @@ class ProposedTopicController extends Controller
             ]);
             return response()->json(['message' => 'Зөвшөөрөлгүй'], 403);
         }
-//TODO::SEND WITH THESSIS CYCLE INFO
+         //TODO::SEND WITH THESSIS CYCLE INFO
         $topics = ProposedTopic::with([
             'fieldValues.field',
             'topicContent',
@@ -123,6 +123,8 @@ class ProposedTopicController extends Controller
             'topicContent',
             'approvalLogs',
              'createdBy',
+            'approvalLogs' ,
+
         ])
         
         ->where('created_by_type', 'App\Models\Student')
@@ -139,6 +141,8 @@ class ProposedTopicController extends Controller
             'fieldValues.field',
             'topicContent',
             'createdBy',
+            'approvalLogs' ,
+
         ])
         ->where('created_by_type', 'App\Models\Teacher')
         ->where('status', 'submitted')
@@ -151,6 +155,26 @@ class ProposedTopicController extends Controller
         return ProposedTopicResource::collection($topics);
     }
     
+    public function getAllApprovedByUser(Request $request)
+{
+    $user = $request->user();
+
+    $topics = ProposedTopic::whereHas('approvalLogs', function ($query) use ($user) {
+        $query->where('reviewer_id', $user->id)
+              ->where('reviewer_type', get_class($user))
+              ->where('action', 'approved');
+    })
+    ->with([
+        'fieldValues.field',
+        'topicContent',
+        'createdBy',
+        'approvalLogs'
+    ])
+    ->get();
+
+    return ProposedTopicResource::collection($topics);
+}
+
     /**
      * Шинээр санал болгосон сэдэв үүсгэх.
      * - Идэвхтэй дипломын цикл байх шаардлагатай.
@@ -163,29 +187,30 @@ class ProposedTopicController extends Controller
             'title_en' => 'required|string|max:255',
             'description' => 'required|string|max:1000',
             'status' => 'nullable|string|in:draft,submitted',
-            'fields' => 'required|array',
-            'fields.*.field_id' => 'required|integer|exists:proposal_fields,id',
-            'fields.*.value' => 'required|string|max:1000',
+            'fields' => 'nullable|array',
+            'fields.*.field_id' => 'required_with:fields.*|integer|exists:proposal_fields,id',
+            'fields.*.value' => 'required_with:fields.*|string|max:1000',
         ]);
-
+    
         $user = $request->user();
-
-        // 1. Идэвхтэй дипломын цикл олж авах
+    
+        // 1. Get active thesis cycle
         $activeCycle = ThesisCycle::where('status', 'Идэвхитэй')
-        ->where('dep_id', $user->dep_id)
-        ->first();
+            ->where('dep_id', $user->dep_id)
+            ->first();
+    
         if (!$activeCycle) {
             return response()->json(['message' => 'Идэвхтэй дипломын цикл олдсонгүй.'], 422);
         }
-
-        // 2. Гарчиг, тайлбар хадгалах
+    
+        // 2. Save topic content
         $content = TopicContent::create([
             'title_mn' => $validated['title_mn'],
             'title_en' => $validated['title_en'],
             'description' => $validated['description'],
         ]);
-
-        // 3. Үндсэн санал болгосон сэдвийг хадгалах
+    
+        // 3. Save proposed topic
         $proposedTopic = ProposedTopic::create([
             'created_by_id' => $user->id,
             'created_by_type' => $user->role === 'student' ? 'App\Models\Student' : 'App\Models\Teacher',
@@ -193,22 +218,24 @@ class ProposedTopicController extends Controller
             'topic_content_id' => $content->id,
             'status' => $validated['status'] ?? 'draft',
         ]);
-
-        // 4. Талбаруудын утгуудыг хадгалах
-        foreach ($validated['fields'] as $field) {
-            ProposalFieldValue::create([
-                'proposed_topic_id' => $proposedTopic->id,
-                'field_id' => $field['field_id'],
-                'value' => $field['value'],
-            ]);
+    
+        // 4. Save field values if provided
+        if (!empty($validated['fields'])) {
+            foreach ($validated['fields'] as $field) {
+                ProposalFieldValue::create([
+                    'proposed_topic_id' => $proposedTopic->id,
+                    'field_id' => $field['field_id'],
+                    'value' => $field['value'],
+                ]);
+            }
         }
-
+    
         return response()->json([
             'message' => 'Сэдэв амжилттай хадгалагдлаа.',
             'topic' => $proposedTopic->load(['topicContent', 'fieldValues']),
         ], 201);
     }
-
+    
     /**
      * Зөвхөн 'ноорог' болон 'татгалзсан' төлөвтэй сэдвийг засварлах боломжтой.
      * 'илгээсэн' болон 'батлагдсан' сэдвийг засаж болохгүй.
@@ -316,14 +343,14 @@ class ProposedTopicController extends Controller
     $topic = ProposedTopic::findOrFail($id);
 
     // Өөрийнхөө сэдвийг батлах/татгалзахыг хориглох
-    if (
-        $topic->created_by_id === $user->id &&
-        $topic->created_by_type === get_class($user)
-    ) {
-        return response()->json([
-            'message' => 'Та өөрийн дэвшүүлсэн сэдвийг батлах эсвэл татгалзах эрхгүй.',
-        ], 403);
-    }
+    // if (
+    //     $topic->created_by_id === $user->id &&
+    //     $topic->created_by_type === get_class($user)
+    // ) {
+    //     return response()->json([
+    //         'message' => 'Та өөрийн дэвшүүлсэн сэдвийг батлах эсвэл татгалзах эрхгүй.',
+    //     ], 403);
+    // }
 
     $topic->status = $request->action;
     $topic->save();

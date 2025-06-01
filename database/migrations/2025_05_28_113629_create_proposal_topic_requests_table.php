@@ -22,7 +22,7 @@ class CreateProposalTopicRequestsTable extends Migration
             $table->string('requested_by_type');
             $table->text('req_note')->nullable();
             $table->string('status')->default('pending'); // pending, approved, rejected
-            $table->boolean('is_selected')->default(false);
+            // $table->boolean('is_selected')->default(false);
             $table->timestamp('selected_at')->nullable();
             $table->timestamps();
         });

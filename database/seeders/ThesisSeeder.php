@@ -26,7 +26,7 @@ class ThesisSeeder extends Seeder
                     'name_english' => 'Facial Recognition System',
                     'description' => 'Камерын тусламжтайгаар хэрэглэгчийн нүүр царайг таних систем хөгжүүлэх.',
                     'status' => 'active',
-                    'thesis_cycle_id' => 3
+                    'thesis_cycle_id' => 1
                 ],
                 [
                     'student_id' => 2,
@@ -35,7 +35,7 @@ class ThesisSeeder extends Seeder
                     'name_english' => 'AI-Based Learning System',
                     'description' => 'Machine Learning ашиглан сурагчдад тохирсон сургалтын систем хөгжүүлэх',
                     'status' => 'active',
-                    'thesis_cycle_id' => 3,
+                    'thesis_cycle_id' => 1,
                 
                 ],
                 [
@@ -45,7 +45,7 @@ class ThesisSeeder extends Seeder
                     'name_english' => 'Flutter Word Puzzle Game',
                     'description' => 'Санхүүгийн үйлчилгээнд блокчейн ашиглах боломжууд',
                     'status' => 'active',
-                    'thesis_cycle_id' => 3,
+                    'thesis_cycle_id' => 1,
                 ],
                 [
                     'student_id' => 4,
@@ -55,7 +55,7 @@ class ThesisSeeder extends Seeder
 Information',
                     'description' => 'Санхүүгийн үйлчилгээнд блокчейн ашиглах боломжууд',
                     'status' => 'active',
-                    'thesis_cycle_id' => 3,
+                    'thesis_cycle_id' => 1,
                 ],
                 [
                     'student_id' => 5,
@@ -64,7 +64,7 @@ Information',
                     'name_english' => 'Procedural Terrain Generation with OpenGL',
                     'description' => 'Санхүүгийн үйлчилгээнд блокчейн ашиглах боломжууд',
                     'status' => 'active',
-                    'thesis_cycle_id' => 3,
+                    'thesis_cycle_id' => 1,
                 ],
                 [
                     'student_id' => 6,
@@ -73,7 +73,7 @@ Information',
                     'name_english' => 'RTC based call application ',
                     'description' => 'Санхүүгийн үйлчилгээнд блокчейн ашиглах боломжууд',
                     'status' => 'active',
-                    'thesis_cycle_id' => 3,
+                    'thesis_cycle_id' => 1,
                 ],
                 [
                     'student_id' => 7,
@@ -82,7 +82,7 @@ Information',
                     'name_english' => 'Car renting website ',
                     'description' => 'Санхүүгийн үйлчилгээнд блокчейн ашиглах боломжууд',
                     'status' => 'active',
-                    'thesis_cycle_id' => 3,
+                    'thesis_cycle_id' => 1,
                 ],
                 [
                     'student_id' => 8,
@@ -93,7 +93,7 @@ Information',
 to record and monitor their training performance',
                     'description' => 'Санхүүгийн үйлчилгээнд блокчейн ашиглах боломжууд',
                     'status' => 'active',
-                    'thesis_cycle_id' => 3,
+                    'thesis_cycle_id' => 1,
                 ],
 
                 [
@@ -103,7 +103,7 @@ to record and monitor their training performance',
                     'name_english' => 'Pottery classification using deep learning ',
                     'description' => 'Санхүүгийн үйлчилгээнд блокчейн ашиглах боломжууд',
                     'status' => 'active',
-                    'thesis_cycle_id' => 3,
+                    'thesis_cycle_id' => 1,
                 ],
 
 

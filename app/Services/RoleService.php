@@ -107,10 +107,11 @@ class RoleService
     public function mapGidToRole($gid)
     {
         $roles = [
-            '68' => 'department',
-            '90' => 'supervisor',
+            '68' => 'department',//tenhmiin tuslah
             '5' => 'student',
             '8' => 'teacher',
+            // '90' => 'supervisor',
+           
             // Add more role mappings as needed
         ];
         

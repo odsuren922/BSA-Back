@@ -15,7 +15,7 @@ class ProposalTopicRequest extends Model
         'requested_by_id',
         'requested_by_type',
         'req_note',
-        'is_selected',
+        // 'is_selected',
         'selected_at',
     ];
 

@@ -34,7 +34,7 @@ class Student extends Model
     public function selectedTopicRequest()
     {
         return $this->hasOne(TopicRequest::class, 'requested_by_id')
-                    ->where('is_selected', true)
+                    ->where('status', 'approved')
                     ->where('requested_by_type', 'student');
     }
 

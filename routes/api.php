@@ -296,6 +296,7 @@ Route::middleware('require.token')->group(function () {
 
     Route::get('proposed-topics/by-students/submitted', [App\Http\Controllers\Proposal\ProposedTopicController::class, 'getAllSubmittedByStudents']);
     Route::get('proposed-topics/by-teachers/submitted', [App\Http\Controllers\Proposal\ProposedTopicController::class, 'getAllSubmittedByTeachers']);
+    Route::get('/proposed-topics/approved-by-user', [App\Http\Controllers\Proposal\ProposedTopicController::class, 'getAllApprovedByUser']);
 
     Route::put('/proposed-topics/{id}/status', [App\Http\Controllers\Proposal\ProposedTopicController::class, 'updateStatus']);
 
@@ -319,6 +320,7 @@ Route::prefix('proposal-topic-requests')->group(function () {
     Route::get('/', [App\Http\Controllers\Proposal\ProposalTopicRequestController::class, 'index']);
     Route::get('{id}', [App\Http\Controllers\Proposal\ProposalTopicRequestController::class, 'show']);
     Route::post('/', [App\Http\Controllers\Proposal\ProposalTopicRequestController::class, 'store']);
+    Route::put('{id}/cancel', [ProposedTopicController::class, 'cancelling']);
     Route::put('{id}/approve', [App\Http\Controllers\Proposal\ProposalTopicRequestController::class, 'approve']);
     Route::put('{id}/decline', [App\Http\Controllers\Proposal\ProposalTopicRequestController::class, 'decline']);
 
