@@ -207,7 +207,7 @@ Route::middleware('require.token')->group(function () {
         Route::post('/committees', [App\Http\Controllers\Committee\CommitteeController::class, 'storeWithCycleAndComponent']);
     });
 
-    Route::get('/committees/by-teacher/{teacherId}', [App\Http\Controllers\Committee\CommitteeController::class, 'getCommitteesByTeacher']);
+    Route::get('/committees/by-teacher', [App\Http\Controllers\Committee\CommitteeController::class, 'getCommitteesByTeacher']);
     // Route::get('/committees/by-student/{studentId}', [App\Http\Controllers\Committee\CommitteeController::class, 'getCommitteesByStudent']);
     Route::delete('/committee-members/{id}', [App\Http\Controllers\Committee\CommitteeMemberController::class, 'destroy']);
     Route::patch('/committee-members/{member}/role', [App\Http\Controllers\Committee\CommitteeMemberController::class, 'patchRole']);
@@ -251,14 +251,14 @@ Route::middleware('require.token')->group(function () {
 
     Route::prefix('assigned-grading')->group(function () {
         Route::get('/', [App\Http\Controllers\AssignedGradingController::class, 'index']); // list all
-        Route::get('/teacher/{teacherId}', [App\Http\Controllers\AssignedGradingController::class, 'getByAssignedById']);
+        Route::get('/teacher', [App\Http\Controllers\AssignedGradingController::class, 'getByAssignedByUser']);
         // list all
         Route::post('/', [App\Http\Controllers\AssignedGradingController::class, 'store']); // store multiple
         Route::post('/check-assignment', [App\Http\Controllers\AssignedGradingController::class, 'checkAssignment']); // permission check
         Route::delete('/{assignedGrading}', [App\Http\Controllers\AssignedGradingController::class, 'destroy']); // delete
     });
-    Route::get('/assigned-grading/teacher/{teacherId}', [App\Http\Controllers\AssignedGradingController::class, 'getByAssignedById']);
-    Route::get('/assigned-grading/score/{teacherId}', [App\Http\Controllers\AssignedGradingController::class, 'getScoreByAssignedById']);
+    // Route::get('/assigned-grading/teacher', [App\Http\Controllers\AssignedGradingController::class, 'getByAssignedByUser']);
+    Route::get('/assigned-grading/score', [App\Http\Controllers\AssignedGradingController::class, 'getScoreByAssignedTeacherByUser']);
     Route::get('/grading-assignments', [App\Http\Controllers\AssignedGradingController::class, 'getGradingAssignments']);
 
     Route::get('/assigned-grading/component/{componentId}/cycle/{cycleId}', [App\Http\Controllers\AssignedGradingController::class, 'getByComponentAndCycle']);

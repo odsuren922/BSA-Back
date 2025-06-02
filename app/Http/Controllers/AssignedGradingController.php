@@ -82,16 +82,18 @@ class AssignedGradingController extends Controller
 
         return AssignedGradingResource::collection($assigned);
 }
-
-public function getByAssignedById($teacherId)
+//TODO:: Get user id from the request
+public function getByAssignedByUser(Request $request)
 {
+
+    $user = $request->user();
     $assigned = AssignedGrading::with([
         'gradingComponent.thesisCycleDeadlines',
         'thesis',
         'student',
         'thesisCycle',
         'score'
-    ])->where('assigned_by_id', $teacherId)->get();
+    ])->where('assigned_by_id', $user->id)->get();
 
     if ($assigned->isEmpty()) {
         return response()->json(['message' => 'No assignments found'], 404);
@@ -158,9 +160,11 @@ public function getByAssignedById($teacherId)
 }
 
 
-public function getScoreByAssignedById($teacherId)
+public function getScoreByAssignedTeacherByUser(Request $request)
 {
-    $assigned = AssignedGrading::where('assigned_by_id', $teacherId)->get();
+    $user = $request->user();
+
+    $assigned = AssignedGrading::where('assigned_by_id', $user->id)->get();
 
     if ($assigned->isEmpty()) {
         return response()->json(['message' => 'No assignments found'], 404);
