@@ -105,6 +105,7 @@ public function getActiveCycleBySchema(Request $request)
     // Step 1: Find the active cycle with its grading schema
     $cycle = ThesisCycle::with('gradingSchema')
         ->where('status', 'Идэвхитэй')
+        ->where('dep_id', $request->user()->dep_id)
         ->first();
 
     if (!$cycle) {

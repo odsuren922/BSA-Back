@@ -29,7 +29,8 @@ class ThesisCycleController extends Controller
 
     public function index(Request $request)
     {
-        $depId = $request->query('dep_id');
+        $user = $request->user();
+        $depId= $user->dep_id;
         return response()->json(
             ThesisCycle::with('gradingSchema', 'reminders.schedules', 'deadlines')
                 ->where('status', '!=', 'Устгах')
@@ -51,8 +52,9 @@ class ThesisCycleController extends Controller
 
     public function active(Request $request)
     {
-        $depId = $request->query('dep_id');
-    
+      //  $depId = $request->query('dep_id');
+        $user = $request->user();
+        $depId= $user->dep_id;
         $activeThesis = ThesisCycle::with('gradingSchema')
             ->withCount(['theses as totalTheses' => function ($query) {
                 $query->whereColumn('thesis_cycle_id', 'thesis_cycles.id',);

@@ -64,17 +64,15 @@ class CommitteeController extends Controller
     public function getActiveCycleValidCommittees(Request $request)
     {
         $committees = Committee::with([
-            //'department',
             'gradingComponent',
             'members.teacher',
-            // 'students',
             'schedules',
             'thesis_cycle_deadlines',
         ])
             ->whereHas('thesis_cycle', function ($query) {
                 $query->where('status', 'Идэвхитэй');
             })
-            // ->where('dep_id', $request->user()->dep_id)
+            ->where('dep_id', $request->user()->dep_id)
             ->whereNotIn('status', ['cancelled', 'done'])
             ->get();
         // ->paginate(10);
